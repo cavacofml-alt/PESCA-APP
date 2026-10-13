@@ -211,3 +211,18 @@ test("SunCalc 1.9.0 em vendor/: nascer e pôr do Sol em Faro coerentes", () => {
   assert.ok(Math.abs(por - (17 * 60 + 53)) <= 20, `pôr ${r.data.sunset}`);
   assert.ok(Math.abs((nascer + por) / 2 - (12 * 60 + 18)) <= 5, "simétrico em torno do meio-dia solar");
 });
+
+test("SunCalc vs. USNO (Faro, 5–11/10/2026): diferença ≤ 3 min", () => {
+  // Referência: horas do USNO citadas num relatório colado pelo utilizador (conversa com o
+  // Gemini, ponto 37.02,-7.93, hora de Lisboa). Não consultadas directamente.
+  const SunCalc = createRequire(import.meta.url)("../vendor/suncalc.js");
+  const usno = { "2026-10-05": ["07:30", "19:09"], "2026-10-06": ["07:31", "19:07"], "2026-10-07": ["07:32", "19:06"],
+    "2026-10-08": ["07:33", "19:04"], "2026-10-09": ["07:34", "19:03"], "2026-10-10": ["07:35", "19:02"], "2026-10-11": ["07:36", "19:01"] };
+  const minutosLisboa = d => { const [h, m] = d.toLocaleTimeString("pt-PT", { timeZone: "Europe/Lisbon", hour: "2-digit", minute: "2-digit" }).split(":"); return +h * 60 + +m; };
+  const minutos = s => { const [h, m] = s.split(":"); return +h * 60 + +m; };
+  for (const [dia, [nascer, por]] of Object.entries(usno)) {
+    const r = getSunAndMoon(new Date(`${dia}T12:00:00Z`), 37.02, -7.93, SunCalc);
+    assert.ok(Math.abs(minutosLisboa(new Date(r.data.sunrise)) - minutos(nascer)) <= 3, `${dia} nascer`);
+    assert.ok(Math.abs(minutosLisboa(new Date(r.data.sunset)) - minutos(por)) <= 3, `${dia} pôr`);
+  }
+});
