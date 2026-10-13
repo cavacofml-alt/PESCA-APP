@@ -70,6 +70,15 @@ test("Open-Meteo: falha HTTP não lança, devolve não obtido", async () => {
   assert.match(r.error, /HTTP 500/);
 });
 
+test("Erros de rede e JSON aparecem em português", async () => {
+  const semRede = async () => { throw new TypeError("Failed to fetch"); };
+  const r = await getForecast({ latitude: 1, longitude: 1, baseUrl: fontes.forecastBase, fetchImpl: semRede, now: NOW });
+  assert.equal(r.error, "Falha de rede (sem ligação ou pedido bloqueado)");
+  const jsonMau = async () => ({ ok: true, status: 200, json: async () => JSON.parse("<html>") });
+  const r2 = await getWarnings({ url: fontes.ipmaWarnings, area: "FAR", tipo: "Agitação Marítima", fetchImpl: jsonMau, now: NOW });
+  assert.equal(r2.error, "Resposta não é JSON válido");
+});
+
 // ---------- IPMA avisos ----------
 
 test("Níveis IPMA mapeados num único sítio", () => {
