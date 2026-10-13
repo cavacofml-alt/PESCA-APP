@@ -1,5 +1,6 @@
 import { fetchJson, makeUrl } from "./http.js";
 import { sourceResult } from "../normalizacao.js";
+import { validarSerieUnix } from "./open-meteo-tempo.js";
 
 const VARIABLES = [
   "wave_height", "wave_direction", "wave_period",
@@ -9,16 +10,18 @@ const VARIABLES = [
 ];
 
 export async function getMarine({ latitude, longitude, pastDays = 7, forecastDays = 7,
-  baseUrl = "https://marine-api.open-meteo.com/v1/marine", fetchImpl = fetch, now = new Date() }) {
+  baseUrl, fetchImpl = fetch, now = new Date() }) {
   const source = "Open-Meteo Marine API";
   const readAt = now.toISOString();
   try {
+    if (!baseUrl) throw new Error("Configuração em falta: URL do Open-Meteo Marine");
+    // timeformat=unixtime: instantes absolutos. A hora local repete-se a 25/10/2026.
     const url = makeUrl(baseUrl, {
       latitude, longitude, hourly: VARIABLES.join(","), timezone: "Europe/Lisbon",
-      past_days: pastDays, forecast_days: forecastDays
+      timeformat: "unixtime", past_days: pastDays, forecast_days: forecastDays
     });
     const json = await fetchJson(url, { fetchImpl });
-    if (!json?.hourly?.time || !Array.isArray(json.hourly.time)) throw new Error("Resposta sem série horária válida");
+    validarSerieUnix(json);
     return sourceResult({ source, readAt, data: json });
   } catch (error) {
     return sourceResult({ source, readAt, error });
