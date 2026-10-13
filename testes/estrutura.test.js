@@ -43,10 +43,15 @@ function carregarSw({ rede }) {
   const handlers = {};
   const cache = new Map();
   const abertas = new Set();
+  const instalados = [];
   const cacheApi = {
     open: async nome => {
       abertas.add(nome);
-      return { put: async (req, res) => cache.set(req.url, res), addAll: async () => {} };
+      return {
+        // Atraso deliberado: prova que a resposta espera pela gravação.
+        put: (req, res) => new Promise(ok => setTimeout(() => { cache.set(req.url, res); ok(); }, 5)),
+        addAll: async lista => { instalados.push(...lista); }
+      };
     },
     match: async req => cache.get(req.url),
     keys: async () => [...abertas]
@@ -63,12 +68,18 @@ function carregarSw({ rede }) {
     URL
   };
   vm.runInNewContext(ler("sw.js"), ctx);
+  async function instalar() {
+    let espera;
+    handlers.install({ waitUntil: p => { espera = p; } });
+    await espera;
+    return instalados;
+  }
   async function pedir(url) {
     let resposta;
     handlers.fetch({ request: { url, method: "GET" }, respondWith: p => { resposta = p; } });
     return resposta ? await resposta : "ignorado";
   }
-  return { pedir, cache, src: ler("sw.js") };
+  return { pedir, instalar, cache };
 }
 
 test("sw: *.json é rede primeiro, mesmo com cópia em cache", async () => {
@@ -85,6 +96,23 @@ test("sw: *.json sem rede usa a cópia em cache; sem cópia devolve erro", async
   assert.equal((await sw.pedir("https://exemplo.pt/config.json")).origem, "erro");
 });
 
+test("sw: a cópia de *.json fica gravada antes de a resposta ser devolvida", async () => {
+  const sw = carregarSw({ rede: "ok" });
+  await sw.pedir("https://exemplo.pt/mares/2026.json");
+  assert.ok(sw.cache.has("https://exemplo.pt/mares/2026.json"));
+});
+
+test("sw: a instalação guarda a shell completa e todos os ficheiros existem", async () => {
+  const sw = carregarSw({ rede: "ok" });
+  const instalados = await sw.instalar();
+  const esperado = ["./", "./index.html", "./manifest.webmanifest", "./css/base.css",
+    ...ficheirosJs("js").map(f => "./" + f.split("\\").join("/"))];
+  assert.deepEqual([...instalados].sort(), [...esperado].sort());
+  for (const f of instalados.filter(f => f !== "./")) {
+    assert.doesNotThrow(() => statSync(join(raiz, f)), `${f} não existe`);
+  }
+});
+
 test("sw: shell é cache primeiro", async () => {
   const sw = carregarSw({ rede: "ok" });
   sw.cache.set("https://exemplo.pt/js/app.js", { ok: true, origem: "cache" });
@@ -96,11 +124,7 @@ test("sw: pedidos a outros domínios (APIs) não passam pela cache", async () =>
   assert.equal(await sw.pedir("https://api.ipma.pt/x.json"), "ignorado");
 });
 
-test("sw: cache versionada (v2 ou superior) e shell inclui todos os módulos da app", () => {
-  const src = ler("sw.js");
-  const versao = Number(src.match(/surfcasting-shell-v(\d+)/)?.[1]);
+test("sw: cache versionada (v2 ou superior)", () => {
+  const versao = Number(ler("sw.js").match(/surfcasting-shell-v(\d+)/)?.[1]);
   assert.ok(versao >= 2);
-  for (const f of ficheirosJs("js").filter(f => !f.startsWith(join("js", "regras")))) {
-    assert.ok(src.includes(`"./${f.split("\\").join("/")}"`), `${f} em falta na shell`);
-  }
 });
