@@ -40,6 +40,38 @@ test("leitura: tipo desconhecido é recusado", () => {
   assert.throws(() => leitura(1, { ...base, tipo: "estimado" }), TypeError);
 });
 
+test("leitura: sem fonte identificada é recusada, mesmo com valor em falta", () => {
+  for (const source of [undefined, null, "", "  "]) {
+    assert.throws(() => leitura(1.2, { ...base, source }), TypeError, String(source));
+    assert.throws(() => leitura(null, { ...base, source }), TypeError, String(source));
+  }
+});
+
+test("parseUtc: datas impossíveis rejeitadas com e sem fuso", () => {
+  for (const sufixo of ["", "Z", "+01:00", "-03:30"]) {
+    for (const data of ["2026-02-29", "2026-02-30", "2026-02-31", "2026-04-31", "2026-06-31",
+      "2026-09-31", "2026-11-31", "2100-02-29", "2026-01-00", "2026-01-32"]) {
+      assert.equal(parseUtc(`${data}T10:00:00${sufixo}`), null, data + sufixo);
+    }
+  }
+});
+
+test("parseUtc: últimos dias válidos de cada mês e anos bissextos", () => {
+  const ultimos = { "01": 31, "02": 28, "03": 31, "04": 30, "05": 31, "06": 30,
+    "07": 31, "08": 31, "09": 30, "10": 31, "11": 30, "12": 31 };
+  for (const [mes, dia] of Object.entries(ultimos)) {
+    for (const sufixo of ["", "Z", "+01:00"]) {
+      assert.ok(parseUtc(`2026-${mes}-${dia}T10:00:00${sufixo}`), `2026-${mes}-${dia}${sufixo}`);
+    }
+  }
+  for (const ano of ["2028", "2000"]) assert.ok(parseUtc(`${ano}-02-29T10:00:00Z`), ano);
+});
+
+test("parseUtc: deslocamento de fuso impossível rejeitado", () => {
+  assert.equal(parseUtc("2026-10-04T08:43:00+24:00"), null);
+  assert.equal(parseUtc("2026-10-04T08:43:00+01:60"), null);
+});
+
 test("parseUtc: cadeia sem fuso é lida como UTC", () => {
   assert.equal(parseUtc("2026-10-04T08:43:00").toISOString(), "2026-10-04T08:43:00.000Z");
   assert.equal(parseUtc("2026-10-04T08:43").toISOString(), "2026-10-04T08:43:00.000Z");
@@ -69,6 +101,8 @@ test("parseUnixSeconds: segundos Unix e valores inválidos", () => {
   assert.equal(parseUnixSeconds(1792886400).toISOString(), "2026-10-25T00:00:00.000Z");
   assert.equal(parseUnixSeconds(NaN), null);
   assert.equal(parseUnixSeconds("1792886400"), null);
+  assert.equal(parseUnixSeconds(1e16), null, "finito mas fora do intervalo do Date");
+  assert.equal(parseUnixSeconds(-1e16), null);
 });
 
 test("25/10/2026: a hora 01:00 repete-se mas os instantes são distintos", () => {
