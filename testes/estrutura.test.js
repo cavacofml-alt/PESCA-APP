@@ -106,7 +106,7 @@ test("sw: a instalação guarda a shell completa e todos os ficheiros existem", 
   const sw = carregarSw({ rede: "ok" });
   const instalados = await sw.instalar();
   const esperado = ["./", "./index.html", "./manifest.webmanifest", "./css/base.css",
-    ...ficheirosJs("js").map(f => "./" + f.split("\\").join("/"))];
+    ...[...ficheirosJs("js"), ...ficheirosJs("vendor")].map(f => "./" + f.split("\\").join("/"))];
   assert.deepEqual([...instalados].sort(), [...esperado].sort());
   for (const f of instalados.filter(f => f !== "./")) {
     assert.doesNotThrow(() => statSync(join(raiz, f)), `${f} não existe`);
