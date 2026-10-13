@@ -1,0 +1,151 @@
+{
+  "versao": 1,
+  "fusoHorario": "Europe/Lisbon",
+  "horizonteDias": 7,
+  "seguranca": {
+    "areaIPMA": "FAR",
+    "tipoAviso": "Agitação Marítima",
+    "nivelMinimo": "amarelo",
+    "bloquearDiaInteiro": true,
+    "bloquearPesqueiros": [
+      "bicos_faro",
+      "bico_ancao",
+      "molhe_quarteira"
+    ],
+    "falhaIPMA": {
+      "bloquearBicos": true,
+      "bloquearMolhe": true,
+      "permitirRia": true,
+      "permitirPraias": true
+    }
+  },
+  "mar": {
+    "hsMarMexidoM": 1.0,
+    "potenciaMarMexidoKWm": 1.5,
+    "periodoVagaVentoSegundos": 6.0,
+    "sectoresGraus": {
+      "levanteSudeste": [
+        67.5,
+        157.5
+      ],
+      "sulSudoesteOeste": [
+        157.5,
+        292.5
+      ],
+      "norteNoroeste": [
+        292.5,
+        67.5
+      ]
+    },
+    "hsMinimaDecisaoMolheM": 0.2,
+    "potenciaRobaloMinimaKWm": 1.0,
+    "potenciaRobaloIntermediaKWm": 1.5,
+    "potenciaDouradaMolheMaximaKWm": 1.5
+  },
+  "mares": {
+    "casasDecimaisAmplitude": 2,
+    "mortaMaxExclusivoM": 2.0,
+    "vivaMinExclusivoM": 3.0,
+    "intervaloEventoMinutos": {
+      "minimo": 30,
+      "maximo": 480
+    }
+  },
+  "chuva": {
+    "limiar48hMm": 20.0,
+    "provisorio": true
+  },
+  "pressao": {
+    "descidaAtiva24hHpa": 5.0,
+    "altaEstavelMinHpa": 1020.0,
+    "variacaoEstavelMaxExclusivaHpa": 2.0,
+    "provisorio": true
+  },
+  "temperaturaAgua": {
+    "temperaturaPreferidaDouradaC": 20.0,
+    "descidaDesfavoravelC": 2.0,
+    "provisorio": true
+  },
+  "alinhamento": {
+    "distanciaMaximaSolRepontoMinutos": 60,
+    "provisorio": true
+  },
+  "pontuacao": {
+    "minimo": 1,
+    "maximo": 5,
+    "provisorio": true,
+    "douradaRia": {
+      "baseAmplitude": {
+        "morta": 4,
+        "intermedia": 3,
+        "viva": 1
+      },
+      "alinhamentoRepontoSol": 1,
+      "descidaPressao": 1,
+      "pressaoAltaEstavel": -1,
+      "descidaTemperaturaAgua": -1,
+      "aguaTurvaChuva": -2
+    },
+    "douradaMolhe": {
+      "base": 3,
+      "alinhamentoRepontoSol": 1,
+      "descidaPressao": 1,
+      "pressaoAltaEstavel": -1,
+      "descidaTemperaturaAgua": -1,
+      "aguaTurvaChuva": -2
+    },
+    "robaloMar": {
+      "potenciaAbaixo1": 1,
+      "potenciaDe1Abaixo15": 3,
+      "potencia15OuMaisSemLimo": 4,
+      "alinhamentoRepontoSol": 1,
+      "descidaPressao": 1
+    },
+    "limitesObrigatorios": {
+      "robaloPotenciaAbaixo1": 1,
+      "robaloComLimoFaroAncaoAlmargem": 1,
+      "douradaMolhePotencia15OuMais": 1,
+      "douradaMolheAguaTurva": 1
+    }
+  },
+  "potenciaOndas": {
+    "coeficiente": 0.49,
+    "formula": "0.49 * Hs * Hs * T",
+    "periodoPreferido": "periodo_medio_total",
+    "alternativa": "periodo_pico",
+    "mostrarAvisoAlternativa": true
+  },
+  "anomalias": {
+    "rajadaSobreVentoMedioMaximo": 3.0,
+    "confirmarAntesDeSair": true,
+    "provisorio": true
+  },
+  "persistencia": {
+    "backend": "IndexedDB",
+    "lembreteCopiaSegurancaDias": 30
+  },
+  "fontes": {
+    "marineBase": "https://marine-api.open-meteo.com/v1/marine",
+    "forecastBase": "https://api.open-meteo.com/v1/forecast",
+    "ipmaWarnings": "https://api.ipma.pt/open-data/forecast/warnings/warnings_www.json",
+    "ipmaSeaForecastBase": "https://api.ipma.pt/open-data/forecast/meteorology/oceanography/"
+  },
+  "locais": {
+    "faroMar": {
+      "latitude": 36.97,
+      "longitude": -7.98
+    },
+    "faroTerra": {
+      "latitude": 37.01,
+      "longitude": -7.93
+    },
+    "quarteiraMar": {
+      "latitude": 37.05,
+      "longitude": -8.1
+    },
+    "quarteiraTerra": {
+      "latitude": 37.07,
+      "longitude": -8.1
+    }
+  }
+}

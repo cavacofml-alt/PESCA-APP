@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "station": "Faro-Olhão",
+  "year": 2026,
+  "timezone": "Europe/Lisbon",
+  "source": "Instituto Hidrográfico",
+  "events": [],
+  "notice": "Ficheiro vazio intencional: preencher apenas com eventos transcritos/convertidos da tabela oficial. A aplicação não inventa marés."
+}
