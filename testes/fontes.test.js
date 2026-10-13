@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { getMarine } from "../js/fontes/open-meteo-marine.js";
 import { getForecast } from "../js/fontes/open-meteo-forecast.js";
 import { validarSerieUnix } from "../js/fontes/open-meteo-tempo.js";
-import { getWarnings, normalizarAviso, NIVEIS_AVISO, ordemNivel } from "../js/fontes/ipma-avisos.js";
+import { getWarnings, normalizarAviso, NIVEIS_AVISO, ordemNivel, SITUACAO_AVISOS } from "../js/fontes/ipma-avisos.js";
 import { getSeaForecastDay } from "../js/fontes/ipma-mar.js";
 import { validateTides } from "../js/fontes/mares-locais.js";
 import {
@@ -141,6 +141,29 @@ test("Avisos: aviso ilegível de outra área não afecta FAR", async () => {
   const outra = { ...IPMA_WARNING_FIXTURE[3], awarenessLevelID: "roxo" };
   const r = await pedirAvisos([...IPMA_WARNING_FIXTURE.slice(0, 3), outra]);
   assert.equal(r.ok, true, r.error);
+});
+
+test("Avisos: cada situação tem um código próprio; só duas confirmam a segurança", async () => {
+  const S = SITUACAO_AVISOS;
+  const casos = [
+    [[], S.SEM_AVISOS, true],
+    [IPMA_WARNING_FIXTURE.slice(2), S.SEM_AVISOS, true], // só outras áreas/tipos
+    [IPMA_WARNING_FIXTURE, S.COM_AVISOS, true],
+    [[{ ...IPMA_WARNING_FIXTURE[0], awarenessLevelID: "2" }], S.AVISO_ILEGIVEL, false],
+    [[{ idAreaAviso: "FAR" }], S.FORMATO_INVALIDO, false],
+    [{ avisos: [] }, S.FORMATO_INVALIDO, false]
+  ];
+  for (const [body, situacao, ok] of casos) {
+    const r = await pedirAvisos(body);
+    assert.equal(r.situacao, situacao, JSON.stringify(body).slice(0, 60));
+    assert.equal(r.ok, ok, situacao);
+  }
+  const semRede = async () => { throw new TypeError("Failed to fetch"); };
+  const r = await getWarnings({ url: fontes.ipmaWarnings, area: "FAR", tipo: "Agitação Marítima", fetchImpl: semRede, now: NOW });
+  assert.equal(r.situacao, S.FALHA_PEDIDO);
+  assert.equal(r.ok, false);
+  const r2 = await pedirAvisos(null);
+  assert.equal(r2.situacao, S.FORMATO_INVALIDO);
 });
 
 test("Avisos: resposta que não é array → não obtido", async () => {

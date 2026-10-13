@@ -34,7 +34,8 @@ Não há dependências a instalar (o `package.json` só indica que os `.js` são
 
 ## Limitações desta entrega
 
-- O IPMA pode alterar nomes/estrutura de campos; a consulta verifica a forma geral, mas o mapeamento semântico dos avisos requer confirmação com respostas reais.
+- O IPMA pode alterar nomes/estrutura de campos. A consulta de avisos valida os campos de todos os registos e devolve uma `situacao` (`sem avisos`, `com avisos`, `aviso ilegível`, `formato inválido`, `pedido falhou`); só as duas primeiras confirmam o estado de segurança. A interpretação dos avisos ainda não foi confirmada com respostas reais.
+- **Limitação conhecida — código da área `FAR`:** se o IPMA deixar de usar `FAR`, a resposta continua válida e a consulta devolve `sem avisos`. Não se exige que `FAR` esteja sempre presente porque a documentação do IPMA é ambígua: o exemplo de `warnings_www.json` inclui registos `green`, mas a descrição diz que só há avisos amarelos, laranja e vermelhos. Rever quando houver uma resposta real (num dia sem avisos, verificar se aparece `FAR` com `green`) ou a lista oficial de identificadores de áreas.
 - O `sw.js` serve a shell a partir da cache; `config.json` e marés (`*.json`) vão sempre primeiro à rede e só usam a cópia em cache sem ligação. Ao alterar a shell, subir a versão da cache em `sw.js`.
 - O JSON de marés tem deliberadamente zero eventos até ser fornecida a tabela oficial.
 - O carregamento da biblioteca SunCalc local deve ser concluído antes de publicar.
