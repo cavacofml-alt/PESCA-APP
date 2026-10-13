@@ -10,8 +10,9 @@ Os módulos ES e `fetch()` não funcionam de forma fiável a partir de `file://`
 
 - Open-Meteo Marine: consulta horária marinha.
 - Open-Meteo Forecast: vento, rajadas, pressão e precipitação. **Não pede nascer/pôr do Sol.**
-- IPMA avisos: obtém o JSON público; a interpretação dos avisos e a conversão temporal serão implementadas/validadas no motor da fase seguinte.
-- IPMA estado do mar: consulta os três ficheiros e filtra `globalIdLocal=1080526`.
+- Open-Meteo (Marine e Forecast): pedidos com `timeformat=unixtime` (instantes absolutos; a hora local repete-se a 25/10/2026). Consulta Faro e Quarteira.
+- IPMA avisos: filtra `idAreaAviso=FAR` e `Agitação Marítima`; níveis `green/yellow/orange/red` mapeados num único sítio (`NIVEIS_AVISO`); `startTime`/`endTime` lidos como UTC.
+- IPMA estado do mar: consulta `oceanography/daily/hp-daily-sea-forecast-day{0,1,2}.json`, filtra `globalIdLocal=1080526` e recusa ficheiros cujo `forecastDate` não seja o dia pedido (`não obtido (desactualizado)`).
 - Marés locais: valida formato, ordem, alternância PM/BM e intervalos de 30 a 480 minutos. `mares/2026.json` está vazio até chegar a tabela oficial.
 - SunCalc: adaptador preparado; colocar uma distribuição local licenciada em `vendor/suncalc.js` e carregá-la antes de usar o adaptador. A aplicação não consulta outra fonte solar.
 
@@ -19,13 +20,22 @@ Os módulos ES e `fetch()` não funcionam de forma fiável a partir de `file://`
 
 A função `leitura()` em `js/normalizacao.js` cria o envelope comum com `value`, `unit`, `source`, `readAt`, `validAt`, `tipo`, `status`, `provisional` e `note`. Valores ausentes ficam `null` e estado `não obtido`.
 
+Os URL das APIs estão só em `config.json` (`fontes`); os módulos em `js/` recebem-nos por parâmetro.
+
 ## Testes offline
 
-`testes/dados-teste.js` contém fixtures fixas e marcadas como dados de teste, incluindo timestamps na mudança de hora de 25/10/2026. Não devem ser usados como previsão real. Os testes unitários das regras serão completados na Fase 3.
+Com Node ≥ 20, na raiz do projecto:
+
+```
+node --test
+```
+
+Não há dependências a instalar (o `package.json` só indica que os `.js` são módulos ES). Os testes não usam a Internet: as respostas das APIs são simuladas com as fixtures de `testes/dados-teste.js`, que não são previsões reais. O GitHub Actions corre os testes em cada push e PR, com Node 20 e 22 e quatro fusos horários (UTC, Europe/Lisbon, America/New_York, Asia/Tokyo).
 
 ## Limitações desta entrega
 
-- O IPMA pode alterar nomes/estrutura de campos; a consulta verifica a forma geral, mas o mapeamento semântico dos avisos requer confirmação com respostas reais.
-- O `sw.js` guarda a shell, não garante previsões offline nem apresenta dados em cache como actuais.
+- O IPMA pode alterar nomes/estrutura de campos. A consulta de avisos valida os campos de todos os registos e devolve uma `situacao` (`sem avisos`, `com avisos`, `aviso ilegível`, `formato inválido`, `pedido falhou`); só as duas primeiras confirmam o estado de segurança. A interpretação dos avisos ainda não foi confirmada com respostas reais.
+- **Limitação conhecida — código da área `FAR`:** se o IPMA deixar de usar `FAR`, a resposta continua válida e a consulta devolve `sem avisos`. Não se exige que `FAR` esteja sempre presente porque a documentação do IPMA é ambígua: o exemplo de `warnings_www.json` inclui registos `green`, mas a descrição diz que só há avisos amarelos, laranja e vermelhos. Rever quando houver uma resposta real (num dia sem avisos, verificar se aparece `FAR` com `green`) ou a lista oficial de identificadores de áreas.
+- O `sw.js` serve a shell a partir da cache; `config.json` e marés (`*.json`) vão sempre primeiro à rede e só usam a cópia em cache sem ligação. Ao alterar a shell, subir a versão da cache em `sw.js`.
 - O JSON de marés tem deliberadamente zero eventos até ser fornecida a tabela oficial.
 - O carregamento da biblioteca SunCalc local deve ser concluído antes de publicar.

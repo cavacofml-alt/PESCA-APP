@@ -1,0 +1,9 @@
+{
+  "name": "surfcasting-algarve",
+  "private": true,
+  "type": "module",
+  "description": "Sem dependências. Só serve para os testes (node --test) tratarem os .js como módulos ES.",
+  "scripts": {
+    "test": "node --test"
+  }
+}
