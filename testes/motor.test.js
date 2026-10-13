@@ -15,7 +15,6 @@ import { amplitudeDoDia, repontosDoDia, CLASSE_MARE } from "../js/regras/mares.j
 import { notaRobalo, notaDouradaRia, notaDouradaMolhe, ordenarMelhoresDias, ESTADO_NOTA } from "../js/regras/notas.js";
 import { analisarDias } from "../js/regras/analise.js";
 import { horasOpenMeteo } from "../js/regras/serie.js";
-import { SITUACAO_AVISOS } from "../js/fontes/ipma-avisos.js";
 
 const config = JSON.parse(readFileSync(new URL("../config.json", import.meta.url), "utf8"));
 const cfgMar = { ...config.mar, coeficiente: config.potenciaOndas.coeficiente };
@@ -273,7 +272,7 @@ test("repontos do dia: null quando a tabela não cobre o dia (não é 'sem repon
 // ---------- Notas (secção 6) ----------
 
 const base = {
-  segurancaLivre: true, motivoSeguranca: null, classeMare: CLASSE_MARE.MORTA, alinhado: false,
+  classeMare: CLASSE_MARE.MORTA, alinhado: false,
   descidaPressao: false, altaEstavel: false, aguaAfasta: false, turva: false, potenciaMax: 1.2, limo: false
 };
 const robalo = (f, opt) => notaRobalo({ ...base, ...f }, config.pontuacao, config.mar, opt);
@@ -313,12 +312,6 @@ test("robalo: ajuste sem dados fica 'não avaliado' e não soma", () => {
   const r = robalo({ potenciaMax: 1.2, descidaPressao: null, motivoPressao: "pressão não obtida" });
   assert.equal(r.nota, 3);
   assert.deepEqual(r.naoAvaliadas, ["descida de pressão ≥ 5 hPa/24 h"]);
-});
-
-test("robalo nos bicos/molhe: segurança não livre → desaconselhado", () => {
-  const r = robalo({ segurancaLivre: false, motivoSeguranca: "segurança por verificar" }, { exigeSeguranca: true });
-  assert.equal(r.estado, ESTADO_NOTA.DESACONSELHADO);
-  assert.equal(r.nota, null);
 });
 
 test("robalo no molhe com P ≥ 1,5 e limo: regra não definida → n.d.", () => {
@@ -361,10 +354,6 @@ test("dourada molhe: limite por verificar (chuva pendente ou P em falta) → n.d
   assert.equal(molhe({ potenciaMax: 2, turva: null }).nota, 1);
 });
 
-test("dourada molhe: aviso amarelo → desaconselhado", () => {
-  assert.equal(molhe({ segurancaLivre: false }).estado, ESTADO_NOTA.DESACONSELHADO);
-});
-
 // ---------- Melhores dias ----------
 
 test("melhores dias: nota máxima, depois alinhamento, depois a outra espécie, depois o mais próximo", () => {
@@ -375,7 +364,7 @@ test("melhores dias: nota máxima, depois alinhamento, depois a outra espécie, 
 
 // ---------- Análise completa: falhas das fontes ----------
 
-function entrada({ avisos, faroMarOk = true, mares = TABELA } = {}) {
+function entrada({ faroMarOk = true, mares = TABELA } = {}) {
   const dias = ["2026-10-20"];
   const anteriores = ["2026-10-13", "2026-10-19"];
   const todos = [...anteriores, ...dias];
@@ -388,7 +377,6 @@ function entrada({ avisos, faroMarOk = true, mares = TABELA } = {}) {
       faroMar: faroMarOk ? ok(marJson) : { ok: false, data: null, error: "HTTP 500", source: "teste" },
       faroTerra: ok(terraJson), quarteiraMar: ok(marJson), quarteiraTerra: ok(terraJson)
     },
-    avisos: avisos ?? { ok: true, situacao: SITUACAO_AVISOS.SEM_AVISOS, data: [] },
     mares,
     sol: () => ({ nascer: Date.parse("2026-10-20T06:45:00Z"), por: Date.parse("2026-10-20T17:55:00Z") }),
     config
@@ -398,7 +386,6 @@ function entrada({ avisos, faroMarOk = true, mares = TABELA } = {}) {
 test("análise: dia normal produz notas com fonte dos pontos e parcelas", () => {
   const { dias, melhoresDias } = analisarDias(entrada());
   const d = dias[0];
-  assert.equal(d.seguranca.estado, "sem aviso");
   // 0,49 × 0,9² × 9 = 3,57 kW/m; vento e ondulação de NO → sem limo → 4.
   assert.equal(d.pesqueiros.praia_faro.potencia.valor, 3.57);
   assert.equal(d.pesqueiros.praia_faro.notas.robalo.nota, 4);
@@ -407,15 +394,16 @@ test("análise: dia normal produz notas com fonte dos pontos e parcelas", () => 
   assert.deepEqual(melhoresDias, ["2026-10-20"]);
 });
 
-test("análise: IPMA em falha → bicos e molhe desaconselhados; praias e Ria permitidas com aviso", () => {
-  const { dias } = analisarDias(entrada({ avisos: { ok: false, situacao: SITUACAO_AVISOS.FALHA_PEDIDO, data: null, error: "HTTP 503" } }));
+test("análise: sem regra de segurança — bicos e molhe têm nota como as praias", () => {
+  const { dias } = analisarDias(entrada());
   const p = dias[0].pesqueiros;
-  for (const id of ["bicos_faro", "bico_ancao"]) assert.equal(p[id].notas.robalo.estado, ESTADO_NOTA.DESACONSELHADO, id);
-  assert.equal(p.molhe_quarteira.notas.robalo.estado, ESTADO_NOTA.DESACONSELHADO);
-  assert.equal(p.molhe_quarteira.notas.dourada.estado, ESTADO_NOTA.DESACONSELHADO);
-  assert.equal(p.praia_faro.notas.robalo.estado, ESTADO_NOTA.OK);
-  assert.ok(p.praia_faro.avisos.some(a => a.startsWith("segurança por verificar")));
-  assert.equal(p.ria.notas.dourada.estado, ESTADO_NOTA.OK);
+  assert.equal(dias[0].seguranca, undefined);
+  for (const id of ["bicos_faro", "bico_ancao"]) {
+    assert.equal(p[id].notas.robalo.estado, ESTADO_NOTA.OK, id);
+    assert.equal(p[id].notas.robalo.nota, p.praia_faro.notas.robalo.nota, id);
+  }
+  assert.equal(p.molhe_quarteira.notas.robalo.estado, ESTADO_NOTA.OK);
+  assert.ok(Object.values(p).every(x => !x.avisos.some(a => /segurança|desaconselh/i.test(a))));
 });
 
 test("análise: Faro mar em falta → robalo n.d. em Faro/Ancão, sem usar Quarteira em silêncio", () => {

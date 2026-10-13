@@ -23,8 +23,9 @@ O utilizador é pescador experiente e exige rigor: verificar o significado de ca
 ## 2. Estado actual
 
 - **Fase 1 (arquitectura): aprovada.** Decisões na secção 6.
-- **Fase 2 (fontes de dados): entregue pelo ChatGPT** como `algarve-surfcasting-fase2.zip` (17 ficheiros). O utilizador vai fornecer o zip. **Tem erros conhecidos** (secção 7) que têm de ser corrigidos antes da Fase 3.
-- Fases 3–6 por fazer (secção 8).
+- **Fase 2 (fontes de dados): entregue pelo ChatGPT** e corrigida (secção 7) no PR #1, já integrado no `main`.
+- **Fase 3 (motor de regras): em curso** no ramo `claude/new-session-ywtpsk`. Tabela de marés oficial de 2026 já convertida (`mares/2026.json`).
+- Fases 4–6 por fazer (secção 8). O repositório é **privado** (13/10/2026): o GitHub Pages grátis não serve; decidir o alojamento na Fase 4.
 
 Estrutura actual (Fase 2):
 
@@ -85,10 +86,10 @@ Coordenadas (config): Faro mar 36.97,-7.98 · Faro terra 37.01,-7.93 · Quarteir
 
 ## 5. Regras (especificação do utilizador)
 
-**Prioridade em conflito:** Segurança > Limo > Marés > Potência > Pressão > Temperatura.
+**Prioridade em conflito:** Limo > Marés > Potência > Pressão > Temperatura. (A segurança foi retirada da app: ver regra 1.)
 Valores marcados *provisório* não estão validados no terreno: aplicar, mas mostrar sempre como provisórios na interface.
 
-1. **Segurança** — aviso IPMA **amarelo ou superior** de *Agitação Marítima* (área `FAR`) → desaconselhar expressamente os bicos das barras (Faro e Ancão) e o molhe de Quarteira. Prevalece sobre tudo. Nunca recomendar o molhe nesse caso.
+1. **Segurança — RETIRADA por decisão do utilizador (13/10/2026).** A app não consulta avisos do IPMA nem desaconselha pesqueiros: a avaliação de segurança é do utilizador. Bicos e molhe têm nota como os outros pesqueiros. Não reintroduzir sem pedido expresso do utilizador.
 2. **Limo e mar mexido** — mar mexido = Hs ≥ 1,0 m **ou** potência ≥ 1,5 kW/m (*provisório*).
    - Faro, Ancão, Almargem: vento, ondulação de fundo ou vaga de vento de Sudeste/Levante **com mar mexido** = mar de fora impossível (limo) → robalo 1/5 nesses pesqueiros. Norte/Noroeste = mar limpo. Oeste/Sudoeste: avaliar pela intensidade e estado do mar, sem assumir limo.
    - Molhe: vaga/ondulação de Sudeste → lado poente; de Oeste/Sudoeste → lado nascente. O lado segue a direcção da vaga/ondulação; o vento só decide quando não há vaga relevante. Avisar sempre que o lado abrigado pode acumular limo à deriva.
@@ -116,8 +117,8 @@ Valores marcados *provisório* não estão validados no terreno: aplicar, mas mo
   - Dourada molhe: base 3; mesmos ajustes; limite obrigatório da regra 11.
   - Robalo mar: P < 1 → 1; 1 ≤ P < 1,5 → 3; P ≥ 1,5 com N/NO ou O/SO sem limo → 4; +1 alinhamento; +1 descida de pressão ≥ 5 hPa.
   - Limites obrigatórios sobrepõem-se à soma.
-- **Dados em falta:** potência não obtida → robalo `n.d.` (nunca 1/5 por defeito). Avisos IPMA falharam → "segurança por verificar": não recomendar bicos nem molhe; Ria e praias permitidas com aviso. Para lá do alcance dos avisos (~3 dias) → "aviso ainda não emitido".
-- **Avisos:** amarelo+ válido em qualquer momento do dia local bloqueia bicos e molhe nesse dia inteiro.
+- **Dados em falta:** potência não obtida → robalo `n.d.` (nunca 1/5 por defeito).
+- **Avisos IPMA:** retirados (regra 1).
 - **Mar mexido:** avaliado no mar **total**. Com mar mexido, há limo se **qualquer** componente (vento, fundo, vaga) vier do sector Levante/Sudeste.
 - **Sectores (provisórios):** Levante/Sudeste [67,5°, 157,5°); Sul/Sudoeste/Oeste [157,5°, 292,5°); Norte/Noroeste [292,5°, 67,5°) atravessando 0°. Intervalos semi-abertos.
 - **Lado do molhe com componentes em conflito:** decide a de maior energia (Hs² × T); se nenhuma tiver Hs ≥ 0,2 m (provisório), decide o vento.
@@ -153,8 +154,8 @@ Menores:
 
 ## 8. Fases seguintes
 
-- **Fase 3 — Motor de regras** (`js/regras/*.js`, funções puras sem rede nem storage) + testes de fronteira: P 0,99/1,0/1,5; amplitude 1,99/2,00/3,00/3,01; período 5,9/6,0 s; aviso amarelo a anular molhe; IPMA em falha; sectores nos limites; rajada 3×; DST 25/10.
-- **Fase 4 — Interface móvel**: resumo de 3 linhas (melhores dias/horas/pesqueiros) + alinhamentos + avisos; tabela "Mar e vento" (Faro e Quarteira: vento dir/vel/rajada; fundo e vaga separadas; potência máx. e hora); tabela "Marés e outros" (PM/BM, amplitude, nascer/pôr, pressão e tendência, água); análise por dia terminando em `[Robalo: X/5] | [Dourada: Y/5]`; "próxima semana" (Lua, próximas vivas/mortas). Cada valor com fonte e hora de leitura. Hora legal de Portugal continental. Deploy GitHub Pages.
+- **Fase 3 — Motor de regras** (`js/regras/*.js`, funções puras sem rede nem storage) + testes de fronteira: P 0,99/1,0/1,5; amplitude 1,99/2,00/3,00/3,01; período 5,9/6,0 s; sectores nos limites; rajada 3×; DST 25/10.
+- **Fase 4 — Interface móvel**: resumo de 3 linhas (melhores dias/horas/pesqueiros) + alinhamentos; tabela "Mar e vento" (Faro e Quarteira: vento dir/vel/rajada; fundo e vaga separadas; potência máx. e hora); tabela "Marés e outros" (PM/BM, amplitude, nascer/pôr, pressão e tendência, água); análise por dia terminando em `[Robalo: X/5] | [Dourada: Y/5]`; "próxima semana" (Lua, próximas vivas/mortas). Cada valor com fonte e hora de leitura. Hora legal de Portugal continental. Deploy: decidir alojamento (repositório privado).
 - **Fase 5 — Diário de saídas**: formulário (data, pesqueiro, hora, capturas, notas) que grava as condições do momento; ecrã que compara registos com condições e sugere ajustes aos valores provisórios, separando "confirmado pelos registos" de "hipótese". Os registos nunca alteram limiares automaticamente.
 - **Fase 6 (opcional)** — proxy mínimo Cloudflare Worker só se alguma API bloquear CORS no browser (o proxy não calcula nada).
 
@@ -166,9 +167,9 @@ Menores:
 |---|---|---|
 | Open-Meteo Marine | `https://marine-api.open-meteo.com/v1/marine` | Variáveis: `wave_height`, `wave_direction`, `wave_period`, `wind_wave_*`, `swell_wave_*`, `sea_surface_temperature`. `wave_peak_period` veio **null** nestes pontos. Confirmar na documentação que `wave_period` é o período médio. Componentes "swell" com T < 6 s são frequentes aqui → tratar como vaga (regra 3). `past_days` dá histórico para a regra 7. |
 | Open-Meteo Forecast | `https://api.open-meteo.com/v1/forecast` | `wind_speed_10m`, `wind_direction_10m`, `wind_gusts_10m`, `pressure_msl`, `precipitation`; `wind_speed_unit=kn`. |
-| IPMA avisos | `https://api.ipma.pt/open-data/forecast/warnings/warnings_www.json` | Array; filtrar `idAreaAviso=="FAR"` e `awarenessTypeName=="Agitação Marítima"`; níveis `green/yellow/orange/red`; horas UTC sem `Z`; alcance ~3 dias. |
+| IPMA avisos (**não usado**: regra 1 retirada) | `https://api.ipma.pt/open-data/forecast/warnings/warnings_www.json` | Array; filtrar `idAreaAviso=="FAR"` e `awarenessTypeName=="Agitação Marítima"`; níveis `green/yellow/orange/red`; horas UTC sem `Z`; alcance ~3 dias. |
 | IPMA estado do mar | `https://api.ipma.pt/open-data/forecast/oceanography/daily/hp-daily-sea-forecast-day{0,1,2}.json` | Faro = `globalIdLocal 1080526` (lat 37.1933, lon -8.0). **Não há ponto em Quarteira.** Campos: `waveHighMin/Max`, `wavePeriodMin/Max`, `predWaveDir`, `sstMin/Max`, `totalSeaMin/Max`. Só referência diária. |
-| Marés | `mares/2026.json` (local) | Fonte oficial: **Instituto Hidrográfico, Faro-Olhão** — o utilizador fornece a tabela. Não usar `sea_level_height` do Open-Meteo. tabuademares.com (tem página de Quarteira) e MeteoConsult servem só para conferir; não fazer scraping. |
+| Marés | `mares/2026.json` (local) | Fonte oficial: **Instituto Hidrográfico, Faro-Olhão** (Tabela de Marés 2026, Vol. I, págs. 2-121 a 2-124). Horas em **TU (UTC)**; alturas ao **zero hidrográfico** (2,00 m abaixo do NM, Cascais 1938); resolução 0,1 m; marégrafo no cais da Culatra (dentro da Ria). Convertida com `ferramentas/mares_ih.py`. Não usar `sea_level_height` do Open-Meteo. tabuademares.com (tem página de Quarteira) e MeteoConsult servem só para conferir; não fazer scraping. |
 | Sol e Lua | SunCalc em `vendor/` | Cálculo local. |
 
 Não usar como fonte de dados (decidido): Windguru (sem API pública; a estação da Praia de Faro pode ser um link "leitura actual"), Beachcam, Facebook.
