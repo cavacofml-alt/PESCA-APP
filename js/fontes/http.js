@@ -7,6 +7,9 @@ export async function fetchJson(url, { timeoutMs = 12000, fetchImpl = fetch } = 
     return await response.json();
   } catch (error) {
     if (error?.name === "AbortError") throw new Error(`Tempo limite excedido (${timeoutMs} ms)`);
+    // fetch() rejeita com TypeError em falha de rede ou bloqueio CORS; mensagem do browser vem em inglês.
+    if (error instanceof TypeError) throw new Error("Falha de rede (sem ligação ou pedido bloqueado)");
+    if (error instanceof SyntaxError) throw new Error("Resposta não é JSON válido");
     throw error;
   } finally {
     clearTimeout(timer);
