@@ -1,0 +1,208 @@
+# FIZK meteograma - Faro - Mar Nascente
+# extraido 2026-10-13 21:46:42 (Europe/Lisbon) / 2026-10-13T20:46:42.391Z UTC
+# CHIPS (nascer/por do sol, lua, coef. mare, pleamar/bajamar) - o painel mostra os chips do dia que esta a esquerda na faixa visivel; no fim da faixa (scrollLeft maximo) o ultimo dia nao chega a ser mostrado
+Hoy · martes 13 de octubre :: [scrollLeft 0] Faro - Mar Nascente | 07:37 | Amanecer | 18:57 | Atardecer | Luna creciente | 6% iluminada | 76 / 70 | Coef. marea | Pleamar | 03:46 0,9 m16:05 0,8 m | Bajamar | 09:49 -1,6 m22:01 -1,5 m | 
+miércoles 14 de octubre :: [scrollLeft 1104] Faro - Mar Nascente | 07:38 | Amanecer | 18:56 | Atardecer | Luna creciente | 12% iluminada | 65 / 59 | Coef. marea | Pleamar | 04:19 0,8 m16:41 0,6 m | Bajamar | 10:23 -1,5 m22:32 -1,3 m | 
+jueves 15 de octubre :: [scrollLeft 2208] Faro - Mar Nascente | 07:39 | Amanecer | 18:55 | Atardecer | Luna creciente | 19% iluminada | 53 / 47 | Coef. marea | Pleamar | 04:54 0,7 m17:16 0,4 m | Bajamar | 10:57 -1,3 m23:06 -1,1 m | 
+viernes 16 de octubre :: [scrollLeft 3312] Faro - Mar Nascente | 07:40 | Amanecer | 18:53 | Atardecer | Luna creciente | 27% iluminada | 41 / 36 | Coef. marea | Pleamar | 05:27 0,5 m17:58 0,3 m | Bajamar | 11:37 -1,1 m23:46 -0,9 m | 
+sábado 17 de octubre :: [scrollLeft 4416] Faro - Mar Nascente | 07:41 | Amanecer | 18:52 | Atardecer | Luna creciente | 35% iluminada | 32 / 29 | Coef. marea | Pleamar | 06:16 0,3 m18:52 0,1 m | Bajamar | 12:30 -0,9 m | 
+domingo 18 de octubre :: [scrollLeft 5520] Faro - Mar Nascente | 07:42 | Amanecer | 18:51 | Atardecer | Cuarto creciente | 44% iluminada | 28 / 29 | Coef. marea | Pleamar | 07:19 0,2 m20:21 0,0 m | Bajamar | 00:42 -0,7 m13:50 -0,7 m | 
+lunes 19 de octubre :: [scrollLeft 6394] Faro - Mar Nascente | 07:42 | Amanecer | 18:51 | Atardecer | Cuarto creciente | 44% iluminada | 28 / 29 | Coef. marea | Pleamar | 07:19 0,2 m20:21 0,0 m | Bajamar | 00:42 -0,7 m13:50 -0,7 m | 
+# MARES (curva svg; ▲ pleamar, ▼ bajamar)
+Hoy · martes 13 de octubre :: ▲ 03:460,9 m
+Hoy · martes 13 de octubre :: ▼ 09:49-1,6 m
+Hoy · martes 13 de octubre :: ▲ 16:050,8 m
+Hoy · martes 13 de octubre :: ▼ 22:01-1,5 m
+miércoles 14 de octubre :: ▲ 04:190,8 m
+miércoles 14 de octubre :: ▼ 10:23-1,5 m
+miércoles 14 de octubre :: ▲ 16:410,6 m
+miércoles 14 de octubre :: ▼ 22:32-1,3 m
+jueves 15 de octubre :: ▲ 04:540,7 m
+jueves 15 de octubre :: ▼ 10:57-1,3 m
+jueves 15 de octubre :: ▲ 17:160,4 m
+jueves 15 de octubre :: ▼ 23:06-1,1 m
+viernes 16 de octubre :: ▲ 05:270,5 m
+viernes 16 de octubre :: ▼ 11:37-1,1 m
+viernes 16 de octubre :: ▲ 17:580,3 m
+sábado 17 de octubre :: ▼ 23:46-0,9 m
+sábado 17 de octubre :: ▲ 06:160,3 m
+sábado 17 de octubre :: ▼ 12:30-0,9 m
+sábado 17 de octubre :: ▲ 18:520,1 m
+domingo 18 de octubre :: ▼ 00:42-0,7 m
+domingo 18 de octubre :: ▲ 07:190,2 m
+domingo 18 de octubre :: ▼ 13:50-0,7 m
+domingo 18 de octubre :: ▲ 20:210,0 m
+lunes 19 de octubre :: ▼ 02:06-0,7 m
+lunes 19 de octubre :: ▲ 09:000,2 m
+lunes 19 de octubre :: ▼ 15:30-0,7 m
+lunes 19 de octubre :: ▲ 22:000,1 m
+# TABELA HORARIA (separador ;)
+dia;hora;icone;temp_ar;score;agua;viento;rachas;dirViento;ola;dirOla;periodo;presion;lluvia
+Hoy · martes 13 de octubre;00:00;luna-nubes.webp;18°;3,8;20,7;4;9;seta rot 175deg;0,5;seta rot 103deg;6;1020;0,0
+Hoy · martes 13 de octubre;01:00;luna.webp;18°;3,7;20,6;4;7;seta rot 186deg;0,5;seta rot 104deg;6;1021;0,0
+Hoy · martes 13 de octubre;02:00;luna.webp;17°;3,9;20,6;3;7;seta rot 162deg;0,4;seta rot 105deg;7;1021;0,0
+Hoy · martes 13 de octubre;03:00;luna.webp;17°;3,9;20,5;4;7;seta rot 156deg;0,4;seta rot 105deg;7;1020;0,0
+Hoy · martes 13 de octubre;04:00;luna.webp;17°;4,0;20,5;5;7;seta rot 151deg;0,4;seta rot 106deg;8;1021;0,0
+Hoy · martes 13 de octubre;05:00;luna.webp;17°;4,0;20,5;5;8;seta rot 148deg;0,4;seta rot 106deg;8;1021;0,0
+Hoy · martes 13 de octubre;06:00;luna.webp;17°;3,9;20,5;4;8;seta rot 156deg;0,4;seta rot 107deg;8;1021;0,0
+Hoy · martes 13 de octubre;07:00;luna-nubes.webp;16°;3,6;20,5;4;8;seta rot 191deg;0,4;seta rot 107deg;8;1022;0,0
+Hoy · martes 13 de octubre;08:00;sol-nubes.webp;16°;3,4;20,5;4;8;seta rot 215deg;0,4;seta rot 107deg;9;1022;0,0
+Hoy · martes 13 de octubre;09:00;sol-nubes.webp;17°;3,4;20,6;4;8;seta rot 218deg;0,4;seta rot 106deg;8;1023;0,0
+Hoy · martes 13 de octubre;10:00;sol.webp;22°;3,0;20,7;3;8;seta rot 249deg;0,5;seta rot 106deg;8;1023;0,0
+Hoy · martes 13 de octubre;11:00;sol.webp;24°;3,9;20,9;3;8;seta rot 297deg;0,5;seta rot 106deg;8;1024;0,0
+Hoy · martes 13 de octubre;12:00;sol.webp;26°;4,8;21,0;5;12;seta rot 333deg;0,5;seta rot 107deg;8;1024;0,0
+Hoy · martes 13 de octubre;13:00;sol.webp;27°;4,3;21,1;6;15;seta rot 310deg;0,5;seta rot 107deg;8;1024;0,0
+Hoy · martes 13 de octubre;14:00;sol.webp;27°;4,5;21,2;6;16;seta rot 317deg;0,5;seta rot 107deg;8;1023;0,0
+Hoy · martes 13 de octubre;15:00;sol-nubes.webp;27°;4,9;21,2;7;15;seta rot 338deg;0,4;seta rot 106deg;8;1023;0,0
+Hoy · martes 13 de octubre;16:00;sol-nubes.webp;27°;4,9;21,3;7;16;seta rot 351deg;0,4;seta rot 106deg;8;1023;0,0
+Hoy · martes 13 de octubre;17:00;sol-nubes.webp;26°;4,7;21,4;6;15;seta rot 14deg;0,4;seta rot 106deg;8;1022;0,0
+Hoy · martes 13 de octubre;18:00;sol.webp;24°;3,8;21,4;4;13;seta rot 48deg;0,4;seta rot 105deg;8;1022;0,0
+Hoy · martes 13 de octubre;19:00;luna.webp;23°;5,5;21,4;4;9;seta rot 80deg;0,4;seta rot 105deg;8;1023;0,0
+Hoy · martes 13 de octubre;20:00;luna.webp;22°;5,4;21,3;4;8;seta rot 112deg;0,4;seta rot 105deg;8;1023;0,0
+Hoy · martes 13 de octubre;21:00;luna.webp;21°;4,0;21,2;4;8;seta rot 138deg;0,4;seta rot 104deg;8;1024;0,0
+Hoy · martes 13 de octubre;22:00;luna.webp;21°;3,7;21,0;4;8;seta rot 170deg;0,4;seta rot 104deg;8;1024;0,0
+Hoy · martes 13 de octubre;23:00;luna.webp;20°;3,7;20,9;5;9;seta rot 180deg;0,4;seta rot 103deg;8;1024;0,0
+miércoles 14 de octubre;00:00;luna.webp;19°;3,6;20,7;5;9;seta rot 198deg;0,4;seta rot 101deg;8;1024;0,0
+miércoles 14 de octubre;01:00;luna.webp;19°;3,7;20,6;5;9;seta rot 205deg;0,5;seta rot 100deg;8;1023;0,0
+miércoles 14 de octubre;02:00;luna.webp;20°;3,7;20,6;6;10;seta rot 207deg;0,5;seta rot 97deg;8;1024;0,0
+miércoles 14 de octubre;03:00;luna.webp;19°;3,7;20,5;5;10;seta rot 214deg;0,5;seta rot 95deg;8;1023;0,0
+miércoles 14 de octubre;04:00;luna.webp;19°;3,8;20,5;5;9;seta rot 208deg;0,5;seta rot 92deg;8;1023;0,0
+miércoles 14 de octubre;05:00;luna.webp;19°;2,8;20,5;5;9;seta rot 219deg;0,6;seta rot 57deg;7;1023;0,0
+miércoles 14 de octubre;06:00;luna.webp;19°;3,1;20,5;4;8;seta rot 228deg;0,7;seta rot 22deg;7;1023;0,0
+miércoles 14 de octubre;07:00;luna.webp;19°;4,1;20,6;5;8;seta rot 238deg;0,8;seta rot 347deg;6;1023;0,0
+miércoles 14 de octubre;08:00;sol.webp;19°;4,6;20,6;6;10;seta rot 245deg;0,9;seta rot 337deg;6;1024;0,0
+miércoles 14 de octubre;09:00;sol.webp;21°;4,7;20,7;7;13;seta rot 246deg;1,0;seta rot 328deg;6;1025;0,0
+miércoles 14 de octubre;10:00;sol-nubes.webp;24°;5,2;20,8;11;21;seta rot 257deg;1,1;seta rot 318deg;6;1025;0,0
+miércoles 14 de octubre;11:00;nubes-sol.webp;25°;6,6;20,9;17;32;seta rot 272deg;1,1;seta rot 316deg;6;1025;0,0
+miércoles 14 de octubre;12:00;nublado.webp;26°;6,9;21,0;20;38;seta rot 275deg;1,1;seta rot 313deg;6;1025;0,0
+miércoles 14 de octubre;13:00;sol-nubes.webp;27°;7,0;21,1;21;40;seta rot 275deg;1,2;seta rot 311deg;6;1024;0,0
+miércoles 14 de octubre;14:00;sol.webp;27°;6,9;21,2;21;40;seta rot 274deg;1,2;seta rot 311deg;6;1023;0,0
+miércoles 14 de octubre;15:00;sol.webp;27°;6,9;21,3;20;40;seta rot 277deg;1,2;seta rot 312deg;6;1023;0,0
+miércoles 14 de octubre;16:00;sol.webp;27°;6,8;21,3;18;38;seta rot 277deg;1,2;seta rot 312deg;6;1022;0,0
+miércoles 14 de octubre;17:00;sol.webp;27°;6,5;21,4;15;34;seta rot 275deg;1,1;seta rot 313deg;6;1022;0,0
+miércoles 14 de octubre;18:00;sol.webp;26°;6,2;21,5;13;29;seta rot 268deg;1,1;seta rot 315deg;6;1022;0,0
+miércoles 14 de octubre;19:00;luna-nubes.webp;25°;5,1;21,5;10;24;seta rot 260deg;1,1;seta rot 316deg;6;1022;0,0
+miércoles 14 de octubre;20:00;luna.webp;24°;5,0;21,5;10;19;seta rot 250deg;1,1;seta rot 316deg;6;1023;0,0
+miércoles 14 de octubre;21:00;luna.webp;23°;5,0;21,5;10;18;seta rot 248deg;1,1;seta rot 317deg;6;1023;0,0
+miércoles 14 de octubre;22:00;luna.webp;23°;bloqueado PRO;21,4;13;23;seta rot 254deg;1,1;seta rot 317deg;6;1023;0,0
+miércoles 14 de octubre;23:00;luna.webp;23°;bloqueado PRO;21,3;12;24;seta rot 253deg;1,2;seta rot 316deg;6;1023;0,0
+jueves 15 de octubre;00:00;luna.webp;22°;bloqueado PRO;21,3;11;22;seta rot 251deg;1,3;seta rot 316deg;6;1023;0,0
+jueves 15 de octubre;01:00;luna-nubes.webp;22°;bloqueado PRO;21,2;11;20;seta rot 253deg;1,3;seta rot 315deg;6;1022;0,0
+jueves 15 de octubre;02:00;luna.webp;22°;bloqueado PRO;21,2;12;22;seta rot 253deg;1,3;seta rot 313deg;6;1022;0,0
+jueves 15 de octubre;03:00;luna.webp;22°;bloqueado PRO;21,2;13;23;seta rot 257deg;1,4;seta rot 312deg;6;1022;0,0
+jueves 15 de octubre;04:00;luna-nubes.webp;22°;bloqueado PRO;21,1;13;23;seta rot 257deg;1,4;seta rot 310deg;6;1022;0,0
+jueves 15 de octubre;05:00;nubes-luna.webp;21°;bloqueado PRO;21,1;12;23;seta rot 251deg;1,4;seta rot 308deg;6;1021;0,0
+jueves 15 de octubre;06:00;luna-nubes.webp;21°;bloqueado PRO;21,1;12;22;seta rot 243deg;1,4;seta rot 307deg;6;1021;0,0
+jueves 15 de octubre;07:00;nubes-luna.webp;21°;bloqueado PRO;21,1;11;22;seta rot 243deg;1,4;seta rot 305deg;6;1022;0,0
+jueves 15 de octubre;08:00;nubes-sol.webp;21°;bloqueado PRO;21,2;11;21;seta rot 247deg;1,4;seta rot 305deg;6;1022;0,0
+jueves 15 de octubre;09:00;nubes-sol.webp;22°;bloqueado PRO;21,3;12;22;seta rot 250deg;1,4;seta rot 304deg;6;1022;0,0
+jueves 15 de octubre;10:00;nublado.webp;24°;bloqueado PRO;21,4;15;28;seta rot 253deg;1,4;seta rot 304deg;6;1022;0,0
+jueves 15 de octubre;11:00;nublado.webp;25°;bloqueado PRO;21,5;19;36;seta rot 258deg;1,3;seta rot 305deg;6;1023;0,0
+jueves 15 de octubre;12:00;sol-nubes.webp;26°;bloqueado PRO;21,6;19;37;seta rot 265deg;1,3;seta rot 305deg;7;1023;0,0
+jueves 15 de octubre;13:00;sol.webp;27°;bloqueado PRO;21,7;21;40;seta rot 270deg;1,2;seta rot 306deg;7;1022;0,0
+jueves 15 de octubre;14:00;sol.webp;27°;bloqueado PRO;21,7;22;41;seta rot 272deg;1,2;seta rot 308deg;7;1021;0,0
+jueves 15 de octubre;15:00;sol.webp;27°;bloqueado PRO;21,8;21;41;seta rot 268deg;1,1;seta rot 311deg;7;1020;0,0
+jueves 15 de octubre;16:00;sol-nubes.webp;27°;bloqueado PRO;21,9;20;40;seta rot 267deg;1,1;seta rot 313deg;7;1020;0,0
+jueves 15 de octubre;17:00;nubes-sol.webp;27°;bloqueado PRO;21,9;16;38;seta rot 273deg;1,1;seta rot 315deg;7;1020;0,0
+jueves 15 de octubre;18:00;nublado.webp;26°;bloqueado PRO;22,0;11;30;seta rot 282deg;1,0;seta rot 318deg;7;1020;0,0
+jueves 15 de octubre;19:00;nublado.webp;25°;bloqueado PRO;22,0;7;21;seta rot 270deg;1,0;seta rot 320deg;7;1020;0,0
+jueves 15 de octubre;20:00;nublado.webp;23°;bloqueado PRO;22,0;7;13;seta rot 251deg;1,0;seta rot 321deg;7;1021;0,0
+jueves 15 de octubre;21:00;luna-nubes.webp;23°;bloqueado PRO;21,9;6;12;seta rot 242deg;1,0;seta rot 322deg;7;1021;0,0
+jueves 15 de octubre;22:00;luna-nubes.webp;22°;bloqueado PRO;21,8;6;11;seta rot 225deg;1,0;seta rot 323deg;7;1021;0,0
+jueves 15 de octubre;23:00;luna-nubes.webp;21°;bloqueado PRO;21,8;5;11;seta rot 196deg;1,0;seta rot 322deg;7;1022;0,0
+viernes 16 de octubre;00:00;luna-nubes.webp;21°;bloqueado PRO;21,7;5;9;seta rot 184deg;1,0;seta rot 322deg;7;1021;0,0
+viernes 16 de octubre;01:00;luna-nubes.webp;20°;bloqueado PRO;21,6;5;9;seta rot 180deg;1,0;seta rot 321deg;7;1021;0,0
+viernes 16 de octubre;02:00;luna.webp;20°;bloqueado PRO;21,6;6;11;seta rot 170deg;1,0;seta rot 320deg;7;1021;0,0
+viernes 16 de octubre;03:00;luna.webp;20°;bloqueado PRO;21,5;5;11;seta rot 172deg;1,0;seta rot 320deg;7;1020;0,0
+viernes 16 de octubre;04:00;luna.webp;19°;bloqueado PRO;21,5;5;10;seta rot 180deg;1,0;seta rot 319deg;7;1020;0,0
+viernes 16 de octubre;05:00;luna.webp;19°;bloqueado PRO;21,4;5;9;seta rot 192deg;1,0;seta rot 320deg;7;1020;0,0
+viernes 16 de octubre;06:00;luna.webp;19°;bloqueado PRO;21,4;6;10;seta rot 191deg;0,9;seta rot 321deg;7;1021;0,0
+viernes 16 de octubre;07:00;luna.webp;19°;bloqueado PRO;21,4;6;10;seta rot 195deg;0,9;seta rot 322deg;7;1021;0,0
+viernes 16 de octubre;08:00;sol.webp;18°;bloqueado PRO;21,4;5;10;seta rot 197deg;0,9;seta rot 322deg;7;1021;0,0
+viernes 16 de octubre;09:00;sol.webp;20°;bloqueado PRO;21,5;4;9;seta rot 202deg;0,9;seta rot 321deg;7;1022;0,0
+viernes 16 de octubre;10:00;sol.webp;24°;bloqueado PRO;21,5;3;8;seta rot 238deg;0,9;seta rot 321deg;7;1022;0,0
+viernes 16 de octubre;11:00;sol.webp;26°;bloqueado PRO;21,6;5;12;seta rot 278deg;0,9;seta rot 324deg;7;1022;0,0
+viernes 16 de octubre;12:00;sol.webp;27°;bloqueado PRO;21,7;7;16;seta rot 285deg;0,9;seta rot 326deg;7;1022;0,0
+viernes 16 de octubre;13:00;sol.webp;28°;bloqueado PRO;21,7;9;18;seta rot 303deg;0,9;seta rot 329deg;7;1022;0,0
+viernes 16 de octubre;14:00;sol-nubes.webp;28°;bloqueado PRO;21,8;9;19;seta rot 326deg;0,8;seta rot 340deg;7;1021;0,0
+viernes 16 de octubre;15:00;sol.webp;28°;bloqueado PRO;21,9;7;19;seta rot 351deg;0,8;seta rot 351deg;7;1021;0,0
+viernes 16 de octubre;16:00;sol-nubes.webp;27°;bloqueado PRO;22,0;7;16;seta rot 22deg;0,8;seta rot 2deg;7;1020;0,0
+viernes 16 de octubre;17:00;sol-nubes.webp;26°;bloqueado PRO;22,0;9;18;seta rot 57deg;0,8;seta rot 16deg;8;1020;0,0
+viernes 16 de octubre;18:00;nubes-sol.webp;25°;bloqueado PRO;22,1;10;20;seta rot 86deg;0,7;seta rot 30deg;8;1020;0,0
+viernes 16 de octubre;19:00;luna-nubes.webp;24°;bloqueado PRO;22,1;8;19;seta rot 93deg;0,7;seta rot 44deg;8;1020;0,0
+viernes 16 de octubre;20:00;nublado.webp;23°;bloqueado PRO;22,0;8;18;seta rot 95deg;0,7;seta rot 54deg;8;1020;0,0
+viernes 16 de octubre;21:00;nublado.webp;22°;bloqueado PRO;22,0;8;16;seta rot 93deg;0,7;seta rot 63deg;8;1020;0,0
+viernes 16 de octubre;22:00;nublado.webp;22°;bloqueado PRO;21,9;7;14;seta rot 93deg;0,6;seta rot 73deg;8;1020;0,0
+viernes 16 de octubre;23:00;nublado.webp;22°;bloqueado PRO;21,8;7;13;seta rot 96deg;0,6;seta rot 77deg;9;1020;0,0
+sábado 17 de octubre;00:00;nublado.webp;21°;bloqueado PRO;21,7;6;11;seta rot 101deg;0,6;seta rot 82deg;9;1020;0,0
+sábado 17 de octubre;01:00;nublado.webp;21°;bloqueado PRO;21,6;5;9;seta rot 106deg;0,6;seta rot 86deg;9;1020;0,0
+sábado 17 de octubre;02:00;nubes-luna.webp;21°;bloqueado PRO;21,5;5;9;seta rot 117deg;0,6;seta rot 88deg;9;1019;0,0
+sábado 17 de octubre;03:00;nubes-luna.webp;20°;bloqueado PRO;21,5;5;9;seta rot 129deg;0,6;seta rot 90deg;9;1019;0,0
+sábado 17 de octubre;04:00;nubes-luna.webp;20°;bloqueado PRO;21,4;4;9;seta rot 138deg;0,6;seta rot 92deg;9;1018;0,0
+sábado 17 de octubre;05:00;luna-nubes.webp;20°;bloqueado PRO;21,4;4;9;seta rot 149deg;0,6;seta rot 94deg;9;1018;0,0
+sábado 17 de octubre;06:00;luna-nubes.webp;19°;bloqueado PRO;21,4;4;8;seta rot 153deg;0,5;seta rot 95deg;9;1018;0,0
+sábado 17 de octubre;07:00;luna-nubes.webp;19°;bloqueado PRO;21,4;4;7;seta rot 158deg;0,5;seta rot 97deg;10;1018;0,0
+sábado 17 de octubre;08:00;nublado.webp;20°;bloqueado PRO;21,4;3;5;seta rot 162deg;0,5;seta rot 98deg;10;1018;0,0
+sábado 17 de octubre;09:00;nublado.webp;22°;bloqueado PRO;21,4;2;5;seta rot 162deg;0,5;seta rot 100deg;9;1018;0,0
+sábado 17 de octubre;10:00;nublado.webp;23°;bloqueado PRO;21,5;1;5;seta rot 135deg;0,5;seta rot 101deg;9;1018;0,0
+sábado 17 de octubre;11:00;nubes-sol.webp;25°;bloqueado PRO;21,5;2;8;seta rot 31deg;0,5;seta rot 101deg;9;1018;0,0
+sábado 17 de octubre;12:00;nubes-sol.webp;26°;bloqueado PRO;21,6;5;13;seta rot 21deg;0,5;seta rot 102deg;9;1018;0,0
+sábado 17 de octubre;13:00;nubes-sol.webp;27°;bloqueado PRO;21,6;8;17;seta rot 24deg;0,5;seta rot 102deg;9;1018;0,0
+sábado 17 de octubre;14:00;sol-nubes.webp;27°;bloqueado PRO;21,6;11;22;seta rot 34deg;0,5;seta rot 102deg;9;1017;0,0
+sábado 17 de octubre;15:00;sol-nubes.webp;26°;bloqueado PRO;21,6;14;26;seta rot 44deg;0,5;seta rot 102deg;9;1016;0,0
+sábado 17 de octubre;16:00;sol-nubes.webp;26°;bloqueado PRO;21,6;15;30;seta rot 54deg;0,6;seta rot 102deg;8;1015;0,0
+sábado 17 de octubre;17:00;sol.webp;26°;bloqueado PRO;21,5;13;31;seta rot 75deg;0,6;seta rot 103deg;7;1015;0,0
+sábado 17 de octubre;18:00;sol.webp;26°;bloqueado PRO;21,5;12;31;seta rot 115deg;0,7;seta rot 103deg;6;1014;0,0
+sábado 17 de octubre;19:00;luna.webp;26°;bloqueado PRO;21,5;14;31;seta rot 136deg;0,8;seta rot 104deg;6;1014;0,0
+sábado 17 de octubre;20:00;luna.webp;24°;bloqueado PRO;21,4;14;29;seta rot 133deg;0,8;seta rot 104deg;5;1014;0,0
+sábado 17 de octubre;21:00;luna.webp;23°;bloqueado PRO;21,4;13;26;seta rot 117deg;0,8;seta rot 103deg;5;1015;0,0
+sábado 17 de octubre;22:00;luna.webp;21°;bloqueado PRO;21,3;12;23;seta rot 104deg;0,8;seta rot 103deg;6;1015;0,0
+sábado 17 de octubre;23:00;luna.webp;20°;bloqueado PRO;21,2;9;20;seta rot 103deg;0,7;seta rot 103deg;6;1014;0,0
+domingo 18 de octubre;00:00;luna.webp;19°;bloqueado PRO;21,1;6;16;seta rot 107deg;0,7;seta rot 102deg;6;1014;0,0
+domingo 18 de octubre;01:00;luna.webp;19°;bloqueado PRO;21,1;4;13;seta rot 124deg;0,6;seta rot 102deg;7;1014;0,0
+domingo 18 de octubre;02:00;luna.webp;18°;bloqueado PRO;21,0;3;12;seta rot 148deg;0,6;seta rot 102deg;7;1014;0,0
+domingo 18 de octubre;03:00;luna.webp;17°;bloqueado PRO;21,0;5;11;seta rot 166deg;0,6;seta rot 102deg;7;1013;0,0
+domingo 18 de octubre;04:00;luna.webp;16°;bloqueado PRO;21,0;5;10;seta rot 172deg;0,6;seta rot 102deg;7;1013;0,0
+domingo 18 de octubre;05:00;luna.webp;16°;bloqueado PRO;21,0;5;10;seta rot 172deg;0,6;seta rot 102deg;7;1013;0,0
+domingo 18 de octubre;06:00;luna.webp;16°;bloqueado PRO;21,0;5;9;seta rot 172deg;0,6;seta rot 102deg;7;1013;0,0
+domingo 18 de octubre;07:00;luna.webp;16°;bloqueado PRO;21,0;5;9;seta rot 171deg;0,6;seta rot 102deg;7;1013;0,0
+domingo 18 de octubre;08:00;sol.webp;17°;bloqueado PRO;21,0;4;9;seta rot 180deg;0,6;seta rot 105deg;7;1013;0,0
+domingo 18 de octubre;09:00;sol.webp;19°;bloqueado PRO;21,0;3;9;seta rot 201deg;0,6;seta rot 109deg;7;1014;0,0
+domingo 18 de octubre;10:00;sol.webp;21°;bloqueado PRO;21,0;3;10;seta rot 230deg;0,6;seta rot 112deg;6;1014;0,0
+domingo 18 de octubre;11:00;sol.webp;23°;bloqueado PRO;21,1;4;12;seta rot 247deg;0,7;seta rot 143deg;6;1014;0,0
+domingo 18 de octubre;12:00;sol.webp;24°;bloqueado PRO;21,1;7;15;seta rot 258deg;0,7;seta rot 174deg;5;1014;0,0
+domingo 18 de octubre;13:00;sol.webp;25°;bloqueado PRO;21,1;8;16;seta rot 265deg;0,8;seta rot 205deg;5;1014;0,0
+domingo 18 de octubre;14:00;nubes-sol.webp;26°;bloqueado PRO;21,2;9;17;seta rot 277deg;0,7;seta rot 182deg;5;1014;0,0
+domingo 18 de octubre;15:00;nubes-sol.webp;26°;bloqueado PRO;21,2;8;15;seta rot 294deg;0,7;seta rot 159deg;5;1013;0,0
+domingo 18 de octubre;16:00;nubes-sol.webp;26°;bloqueado PRO;21,2;7;15;seta rot 315deg;0,7;seta rot 136deg;5;1013;0,0
+domingo 18 de octubre;17:00;nublado.webp;25°;bloqueado PRO;21,3;6;18;seta rot 343deg;0,6;seta rot 125deg;6;1013;0,0
+domingo 18 de octubre;18:00;nublado.webp;23°;bloqueado PRO;21,3;6;21;seta rot 17deg;0,6;seta rot 113deg;6;1013;0,0
+domingo 18 de octubre;19:00;nublado.webp;21°;bloqueado PRO;21,3;6;22;seta rot 36deg;0,5;seta rot 102deg;6;1014;0,0
+domingo 18 de octubre;20:00;nublado.webp;21°;bloqueado PRO;21,2;4;18;seta rot 45deg;0,5;seta rot 101deg;6;1014;0,0
+domingo 18 de octubre;21:00;nublado.webp;20°;bloqueado PRO;21,2;1;12;seta rot 198deg;0,5;seta rot 100deg;6;1014;0,0
+domingo 18 de octubre;22:00;nublado.webp;20°;bloqueado PRO;21,1;5;10;seta rot 222deg;0,5;seta rot 99deg;6;1015;0,0
+domingo 18 de octubre;23:00;nublado.webp;19°;bloqueado PRO;21,0;9;16;seta rot 233deg;0,4;seta rot 99deg;6;1015;0,0
+lunes 19 de octubre;00:00;nublado.webp;19°;bloqueado PRO;21,0;13;25;seta rot 241deg;0,4;seta rot 98deg;6;1015;0,0
+lunes 19 de octubre;01:00;nublado.webp;18°;bloqueado PRO;20,9;16;32;seta rot 243deg;0,4;seta rot 98deg;6;1015;0,0
+lunes 19 de octubre;02:00;nublado.webp;18°;bloqueado PRO;20,9;16;31;seta rot 240deg;0,4;seta rot 98deg;7;1015;0,0
+lunes 19 de octubre;03:00;nublado.webp;17°;bloqueado PRO;20,8;14;27;seta rot 234deg;0,4;seta rot 99deg;7;1015;0,0
+lunes 19 de octubre;04:00;nublado.webp;16°;bloqueado PRO;20,8;14;24;seta rot 230deg;0,4;seta rot 99deg;6;1015;0,0
+lunes 19 de octubre;05:00;nubes-luna.webp;16°;bloqueado PRO;20,8;15;26;seta rot 229deg;0,4;seta rot 100deg;6;1015;0,0
+lunes 19 de octubre;06:00;nubes-luna.webp;15°;bloqueado PRO;20,8;17;29;seta rot 229deg;0,4;seta rot 100deg;6;1015;0,0
+lunes 19 de octubre;07:00;nubes-luna.webp;15°;bloqueado PRO;20,8;18;32;seta rot 232deg;0,4;seta rot 101deg;6;1016;0,0
+lunes 19 de octubre;08:00;nublado.webp;15°;bloqueado PRO;20,8;19;34;seta rot 236deg;0,4;seta rot 105deg;6;1016;0,0
+lunes 19 de octubre;09:00;nublado.webp;16°;bloqueado PRO;20,8;20;35;seta rot 240deg;0,4;seta rot 109deg;5;1017;0,0
+lunes 19 de octubre;10:00;nublado.webp;16°;bloqueado PRO;20,8;21;36;seta rot 245deg;0,4;seta rot 113deg;5;1017;0,0
+lunes 19 de octubre;11:00;nublado.webp;17°;bloqueado PRO;20,9;21;38;seta rot 249deg;0,4;seta rot 157deg;5;1017;0,0
+lunes 19 de octubre;12:00;nublado.webp;18°;bloqueado PRO;20,9;21;40;seta rot 253deg;0,4;seta rot 201deg;4;1017;0,0
+lunes 19 de octubre;13:00;nublado.webp;18°;bloqueado PRO;20,9;20;41;seta rot 256deg;0,4;seta rot 245deg;4;1016;0,0
+lunes 19 de octubre;14:00;nublado.webp;19°;bloqueado PRO;20,9;19;39;seta rot 258deg;0,4;seta rot 265deg;4;1015;0,0
+lunes 19 de octubre;15:00;nublado.webp;20°;bloqueado PRO;21,0;17;36;seta rot 256deg;0,4;seta rot 285deg;4;1014;0,0
+lunes 19 de octubre;16:00;nublado.webp;20°;bloqueado PRO;21,0;15;32;seta rot 256deg;0,4;seta rot 305deg;5;1014;0,0
+lunes 19 de octubre;17:00;nublado.webp;20°;bloqueado PRO;21,0;12;26;seta rot 254deg;0,4;seta rot 317deg;5;1014;0,0
+lunes 19 de octubre;18:00;nublado.webp;19°;bloqueado PRO;21,0;8;19;seta rot 249deg;0,3;seta rot 329deg;5;1014;0,0
+lunes 19 de octubre;19:00;nublado.webp;18°;bloqueado PRO;21,0;6;14;seta rot 238deg;0,3;seta rot 341deg;5;1014;0,0
+lunes 19 de octubre;20:00;nublado.webp;17°;bloqueado PRO;21,0;5;13;seta rot 214deg;0,3;seta rot 335deg;5;1014;0,0
+lunes 19 de octubre;21:00;nublado.webp;15°;bloqueado PRO;21,0;6;13;seta rot 193deg;0,4;seta rot 330deg;5;1014;0,0
+lunes 19 de octubre;22:00;nublado.webp;14°;bloqueado PRO;20,9;8;13;seta rot 185deg;0,4;seta rot 324deg;5;1014;0,0
+lunes 19 de octubre;23:00;nublado.webp;14°;bloqueado PRO;20,9;8;13;seta rot 185deg;0,4;seta rot 319deg;5;1014;0,0

@@ -1,0 +1,20 @@
+##### DADOS ADICIONAIS DAS APIs #####
+
+===== get_jornada_completa.php?id=1 =====
+[]
+
+===== get_captura.php?id=1 =====
+{"success":false,"error":"ID no v\u00e1lido"}
+
+===== get_capturas_jornada.php?jornada=1 =====
+{"success":false,"error":"ID inv\u00e1lido"}
+
+===== get_points.php =====
+{"type":"FeatureCollection","features":[]}
+
+===== get_points_scores.php =====
+{"times":[],"scores":{}}
+
+===== get_marker_predictions.php =====
+{"error":"Especie ID o fecha no v?lida"}
+
