@@ -6,7 +6,8 @@ const SHELL = [
   "./js/fontes/http.js", "./js/fontes/open-meteo-tempo.js",
   "./js/fontes/open-meteo-marine.js", "./js/fontes/open-meteo-forecast.js",
   "./js/fontes/ipma-avisos.js", "./js/fontes/ipma-mar.js",
-  "./js/fontes/mares-locais.js", "./js/fontes/suncalc.js"
+  "./js/fontes/mares-locais.js", "./js/fontes/suncalc.js",
+  "./js/regras/sectores.js"
 ];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)));
@@ -16,12 +17,12 @@ self.addEventListener("activate", event => {
   event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))));
   self.clients.claim();
 });
+// Devolve a resposta só depois de a cópia estar gravada, para ficar disponível sem rede
+// logo a seguir. Uma falha a gravar não impede a resposta.
 function guardar(request, response) {
-  if (response.ok) {
-    const copy = response.clone();
-    caches.open(CACHE).then(cache => cache.put(request, copy));
-  }
-  return response;
+  if (!response.ok) return Promise.resolve(response);
+  const copy = response.clone();
+  return caches.open(CACHE).then(cache => cache.put(request, copy)).catch(() => {}).then(() => response);
 }
 // *.json (config, marés): rede primeiro; a cópia em cache só serve sem rede.
 function redePrimeiro(request) {
