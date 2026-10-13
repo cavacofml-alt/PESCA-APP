@@ -7,6 +7,8 @@
     "tipoAviso": "Agitação Marítima",
     "nivelMinimo": "amarelo",
     "bloquearDiaInteiro": true,
+    "alcanceAvisosDias": 3,
+    "alcanceAvisosProvisorio": true,
     "bloquearPesqueiros": [
       "bicos_faro",
       "bico_ancao",
