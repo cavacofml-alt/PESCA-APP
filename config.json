@@ -55,7 +55,8 @@
   },
   "chuva": {
     "limiar48hMm": 20.0,
-    "provisorio": true
+    "provisorio": true,
+    "pendenteAprovacao": true
   },
   "pressao": {
     "descidaAtiva24hHpa": 5.0,
@@ -148,6 +149,81 @@
     "quarteiraTerra": {
       "latitude": 37.07,
       "longitude": -8.1
+    }
+  },
+  "pesqueirosProvisorio": true,
+  "pesqueirosNota": "Correspondência pesqueiro → pontos de dados por confirmar pelo utilizador (decisão C).",
+  "pesqueiros": {
+    "ria": {
+      "nome": "Ria Formosa (interior, Faro)",
+      "especies": [
+        "dourada"
+      ],
+      "tipo": "ria",
+      "mar": null,
+      "terra": "faroTerra",
+      "agua": "faroMar"
+    },
+    "praia_faro": {
+      "nome": "Praia de Faro (mar de fora)",
+      "especies": [
+        "robalo"
+      ],
+      "tipo": "praia",
+      "mar": "faroMar",
+      "terra": "faroTerra",
+      "agua": null
+    },
+    "bicos_faro": {
+      "nome": "Bicos das barras (Faro)",
+      "especies": [
+        "robalo"
+      ],
+      "tipo": "praia",
+      "mar": "faroMar",
+      "terra": "faroTerra",
+      "agua": null
+    },
+    "ancao": {
+      "nome": "Praia do Ancão (mar de fora, Loulé)",
+      "especies": [
+        "robalo"
+      ],
+      "tipo": "praia",
+      "mar": "faroMar",
+      "terra": "faroTerra",
+      "agua": null
+    },
+    "bico_ancao": {
+      "nome": "Bico da barra do Ancão",
+      "especies": [
+        "robalo"
+      ],
+      "tipo": "praia",
+      "mar": "faroMar",
+      "terra": "faroTerra",
+      "agua": null
+    },
+    "almargem": {
+      "nome": "Praia do Almargem (mar de fora, Quarteira)",
+      "especies": [
+        "robalo"
+      ],
+      "tipo": "praia",
+      "mar": "quarteiraMar",
+      "terra": "quarteiraTerra",
+      "agua": null
+    },
+    "molhe_quarteira": {
+      "nome": "Molhe de Quarteira",
+      "especies": [
+        "robalo",
+        "dourada"
+      ],
+      "tipo": "molhe",
+      "mar": "quarteiraMar",
+      "terra": "quarteiraTerra",
+      "agua": "quarteiraMar"
     }
   }
 }
