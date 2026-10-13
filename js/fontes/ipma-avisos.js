@@ -52,27 +52,44 @@ export function validarFormatoAvisos(json) {
   });
 }
 
-// ok=true só quando a resposta tem o formato esperado e todos os avisos relevantes são
-// interpretáveis. Uma lista vazia com ok=true significa "sem avisos" confirmado.
-// Aviso relevante inválido → ok=false (segurança por verificar), mantendo os dados lidos.
+// Situação da consulta, para o motor de regras não depender do texto das mensagens.
+// Só SEM_AVISOS e COM_AVISOS (ok=true) confirmam o estado de segurança; todas as outras
+// significam "segurança por verificar".
+export const SITUACAO_AVISOS = Object.freeze({
+  SEM_AVISOS: "sem avisos",            // resposta válida, sem aviso aplicável (área/tipo)
+  COM_AVISOS: "com avisos",            // resposta válida, avisos aplicáveis todos interpretáveis
+  AVISO_ILEGIVEL: "aviso ilegível",    // resposta válida, mas um aviso aplicável tem nível/horas ilegíveis
+  FORMATO_INVALIDO: "formato inválido",// resposta recebida mas incompatível com o formato esperado
+  FALHA_PEDIDO: "pedido falhou"        // configuração em falta, rede, HTTP ou JSON ilegível
+});
+
+// Limitação conhecida: se o IPMA deixar de usar o código da área (FAR), a resposta continua
+// válida e o resultado é SEM_AVISOS. Não se exige a presença de FAR porque a documentação
+// do IPMA é ambígua sobre a publicação de registos verdes (ver README).
 export async function getWarnings({ url, area, tipo, fetchImpl = fetch, now = new Date() }) {
   const source = "IPMA — avisos";
   const readAt = now.toISOString();
+  const resultado = (situacao, campos) => ({ ...sourceResult({ source, readAt, ...campos }), situacao });
+  let json;
   try {
     if (!url || !area || !tipo) throw new Error("Configuração em falta: url, área ou tipo de aviso");
-    const json = await fetchJson(url, { fetchImpl });
-    validarFormatoAvisos(json);
-    const avisos = json
-      .filter(row => row.idAreaAviso === area && row.awarenessTypeName === tipo)
-      .map(normalizarAviso);
-    const invalidos = avisos.filter(a => a.status !== ESTADO.OBTIDO);
-    if (invalidos.length) {
-      const detalhe = invalidos.flatMap(a => a.problemas).join("; ");
-      return sourceResult({ source, readAt, data: avisos,
-        error: `segurança por verificar: ${invalidos.length} aviso(s) ilegível(eis) (${detalhe})` });
-    }
-    return sourceResult({ source, readAt, data: avisos });
+    json = await fetchJson(url, { fetchImpl });
   } catch (error) {
-    return sourceResult({ source, readAt, error });
+    return resultado(SITUACAO_AVISOS.FALHA_PEDIDO, { error });
   }
+  try {
+    validarFormatoAvisos(json);
+  } catch (error) {
+    return resultado(SITUACAO_AVISOS.FORMATO_INVALIDO, { error });
+  }
+  const avisos = json
+    .filter(row => row.idAreaAviso === area && row.awarenessTypeName === tipo)
+    .map(normalizarAviso);
+  const invalidos = avisos.filter(a => a.status !== ESTADO.OBTIDO);
+  if (invalidos.length) {
+    const detalhe = invalidos.flatMap(a => a.problemas).join("; ");
+    return resultado(SITUACAO_AVISOS.AVISO_ILEGIVEL, { data: avisos,
+      error: `segurança por verificar: ${invalidos.length} aviso(s) ilegível(eis) (${detalhe})` });
+  }
+  return resultado(avisos.length ? SITUACAO_AVISOS.COM_AVISOS : SITUACAO_AVISOS.SEM_AVISOS, { data: avisos });
 }
