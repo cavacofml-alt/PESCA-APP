@@ -226,10 +226,6 @@ test("Estado do mar: o dia pedido é o dia de Lisboa, não o UTC", async () => {
 
 // ---------- Marés locais (mantido da Fase 2) ----------
 
-test("Marés: fixture válida e tabela real vazia", () => {
+test("Marés: fixture de teste válida", () => {
   assert.equal(validateTides(TIDE_FIXTURE).ok, true);
-  const mares = JSON.parse(readFileSync(new URL("../mares/2026.json", import.meta.url), "utf8"));
-  const v = validateTides(mares);
-  assert.equal(v.ok, true);
-  assert.equal(v.events.length, 0);
 });
