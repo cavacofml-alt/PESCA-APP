@@ -8,6 +8,10 @@ export function leitura(value, { unit = null, source, readAt = new Date().toISOS
   if (!["observado", "previsto", "calculado"].includes(tipo)) {
     throw new TypeError(`tipo inválido: ${tipo}`);
   }
+  // Nenhum valor sem fonte identificada (secção 10), nem sequer um valor em falta.
+  if (typeof source !== "string" || !source.trim()) {
+    throw new TypeError("leitura() exige a fonte (source)");
+  }
   // null/undefined → não obtido; número não finito (NaN, ±Infinity) → inválido.
   let estado = status;
   let valor = value;
@@ -21,7 +25,7 @@ export function leitura(value, { unit = null, source, readAt = new Date().toISOS
   return {
     value: valor,
     unit,
-    source: source ?? "não obtido",
+    source,
     readAt,
     validAt,
     tipo,
@@ -46,19 +50,23 @@ export function parseUtc(value) {
   if (typeof value !== "string") return null;
   const m = value.match(ISO_INSTANTE);
   if (!m) return null;
-  const [, y, mo, d, h, mi, s = "00"] = m;
-  if (+mo < 1 || +mo > 12 || +d < 1 || +d > 31 || +h > 23 || +mi > 59 || +s > 59) return null;
-  const date = new Date(m[7] ? value : `${value}Z`);
-  if (!Number.isFinite(date.getTime())) return null;
-  // Rejeita datas que o motor "corrige" (ex.: 31 de Fevereiro → 3 de Março).
-  if (!m[7] && date.getUTCDate() !== +d) return null;
-  return date;
+  const [, y, mo, d, h, mi, s = "00", fuso] = m;
+  if (+mo < 1 || +mo > 12 || +h > 23 || +mi > 59 || +s > 59) return null;
+  // Data civil completa, com e sem fuso: o motor JavaScript "corrige" datas impossíveis
+  // (31 de Fevereiro → 3 de Março) em vez de as rejeitar.
+  const diasDoMes = new Date(Date.UTC(+y, +mo, 0)).getUTCDate();
+  if (+d < 1 || +d > diasDoMes) return null;
+  if (fuso && fuso !== "Z" && (+fuso.slice(1, 3) > 23 || +fuso.slice(4) > 59)) return null;
+  const date = new Date(fuso ? value : `${value}Z`);
+  return Number.isFinite(date.getTime()) ? date : null;
 }
 
 // Converte segundos Unix (Open-Meteo com timeformat=unixtime) num Date. null se inválido.
 export function parseUnixSeconds(value) {
   if (typeof value !== "number" || !Number.isFinite(value)) return null;
-  return new Date(value * 1000);
+  const date = new Date(value * 1000);
+  // Fora do intervalo suportado pelo Date (±8,64e15 ms) → Invalid Date.
+  return Number.isFinite(date.getTime()) ? date : null;
 }
 
 function partesLisboa(date) {
