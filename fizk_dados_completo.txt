@@ -1,0 +1,20 @@
+##### DADOS COM IDs ENCONTRADOS #####
+
+===== get_captura.php?id=18458 =====
+{"success":false,"error":"ID no v\u00e1lido"}
+
+===== get_captura.php?id=6371 =====
+{"success":false,"error":"ID no v\u00e1lido"}
+
+===== get_captura.php?id=5000 =====
+{"success":false,"error":"ID no v\u00e1lido"}
+
+===== get_captura.php?id=1993 =====
+{"success":false,"error":"ID no v\u00e1lido"}
+
+===== get_points.php?lat=36.7&lon=-2.97 =====
+{"type":"FeatureCollection","features":[]}
+
+===== get_points.php?lat=40&lon=-8.5 =====
+{"type":"FeatureCollection","features":[]}
+
