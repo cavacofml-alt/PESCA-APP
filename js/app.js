@@ -1,6 +1,5 @@
 import { getMarine } from "./fontes/open-meteo-marine.js";
 import { getForecast } from "./fontes/open-meteo-forecast.js";
-import { getWarnings } from "./fontes/ipma-avisos.js";
 import { getSeaForecastDay } from "./fontes/ipma-mar.js";
 import { loadLocalTides } from "./fontes/mares-locais.js";
 import { getSunAndMoon } from "./fontes/suncalc.js";
@@ -24,13 +23,12 @@ async function run() {
     return;
   }
   const config = await cfgResponse.json();
-  const { fontes, locais, seguranca } = config;
+  const { fontes, locais } = config;
   const tasks = await Promise.all([
     getMarine({ ...locais.faroMar, baseUrl: fontes.marineBase }),
     getForecast({ ...locais.faroTerra, baseUrl: fontes.forecastBase }),
     getMarine({ ...locais.quarteiraMar, baseUrl: fontes.marineBase }),
     getForecast({ ...locais.quarteiraTerra, baseUrl: fontes.forecastBase }),
-    getWarnings({ url: fontes.ipmaWarnings, area: seguranca.areaIPMA, tipo: seguranca.tipoAviso }),
     getSeaForecastDay(0, { baseUrl: fontes.ipmaSeaForecastBase }),
     getSeaForecastDay(1, { baseUrl: fontes.ipmaSeaForecastBase }),
     getSeaForecastDay(2, { baseUrl: fontes.ipmaSeaForecastBase }),
@@ -39,7 +37,7 @@ async function run() {
       maxIntervalMinutes: config.mares.intervaloEventoMinutos.maximo })
   ]);
   const labels = ["Open-Meteo Marine — Faro", "Open-Meteo Forecast — Faro",
-    "Open-Meteo Marine — Quarteira", "Open-Meteo Forecast — Quarteira", "IPMA — avisos",
+    "Open-Meteo Marine — Quarteira", "Open-Meteo Forecast — Quarteira",
     "IPMA — estado do mar dia 0", "IPMA — estado do mar dia 1", "IPMA — estado do mar dia 2",
     "Marés locais — Faro-Olhão"];
   resultRoot.innerHTML = tasks.map((r, i) => card(labels[i], r,

@@ -2,25 +2,6 @@
   "versao": 1,
   "fusoHorario": "Europe/Lisbon",
   "horizonteDias": 7,
-  "seguranca": {
-    "areaIPMA": "FAR",
-    "tipoAviso": "Agitação Marítima",
-    "nivelMinimo": "amarelo",
-    "bloquearDiaInteiro": true,
-    "alcanceAvisosDias": 3,
-    "alcanceAvisosProvisorio": true,
-    "bloquearPesqueiros": [
-      "bicos_faro",
-      "bico_ancao",
-      "molhe_quarteira"
-    ],
-    "falhaIPMA": {
-      "bloquearBicos": true,
-      "bloquearMolhe": true,
-      "permitirRia": true,
-      "permitirPraias": true
-    }
-  },
   "mar": {
     "hsMarMexidoM": 1.0,
     "potenciaMarMexidoKWm": 1.5,
@@ -130,7 +111,6 @@
   "fontes": {
     "marineBase": "https://marine-api.open-meteo.com/v1/marine",
     "forecastBase": "https://api.open-meteo.com/v1/forecast",
-    "ipmaWarnings": "https://api.ipma.pt/open-data/forecast/warnings/warnings_www.json",
     "ipmaSeaForecastBase": "https://api.ipma.pt/open-data/forecast/oceanography/daily/"
   },
   "locais": {

@@ -7,11 +7,9 @@ import { horasOpenMeteo, porDia } from "../js/regras/serie.js";
 import { potenciaHora, potenciaMaximaDoDia, AVISO_PERIODO_PICO } from "../js/regras/potencia.js";
 import { classificarComponentes, energia } from "../js/regras/componentes.js";
 import { classificarAmplitude, amplitudesConsecutivas, CLASSE_MARE } from "../js/regras/mares.js";
-import { segurancaDoDia, podeRecomendarBicosEMolhe, ESTADO_SEGURANCA } from "../js/regras/seguranca.js";
-import { normalizarAviso, SITUACAO_AVISOS } from "../js/fontes/ipma-avisos.js";
 import { getSunAndMoon } from "../js/fontes/suncalc.js";
 import { validateTides } from "../js/fontes/mares-locais.js";
-import { MARINE_FIXTURE, IPMA_WARNING_FIXTURE, TIDE_FIXTURE } from "./dados-teste.js";
+import { MARINE_FIXTURE, TIDE_FIXTURE } from "./dados-teste.js";
 
 const config = JSON.parse(readFileSync(new URL("../config.json", import.meta.url), "utf8"));
 const COEF = config.potenciaOndas.coeficiente;
@@ -136,63 +134,6 @@ test("amplitudes consecutivas da tabela de teste", () => {
   const { events } = validateTides(TIDE_FIXTURE);
   const a = amplitudesConsecutivas(events);
   assert.deepEqual(a.map(x => Math.round(x.metros * 100) / 100), [2.4, 2.5]);
-});
-
-// ---------- Segurança (regra 1) ----------
-
-const avisosOk = (dados, situacao = SITUACAO_AVISOS.COM_AVISOS) =>
-  ({ ok: true, situacao, data: dados.map(normalizarAviso), error: null });
-
-test("aviso amarelo bloqueia bicos e molhe no dia inteiro", () => {
-  const r = avisosOk(IPMA_WARNING_FIXTURE.filter(a => a.idAreaAviso === "FAR" && a.awarenessTypeName === "Agitação Marítima"));
-  const s = segurancaDoDia(r, "2026-10-04", 0, { nivelMinimo: "amarelo", alcanceDias: 3 });
-  assert.equal(s.estado, ESTADO_SEGURANCA.BLOQUEADO);
-  assert.equal(podeRecomendarBicosEMolhe(s), false);
-  // O aviso verde de 05/10 não bloqueia.
-  const s5 = segurancaDoDia(r, "2026-10-05", 1);
-  assert.equal(s5.estado, ESTADO_SEGURANCA.LIVRE);
-  assert.equal(podeRecomendarBicosEMolhe(s5), true);
-});
-
-test("aviso que só toca o dia num minuto (hora local) bloqueia o dia inteiro", () => {
-  // 23:30–23:50 UTC de 04/10 = 00:30–00:50 de 05/10 em Lisboa.
-  const r = avisosOk([{ ...IPMA_WARNING_FIXTURE[0], startTime: "2026-10-04T23:30:00", endTime: "2026-10-04T23:50:00" }]);
-  assert.equal(segurancaDoDia(r, "2026-10-05", 1).estado, ESTADO_SEGURANCA.BLOQUEADO);
-  assert.equal(segurancaDoDia(r, "2026-10-04", 0).estado, ESTADO_SEGURANCA.LIVRE);
-});
-
-test("laranja e vermelho também bloqueiam", () => {
-  for (const nivel of ["orange", "red"]) {
-    const r = avisosOk([{ ...IPMA_WARNING_FIXTURE[0], awarenessLevelID: nivel }]);
-    assert.equal(segurancaDoDia(r, "2026-10-04", 0).estado, ESTADO_SEGURANCA.BLOQUEADO, nivel);
-  }
-});
-
-test("IPMA em falha, formato inválido ou aviso ilegível → segurança por verificar", () => {
-  for (const situacao of [SITUACAO_AVISOS.FALHA_PEDIDO, SITUACAO_AVISOS.FORMATO_INVALIDO, SITUACAO_AVISOS.AVISO_ILEGIVEL]) {
-    const s = segurancaDoDia({ ok: false, situacao, data: null, error: "x" }, "2026-10-04", 0);
-    assert.equal(s.estado, ESTADO_SEGURANCA.POR_VERIFICAR, situacao);
-    assert.equal(podeRecomendarBicosEMolhe(s), false);
-  }
-  assert.equal(segurancaDoDia(undefined, "2026-10-04", 0).estado, ESTADO_SEGURANCA.POR_VERIFICAR);
-});
-
-test("lista vazia confirmada → sem aviso; para lá do alcance → aviso ainda não emitido", () => {
-  const vazio = avisosOk([], SITUACAO_AVISOS.SEM_AVISOS);
-  assert.equal(segurancaDoDia(vazio, "2026-10-06", 2, { alcanceDias: 3 }).estado, ESTADO_SEGURANCA.LIVRE);
-  const s = segurancaDoDia(vazio, "2026-10-07", 3, { alcanceDias: 3 });
-  assert.equal(s.estado, ESTADO_SEGURANCA.NAO_EMITIDO);
-  assert.equal(podeRecomendarBicosEMolhe(s), false);
-});
-
-test("aviso no dia da mudança de hora (25/10, 25 horas)", () => {
-  // 23:30 UTC de 25/10 = 23:30 WET de 25/10 (já sem hora de Verão).
-  const r = avisosOk([{ ...IPMA_WARNING_FIXTURE[0], startTime: "2026-10-25T23:30:00", endTime: "2026-10-26T06:00:00" }]);
-  assert.equal(segurancaDoDia(r, "2026-10-25", 0).estado, ESTADO_SEGURANCA.BLOQUEADO);
-  // 23:30 UTC de 24/10 = 00:30 WEST de 25/10.
-  const r2 = avisosOk([{ ...IPMA_WARNING_FIXTURE[0], startTime: "2026-10-24T23:30:00", endTime: "2026-10-24T23:45:00" }]);
-  assert.equal(segurancaDoDia(r2, "2026-10-24", 0).estado, ESTADO_SEGURANCA.LIVRE);
-  assert.equal(segurancaDoDia(r2, "2026-10-25", 1).estado, ESTADO_SEGURANCA.BLOQUEADO);
 });
 
 // ---------- SunCalc (vendor) ----------

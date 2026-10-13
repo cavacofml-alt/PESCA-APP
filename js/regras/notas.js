@@ -4,7 +4,7 @@
 // não foi obtido → nota n.d. (o limite podia aplicar-se). Limites sobrepõem-se à soma.
 import { CLASSE_MARE } from "./mares.js";
 
-export const ESTADO_NOTA = Object.freeze({ OK: "ok", ND: "n.d.", DESACONSELHADO: "desaconselhado" });
+export const ESTADO_NOTA = Object.freeze({ OK: "ok", ND: "n.d." });
 
 function limitar(v, min, max) { return Math.min(max, Math.max(min, v)); }
 
@@ -68,7 +68,6 @@ export function notaDouradaRia(f, cfgPontuacao) {
 
 // Dourada no molhe: base 3; limite obrigatório da regra 11 (P ≥ 1,5 ou água turva → 1).
 export function notaDouradaMolhe(f, cfgPontuacao, cfgMar) {
-  if (!f.segurancaLivre) return resultado(ESTADO_NOTA.DESACONSELHADO, { motivo: f.motivoSeguranca });
   const pesos = cfgPontuacao.douradaMolhe;
   const lim = cfgPontuacao.limitesObrigatorios;
   const s = somar({ descricao: "base", valor: pesos.base }, fatoresDourada(f, pesos), cfgPontuacao);
@@ -83,8 +82,7 @@ export function notaDouradaMolhe(f, cfgPontuacao, cfgMar) {
 }
 
 // Robalo no mar. tipo: "praia" (Faro, Ancão, Almargem — limo força 1) ou "molhe".
-export function notaRobalo(f, cfgPontuacao, cfgMar, { tipo = "praia", exigeSeguranca = false } = {}) {
-  if (exigeSeguranca && !f.segurancaLivre) return resultado(ESTADO_NOTA.DESACONSELHADO, { motivo: f.motivoSeguranca });
+export function notaRobalo(f, cfgPontuacao, cfgMar, { tipo = "praia" } = {}) {
   const pesos = cfgPontuacao.robaloMar;
   const lim = cfgPontuacao.limitesObrigatorios;
   const p = f.potenciaMax;
@@ -118,7 +116,7 @@ export function notaRobalo(f, cfgPontuacao, cfgMar, { tipo = "praia", exigeSegur
 }
 
 // Melhores dias: nota máxima do dia; desempate por alinhamento, depois nota da outra espécie,
-// depois o dia mais próximo. Notas n.d./desaconselhado contam como ausentes (ficam no fim).
+// depois o dia mais próximo. Notas n.d. contam como ausentes (ficam no fim).
 export function ordenarMelhoresDias(dias) {
   const chave = d => {
     const r = d.melhorRobalo ?? -Infinity;

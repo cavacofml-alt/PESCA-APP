@@ -1,11 +1,11 @@
-// Análise por dia: junta as regras pela prioridade Segurança > Limo > Marés > Potência >
-// Pressão > Temperatura. Função pura: recebe os dados já obtidos e devolve o resultado.
+// Análise por dia: junta as regras pela prioridade Limo > Marés > Potência > Pressão >
+// Temperatura. (A regra de segurança foi retirada por decisão do utilizador, 13/10/2026.)
+// Função pura: recebe os dados já obtidos e devolve o resultado.
 //
 // entrada = {
 //   dias: ["AAAA-MM-DD", ...]          dias civis de Lisboa a analisar (índice 0 = hoje)
 //   pontos: { faroMar, faroTerra, quarteiraMar, quarteiraTerra }   resultados das fontes
 //           ({ ok, data } do Open-Meteo); série completa, com os dias anteriores
-//   avisos: resultado de getWarnings
 //   mares: eventos validados (validateTides) ou null se a tabela não foi obtida
 //   sol: (dia, ponto) => { nascer: ms|null, por: ms|null }   (SunCalc, pelo chamador)
 //   config
@@ -15,7 +15,6 @@ import { potenciaMaximaDoDia } from "./potencia.js";
 import { limoDoDia } from "./limo.js";
 import { ladosDoDia } from "./molhe.js";
 import { amplitudeDoDia, repontosDoDia, CLASSE_MARE } from "./mares.js";
-import { segurancaDoDia, podeRecomendarBicosEMolhe } from "./seguranca.js";
 import { pressaoDoDia } from "./pressao.js";
 import { aguaDoDia } from "./agua.js";
 import { alinhamentosDoDia } from "./alinhamento.js";
@@ -40,14 +39,10 @@ function analisarPonto(p, dia) {
   return { doDia, todas: p.horas };
 }
 
-export function analisarDias({ dias, pontos, avisos, mares, sol, config }) {
+export function analisarDias({ dias, pontos, mares, sol, config }) {
   const P = prepararPontos(pontos);
   const cfgMar = cfgMarDe(config);
-  const bloqueaveis = new Set(config.seguranca.bloquearPesqueiros);
   const resultado = dias.map((dia, indice) => {
-    const seguranca = segurancaDoDia(avisos, dia, indice, {
-      nivelMinimo: config.seguranca.nivelMinimo, alcanceDias: config.seguranca.alcanceAvisosDias });
-    const segurancaLivre = podeRecomendarBicosEMolhe(seguranca);
     const amplitude = amplitudeDoDia(mares, dia, config.mares);
     const repontos = repontosDoDia(mares, dia);
 
@@ -65,7 +60,6 @@ export function analisarDias({ dias, pontos, avisos, mares, sol, config }) {
       const mar = pq.mar ? calcularPonto(pq.mar) : null;
       const terra = calcularPonto(pq.terra);
       const agua = pq.agua ? calcularPonto(pq.agua) : null;
-      const exigeSeguranca = bloqueaveis.has(id);
 
       const potencia = mar ? potenciaMaximaDoDia(mar.doDia, cfgMar.coeficiente) : null;
       const limo = mar ? limoDoDia(mar.doDia, terra?.doDia ?? [], cfgMar) : null;
@@ -78,7 +72,6 @@ export function analisarDias({ dias, pontos, avisos, mares, sol, config }) {
       const lados = pq.tipo === "molhe" && mar ? ladosDoDia(mar.doDia, terra?.doDia ?? [], cfgMar) : null;
 
       const fatores = {
-        segurancaLivre, motivoSeguranca: `${seguranca.estado}${seguranca.motivo ? ` (${seguranca.motivo})` : ""}`,
         classeMare: amplitude.classe, motivoMare: amplitude.motivo,
         alinhado: alinhamento.alinhado, motivoAlinhamento: alinhamento.motivo,
         descidaPressao: pressao?.descida.activo ?? null, motivoPressao: pressao?.descida.motivo ?? (pressao ? null : "pressão não obtida"),
@@ -94,12 +87,10 @@ export function analisarDias({ dias, pontos, avisos, mares, sol, config }) {
         notas.dourada = pq.tipo === "molhe" ? notaDouradaMolhe(fatores, config.pontuacao, config.mar) : notaDouradaRia(fatores, config.pontuacao);
       }
       if (pq.especies.includes("robalo")) {
-        notas.robalo = notaRobalo(fatores, config.pontuacao, config.mar, { tipo: pq.tipo, exigeSeguranca });
+        notas.robalo = notaRobalo(fatores, config.pontuacao, config.mar, { tipo: pq.tipo });
       }
 
       const avisosTexto = [];
-      if (!exigeSeguranca && !segurancaLivre) avisosTexto.push(`${seguranca.estado}: pesqueiro permitido, com cautela`);
-      if (exigeSeguranca && !segurancaLivre) avisosTexto.push(`desaconselhado: ${seguranca.estado}`);
       if (pq.tipo === "ria" && amplitude.classe === CLASSE_MARE.VIVA) {
         avisosTexto.push("Marés vivas: Ria inútil para dourada; apostar no robalo no mar/bicos nos repontos, se não houver limo.");
       }
@@ -118,7 +109,7 @@ export function analisarDias({ dias, pontos, avisos, mares, sol, config }) {
       return v.length ? Math.max(...v) : null;
     };
     const alinhado = Object.values(pesqueiros).some(p => p.alinhamento.alinhado === true);
-    return { dia, indice, seguranca, amplitude, repontos, alinhado, pesqueiros,
+    return { dia, indice, amplitude, repontos, alinhado, pesqueiros,
       melhorRobalo: melhor("robalo"), melhorDourada: melhor("dourada") };
   });
   return { dias: resultado, melhoresDias: ordenarMelhoresDias(resultado).map(d => d.dia) };

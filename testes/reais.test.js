@@ -3,10 +3,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { validateTides } from "../js/fontes/mares-locais.js";
-import { getWarnings, SITUACAO_AVISOS } from "../js/fontes/ipma-avisos.js";
 import { getForecast } from "../js/fontes/open-meteo-forecast.js";
 import { amplitudeDoDia, repontosDoDia, CLASSE_MARE } from "../js/regras/mares.js";
-import { segurancaDoDia, ESTADO_SEGURANCA } from "../js/regras/seguranca.js";
 import { horasOpenMeteo } from "../js/regras/serie.js";
 
 const ler = rel => JSON.parse(readFileSync(new URL(rel, import.meta.url), "utf8"));
@@ -62,15 +60,6 @@ test("25/10 (25 horas): repontos do dia em hora de Lisboa, incluindo a hora repe
 
 const fakeFetch = rel => async () => ({ ok: true, status: 200, json: async () => ler(rel) });
 const NOW = new Date("2026-10-13T20:30:11Z");
-
-test("avisos reais: FAR com Agitação Marítima verde → sem aviso amarelo, segurança livre", async () => {
-  const r = await getWarnings({ url: config.fontes.ipmaWarnings, area: "FAR", tipo: "Agitação Marítima",
-    fetchImpl: fakeFetch("./reais/ipma_warnings_20261013_2130.json"), now: NOW });
-  assert.equal(r.ok, true);
-  assert.equal(r.situacao, SITUACAO_AVISOS.COM_AVISOS);
-  assert.deepEqual(r.data.map(a => [a.nivel, a.inicio, a.fim]), [["verde", "2026-10-13T10:35:00.000Z", "2026-10-16T10:00:00.000Z"]]);
-  assert.equal(segurancaDoDia(r, "2026-10-13", 0).estado, ESTADO_SEGURANCA.LIVRE);
-});
 
 test("Open-Meteo Forecast real: unixtime, nós, 336 horas e 24 horas em 13/10", async () => {
   for (const f of ["faro", "quarteira"]) {
