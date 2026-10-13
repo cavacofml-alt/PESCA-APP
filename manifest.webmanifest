@@ -1,0 +1,11 @@
+{
+  "name": "Surfcasting Algarve",
+  "short_name": "Surfcasting",
+  "lang": "pt-PT",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f8fa",
+  "theme_color": "#0b3b53",
+  "description": "Condições de surfcasting no Algarve, com regras determinísticas."
+}
