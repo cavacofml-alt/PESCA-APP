@@ -18,7 +18,9 @@ export async function getSeaForecastDay(day, { baseUrl, fetchImpl = fetch, now =
     if (json.forecastDate !== esperado) {
       throw new Error(`não obtido (desactualizado): forecastDate ${json.forecastDate ?? "em falta"}, esperado ${esperado}`);
     }
-    const faro = json.data.filter(row => Number(row.globalIdLocal) === GLOBAL_ID_FARO);
+    const faro = json.data.filter(row => Number(row?.globalIdLocal) === GLOBAL_ID_FARO);
+    if (faro.length === 0) throw new Error(`não obtido: resposta sem registo de Faro (${GLOBAL_ID_FARO})`);
+    if (faro.length > 1) throw new Error(`inválido: ${faro.length} registos de Faro (${GLOBAL_ID_FARO}), esperado 1`);
     return sourceResult({ source, readAt, data: faro });
   } catch (error) {
     return sourceResult({ source, readAt, error });

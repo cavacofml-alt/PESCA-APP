@@ -109,6 +109,40 @@ test("Avisos: nível desconhecido ou hora ilegível → inválido", () => {
   assert.equal(b.status, "inválido");
 });
 
+const pedirAvisos = body => getWarnings({ url: fontes.ipmaWarnings, area: config.seguranca.areaIPMA,
+  tipo: config.seguranca.tipoAviso, fetchImpl: fakeFetch(body), now: NOW });
+
+test("Avisos: lista vazia com formato válido = sem avisos confirmado", async () => {
+  const r = await pedirAvisos([]);
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.data, []);
+});
+
+test("Avisos: campo renomeado num registo qualquer → não obtido, nunca lista vazia", async () => {
+  // Se o IPMA renomear idAreaAviso, o filtro deixaria de encontrar o aviso amarelo de FAR.
+  const renomeado = IPMA_WARNING_FIXTURE.map(({ idAreaAviso, ...resto }) => ({ ...resto, areaId: idAreaAviso }));
+  const r = await pedirAvisos(renomeado);
+  assert.equal(r.ok, false);
+  assert.match(r.error, /Formato de avisos inesperado: registo 0 sem idAreaAviso/);
+  // Basta um registo malformado, mesmo de outra área.
+  const r2 = await pedirAvisos([...IPMA_WARNING_FIXTURE, { idAreaAviso: "LSB" }]);
+  assert.equal(r2.ok, false);
+});
+
+test("Avisos: aviso relevante ilegível → segurança por verificar (ok=false), dados mantidos", async () => {
+  const r = await pedirAvisos([{ ...IPMA_WARNING_FIXTURE[0], awarenessLevelID: "2" }, ...IPMA_WARNING_FIXTURE.slice(1)]);
+  assert.equal(r.ok, false);
+  assert.match(r.error, /^segurança por verificar/);
+  assert.equal(r.data.length, 2);
+  assert.equal(r.data[0].status, "inválido");
+});
+
+test("Avisos: aviso ilegível de outra área não afecta FAR", async () => {
+  const outra = { ...IPMA_WARNING_FIXTURE[3], awarenessLevelID: "roxo" };
+  const r = await pedirAvisos([...IPMA_WARNING_FIXTURE.slice(0, 3), outra]);
+  assert.equal(r.ok, true, r.error);
+});
+
 test("Avisos: resposta que não é array → não obtido", async () => {
   const r = await getWarnings({ url: fontes.ipmaWarnings, area: "FAR", tipo: "Agitação Marítima",
     fetchImpl: fakeFetch({ erro: true }), now: NOW });
@@ -133,6 +167,23 @@ test("Estado do mar: forecastDate diferente do dia pedido → desactualizado", a
     fetchImpl: fakeFetch(ipmaMarFixture("2026-10-07")), now: NOW });
   assert.equal(r.ok, false);
   assert.match(r.error, /desactualizado/);
+});
+
+test("Estado do mar: sem registo de Faro → não obtido", async () => {
+  const pedir = body => getSeaForecastDay(0, { baseUrl: fontes.ipmaSeaForecastBase, fetchImpl: fakeFetch(body), now: NOW });
+  const vazio = { ...ipmaMarFixture("2026-10-08"), data: [] };
+  const soOutros = ipmaMarFixture("2026-10-08");
+  soOutros.data = soOutros.data.filter(r => r.globalIdLocal !== 1080526);
+  for (const body of [vazio, soOutros]) {
+    const r = await pedir(body);
+    assert.equal(r.ok, false);
+    assert.match(r.error, /sem registo de Faro/);
+  }
+  const duplicado = ipmaMarFixture("2026-10-08");
+  duplicado.data.push({ ...duplicado.data[0] });
+  const r = await pedir(duplicado);
+  assert.equal(r.ok, false);
+  assert.match(r.error, /2 registos de Faro/);
 });
 
 test("Estado do mar: forecastDate em falta → desactualizado", async () => {
