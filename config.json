@@ -129,10 +129,25 @@
     "quarteiraTerra": {
       "latitude": 37.07,
       "longitude": -8.1
+    },
+    "fizkFaroMarPoente": {
+      "latitude": 37.0133,
+      "longitude": -8.00567,
+      "origem": "Fizk, ponto 3817 «Faro - Mar Poente»"
+    },
+    "fizkAncao": {
+      "latitude": 37.0322,
+      "longitude": -8.03852,
+      "origem": "Fizk, ponto 3619 «Ancão»"
+    },
+    "fizkForteNovo": {
+      "latitude": 37.062,
+      "longitude": -8.09016,
+      "origem": "Fizk, ponto 3877 «Forte Novo» (o mais perto do Almargem)"
     }
   },
   "pesqueirosProvisorio": true,
-  "pesqueirosNota": "Correspondência pesqueiro → pontos de dados por confirmar pelo utilizador (decisão C).",
+  "pesqueirosNota": "Decisão C (14/10/2026): pontos da Fizk nas praias. Ria e molhe sem ponto Fizk: ficam os pontos anteriores até o utilizador dar coordenadas.",
   "pesqueiros": {
     "ria": {
       "nome": "Ria Formosa (interior, Faro)",
@@ -145,43 +160,23 @@
       "agua": "faroMar"
     },
     "praia_faro": {
-      "nome": "Praia de Faro (mar de fora)",
+      "nome": "Praia de Faro (mar de fora) e bicos das barras",
       "especies": [
         "robalo"
       ],
       "tipo": "praia",
-      "mar": "faroMar",
-      "terra": "faroTerra",
-      "agua": null
-    },
-    "bicos_faro": {
-      "nome": "Bicos das barras (Faro)",
-      "especies": [
-        "robalo"
-      ],
-      "tipo": "praia",
-      "mar": "faroMar",
-      "terra": "faroTerra",
+      "mar": "fizkFaroMarPoente",
+      "terra": "fizkFaroMarPoente",
       "agua": null
     },
     "ancao": {
-      "nome": "Praia do Ancão (mar de fora, Loulé)",
+      "nome": "Praia do Ancão (mar de fora) e bico da barra do Ancão",
       "especies": [
         "robalo"
       ],
       "tipo": "praia",
-      "mar": "faroMar",
-      "terra": "faroTerra",
-      "agua": null
-    },
-    "bico_ancao": {
-      "nome": "Bico da barra do Ancão",
-      "especies": [
-        "robalo"
-      ],
-      "tipo": "praia",
-      "mar": "faroMar",
-      "terra": "faroTerra",
+      "mar": "fizkAncao",
+      "terra": "fizkAncao",
       "agua": null
     },
     "almargem": {
@@ -190,8 +185,8 @@
         "robalo"
       ],
       "tipo": "praia",
-      "mar": "quarteiraMar",
-      "terra": "quarteiraTerra",
+      "mar": "fizkForteNovo",
+      "terra": "fizkForteNovo",
       "agua": null
     },
     "molhe_quarteira": {
