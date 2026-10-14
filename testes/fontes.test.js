@@ -69,6 +69,12 @@ test("Open-Meteo: falha HTTP não lança, devolve não obtido", async () => {
   assert.match(r.error, /HTTP 500/);
 });
 
+test("HTTP 429 (limite de pedidos) aparece explicado em português", async () => {
+  const r = await getForecast({ latitude: 1, longitude: 1, baseUrl: fontes.forecastBase, fetchImpl: fakeFetch(null, { status: 429 }), now: NOW });
+  assert.equal(r.ok, false);
+  assert.match(r.error, /Limite de pedidos da fonte atingido/);
+});
+
 test("Erros de rede e JSON aparecem em português", async () => {
   const semRede = async () => { throw new TypeError("Failed to fetch"); };
   const r = await getForecast({ latitude: 1, longitude: 1, baseUrl: fontes.forecastBase, fetchImpl: semRede, now: NOW });
