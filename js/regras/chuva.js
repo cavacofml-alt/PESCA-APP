@@ -26,6 +26,8 @@ export function aguaTurvaDoDia(todasAsHoras, dia, { limiar48hMm = 20, janelaHora
   }
   const chuva48hMm = roundTo(soma, 1);
   if (soma >= limiar48hMm) return { turva: true, chuva48hMm, horasEmFalta: emFalta };
+  if (emFalta === janelaHoras) return { turva: null, chuva48hMm: null, horasEmFalta: emFalta,
+    motivo: "chuva das 48 h anteriores não obtida" };
   if (emFalta > 0) return { turva: null, chuva48hMm, horasEmFalta: emFalta,
     motivo: `chuva das 48 h anteriores incompleta (${emFalta} h sem valor; ${chuva48hMm} mm nas restantes)` };
   return { turva: false, chuva48hMm, horasEmFalta: 0 };
