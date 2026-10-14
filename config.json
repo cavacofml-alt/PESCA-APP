@@ -150,20 +150,25 @@
       "longitude": -8.09016,
       "origem": "app de referência, ponto 3877 «Forte Novo» (o mais perto do Almargem)"
     },
+    "molheQuarteira": {
+      "latitude": 37.066552,
+      "longitude": -8.11001,
+      "origem": "Farolim do molhe este do porto de pesca de Quarteira (posição do objecto na fotografia do Wikimedia Commons «17-05-2017 Farol de Quarteira Molhe Este»); confirmado pelo utilizador a 14/10/2026"
+    },
     "vilamouraPraia": {
       "latitude": 37.0719,
       "longitude": -8.11896,
-      "origem": "app de referência, ponto 3894 «Vilamoura» (favorito; praia a nascente da marina, não no molhe). Ainda não usado."
+      "origem": "app de referência, ponto 3894 «Vilamoura» (favorito; praia a nascente da marina, não no molhe)"
     },
     "falesiaAlfamar": {
       "latitude": 37.0834,
       "longitude": -8.15912,
-      "origem": "app de referência, ponto 3922 «Falésia Alfamar» (favorito). Ainda não usado."
+      "origem": "app de referência, ponto 3922 «Falésia Alfamar» (favorito)"
     },
     "vilamouraMolheOeste": {
       "latitude": 37.0696033,
       "longitude": -8.1243409,
-      "origem": "Utilizador, 14/10/2026: Google Maps «Farol de Vilamoura Oeste» (molhe da marina de Vilamoura). Ainda não usado por nenhum pesqueiro."
+      "origem": "Utilizador, 14/10/2026: Google Maps «Farol de Vilamoura Oeste» (molhe oeste da marina de Vilamoura)."
     }
   },
   "pesqueirosProvisorio": true,
@@ -233,12 +238,90 @@
         "dourada"
       ],
       "tipo": "molhe",
-      "mar": "quarteiraMar",
-      "terra": "quarteiraTerra",
-      "agua": "quarteiraMar",
+      "mar": "molheQuarteira",
+      "terra": "molheQuarteira",
+      "agua": "molheQuarteira",
       "foto": {"ficheiro": "assets/fotos/molhe_quarteira.jpg", "autor": "Kolforn", "licenca": "CC BY-SA 4.0", "pagina": "https://commons.wikimedia.org/wiki/File:17-05-2017_Farol_de_Quarteira_Molhe_Este.JPG"},
       "camaras": [{"nome": "Praia de Quarteira Oeste (MEO)", "url": "https://beachcam.meo.pt/livecams/praia-quarteira-oeste/"}, {"nome": "Vilamoura (MEO)", "url": "https://beachcam.meo.pt/livecams/vilamoura/"}, {"nome": "Quarteira, Praia do Almargem (Windy)", "url": "https://www.windy.com/webcams/1647793943"}, {"nome": "Praia da Rocha Baixinha (Windy)", "url": "https://www.windy.com/webcams/1444762905"}],
       "estacoes": [{"nome": "Quarteira, Dom José Beach Hotel", "url": "https://www.windguru.cz/station/3370"}, {"nome": "Vilamoura, Portugal Yacht Charters", "url": "https://www.windguru.cz/station/15198"}]
+    },
+    "vilamoura": {
+      "nome": "Praia de Vilamoura (mar de fora, a nascente da marina)",
+      "nomeCurto": "Praia de Vilamoura",
+      "especies": [
+        "robalo"
+      ],
+      "tipo": "praia",
+      "mar": "vilamouraPraia",
+      "terra": "vilamouraPraia",
+      "agua": null,
+      "camaras": [
+        {
+          "nome": "Vilamoura (MEO)",
+          "url": "https://beachcam.meo.pt/livecams/vilamoura/"
+        },
+        {
+          "nome": "Praia da Rocha Baixinha (Windy)",
+          "url": "https://www.windy.com/webcams/1444762905"
+        }
+      ],
+      "estacoes": [
+        {
+          "nome": "Vilamoura, Portugal Yacht Charters",
+          "url": "https://www.windguru.cz/station/15198"
+        }
+      ]
+    },
+    "molhe_vilamoura": {
+      "nome": "Molhe oeste da marina de Vilamoura",
+      "nomeCurto": "Molhe de Vilamoura",
+      "especies": [
+        "robalo",
+        "dourada"
+      ],
+      "tipo": "molhe",
+      "mar": "vilamouraMolheOeste",
+      "terra": "vilamouraMolheOeste",
+      "agua": "vilamouraMolheOeste",
+      "camaras": [
+        {
+          "nome": "Vilamoura (MEO)",
+          "url": "https://beachcam.meo.pt/livecams/vilamoura/"
+        },
+        {
+          "nome": "Praia da Rocha Baixinha (Windy)",
+          "url": "https://www.windy.com/webcams/1444762905"
+        }
+      ],
+      "estacoes": [
+        {
+          "nome": "Vilamoura, Portugal Yacht Charters",
+          "url": "https://www.windguru.cz/station/15198"
+        }
+      ]
+    },
+    "falesia": {
+      "nome": "Praia da Falésia, Alfamar (mar de fora)",
+      "nomeCurto": "Falésia Alfamar",
+      "especies": [
+        "robalo"
+      ],
+      "tipo": "praia",
+      "mar": "falesiaAlfamar",
+      "terra": "falesiaAlfamar",
+      "agua": null,
+      "camaras": [
+        {
+          "nome": "Praia da Rocha Baixinha (Windy)",
+          "url": "https://www.windy.com/webcams/1444762905"
+        }
+      ],
+      "estacoes": [
+        {
+          "nome": "Vilamoura, Portugal Yacht Charters",
+          "url": "https://www.windguru.cz/station/15198"
+        }
+      ]
     }
   },
   "periodos": [
