@@ -3,6 +3,7 @@ export async function fetchJson(url, { timeoutMs = 12000, fetchImpl = fetch } = 
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetchImpl(url, { signal: controller.signal, headers: { "Accept": "application/json" } });
+    if (response.status === 429) throw new Error("Limite de pedidos da fonte atingido (HTTP 429); tentar mais tarde");
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
   } catch (error) {

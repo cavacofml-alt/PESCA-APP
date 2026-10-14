@@ -11,7 +11,6 @@ Os módulos ES e `fetch()` não funcionam de forma fiável a partir de `file://`
 - Open-Meteo Marine: consulta horária marinha.
 - Open-Meteo Forecast: vento, rajadas, pressão e precipitação. **Não pede nascer/pôr do Sol.**
 - Open-Meteo (Marine e Forecast): pedidos com `timeformat=unixtime` (instantes absolutos; a hora local repete-se a 25/10/2026). Consulta Faro e Quarteira.
-- IPMA avisos: filtra `idAreaAviso=FAR` e `Agitação Marítima`; níveis `green/yellow/orange/red` mapeados num único sítio (`NIVEIS_AVISO`); `startTime`/`endTime` lidos como UTC.
 - IPMA estado do mar: consulta `oceanography/daily/hp-daily-sea-forecast-day{0,1,2}.json`, filtra `globalIdLocal=1080526` e recusa ficheiros cujo `forecastDate` não seja o dia pedido (`não obtido (desactualizado)`).
 - Marés locais: valida formato, ordem, alternância PM/BM e intervalos de 30 a 480 minutos. `mares/2026.json` está vazio até chegar a tabela oficial.
 - SunCalc: adaptador preparado; colocar uma distribuição local licenciada em `vendor/suncalc.js` e carregá-la antes de usar o adaptador. A aplicação não consulta outra fonte solar.
@@ -34,8 +33,32 @@ Não há dependências a instalar (o `package.json` só indica que os `.js` são
 
 ## Limitações desta entrega
 
-- O IPMA pode alterar nomes/estrutura de campos. A consulta de avisos valida os campos de todos os registos e devolve uma `situacao` (`sem avisos`, `com avisos`, `aviso ilegível`, `formato inválido`, `pedido falhou`); só as duas primeiras confirmam o estado de segurança. A interpretação dos avisos ainda não foi confirmada com respostas reais.
-- **Limitação conhecida — código da área `FAR`:** se o IPMA deixar de usar `FAR`, a resposta continua válida e a consulta devolve `sem avisos`. Não se exige que `FAR` esteja sempre presente porque a documentação do IPMA é ambígua: o exemplo de `warnings_www.json` inclui registos `green`, mas a descrição diz que só há avisos amarelos, laranja e vermelhos. Rever quando houver uma resposta real (num dia sem avisos, verificar se aparece `FAR` com `green`) ou a lista oficial de identificadores de áreas.
+- Os avisos do IPMA não são consultados: a regra de segurança foi retirada por decisão do utilizador (13/10/2026).
 - O `sw.js` serve a shell a partir da cache; `config.json` e marés (`*.json`) vão sempre primeiro à rede e só usam a cópia em cache sem ligação. Ao alterar a shell, subir a versão da cache em `sw.js`.
-- O JSON de marés tem deliberadamente zero eventos até ser fornecida a tabela oficial.
 - O carregamento da biblioteca SunCalc local deve ser concluído antes de publicar.
+
+## Tabela de marés
+
+`mares/2026.json` foi gerado a partir da tabela oficial do Instituto Hidrográfico (Tabela de Marés 2026, Vol. I, Porto de Faro-Olhão, págs. 2-121 a 2-124). Horas em TU (UTC); alturas referidas ao zero hidrográfico (2,00 m abaixo do nível médio, Cascais 1938); resolução de 0,1 m. A tabela não indica PM/BM: o tipo é deduzido pela alternância das alturas e validado.
+
+Para gerar o ano seguinte, com o PDF do IH e o `pdftotext` (poppler) instalado:
+
+```
+for p in <páginas de Faro-Olhão>; do pdftotext -f $p -l $p -bbox Tabela.pdf pasta/p$p.html; done
+python3 ferramentas/mares_ih.py pasta mares/AAAA.json $(sha256sum Tabela.pdf | cut -d' ' -f1)
+```
+
+O script recusa escrever se alguma validação falhar (dias seguidos, dia da semana impresso, alternância, intervalos, 365/366 dias). Ajustar `PAGINAS` e o ano no script.
+
+## Motor de regras (Fase 3)
+
+`js/regras/` — funções puras, sem rede nem armazenamento. `analisarDias()` (em `analise.js`) recebe os dados já obtidos (Open-Meteo por ponto, tabela de marés, nascer/pôr do Sol do SunCalc) e devolve, por dia e por pesqueiro: notas de robalo e dourada **por período** (madrugada, manhã, tarde, noite) com as parcelas, potência máxima e hora, limo, lado do molhe, pressão, água, chuva, alinhamentos e avisos. Dado em falta → `n.d.` com o motivo; nunca um valor por defeito.
+
+Os limiares provisórios estão no `config.json` (`mar`, `pressao`, `temperaturaAgua`, `chuva`, `anomalias`, `alinhamento`, `periodos`, `pontuacao`). Os pesqueiros e os pontos de dados estão em `pesqueiros` e `locais`.
+
+Para ver o resultado sem interface:
+
+```
+node ferramentas/analisar.mjs --rede            # vai buscar os dados agora (guarda em recolha/<dia>/apis/)
+node ferramentas/analisar.mjs recolha/2026-10-14/apis 2026-10-14 7   # com ficheiros guardados
+```

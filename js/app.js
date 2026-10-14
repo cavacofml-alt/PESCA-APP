@@ -1,9 +1,9 @@
 import { getMarine } from "./fontes/open-meteo-marine.js";
 import { getForecast } from "./fontes/open-meteo-forecast.js";
-import { getWarnings } from "./fontes/ipma-avisos.js";
 import { getSeaForecastDay } from "./fontes/ipma-mar.js";
 import { loadLocalTides } from "./fontes/mares-locais.js";
 import { getSunAndMoon } from "./fontes/suncalc.js";
+import { pontosNecessarios } from "./pontos.js";
 
 const $ = selector => document.querySelector(selector);
 const resultRoot = $("#results");
@@ -24,24 +24,18 @@ async function run() {
     return;
   }
   const config = await cfgResponse.json();
-  const { fontes, locais, seguranca } = config;
-  const tasks = await Promise.all([
-    getMarine({ ...locais.faroMar, baseUrl: fontes.marineBase }),
-    getForecast({ ...locais.faroTerra, baseUrl: fontes.forecastBase }),
-    getMarine({ ...locais.quarteiraMar, baseUrl: fontes.marineBase }),
-    getForecast({ ...locais.quarteiraTerra, baseUrl: fontes.forecastBase }),
-    getWarnings({ url: fontes.ipmaWarnings, area: seguranca.areaIPMA, tipo: seguranca.tipoAviso }),
-    getSeaForecastDay(0, { baseUrl: fontes.ipmaSeaForecastBase }),
-    getSeaForecastDay(1, { baseUrl: fontes.ipmaSeaForecastBase }),
-    getSeaForecastDay(2, { baseUrl: fontes.ipmaSeaForecastBase }),
-    loadLocalTides({ url: "./mares/2026.json",
+  const { fontes, locais } = config;
+  const pontos = pontosNecessarios(config);
+  const pedidos = [
+    ...pontos.mar.map(k => [`Open-Meteo Marine — ${k}`, getMarine({ ...locais[k], baseUrl: fontes.marineBase })]),
+    ...pontos.terra.map(k => [`Open-Meteo Forecast — ${k}`, getForecast({ ...locais[k], baseUrl: fontes.forecastBase })]),
+    ...[0, 1, 2].map(d => [`IPMA — estado do mar dia ${d}`, getSeaForecastDay(d, { baseUrl: fontes.ipmaSeaForecastBase })]),
+    ["Marés locais — Faro-Olhão", loadLocalTides({ url: "./mares/2026.json",
       minIntervalMinutes: config.mares.intervaloEventoMinutos.minimo,
-      maxIntervalMinutes: config.mares.intervaloEventoMinutos.maximo })
-  ]);
-  const labels = ["Open-Meteo Marine — Faro", "Open-Meteo Forecast — Faro",
-    "Open-Meteo Marine — Quarteira", "Open-Meteo Forecast — Quarteira", "IPMA — avisos",
-    "IPMA — estado do mar dia 0", "IPMA — estado do mar dia 1", "IPMA — estado do mar dia 2",
-    "Marés locais — Faro-Olhão"];
+      maxIntervalMinutes: config.mares.intervaloEventoMinutos.maximo })]
+  ];
+  const tasks = await Promise.all(pedidos.map(([, p]) => p));
+  const labels = pedidos.map(([nome]) => nome);
   resultRoot.innerHTML = tasks.map((r, i) => card(labels[i], r,
     r.ok && r.data ? `<details><summary>Ver metadados da resposta</summary><pre>${esc(JSON.stringify({
       fonte:r.source, leitura:r.readAt, tipo:"previsto", campos:Object.keys(r.data)

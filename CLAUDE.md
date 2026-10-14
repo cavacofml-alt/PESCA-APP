@@ -23,8 +23,10 @@ O utilizador é pescador experiente e exige rigor: verificar o significado de ca
 ## 2. Estado actual
 
 - **Fase 1 (arquitectura): aprovada.** Decisões na secção 6.
-- **Fase 2 (fontes de dados): entregue pelo ChatGPT** como `algarve-surfcasting-fase2.zip` (17 ficheiros). O utilizador vai fornecer o zip. **Tem erros conhecidos** (secção 7) que têm de ser corrigidos antes da Fase 3.
-- Fases 3–6 por fazer (secção 8).
+- **Fase 2 (fontes de dados): entregue pelo ChatGPT** e corrigida (secção 7) no PR #1, já integrado no `main`.
+- **Fase 3 (motor de regras): concluída** no ramo `claude/new-session-ywtpsk` (PR para revisão do ChatGPT). Tabela de marés oficial de 2026 convertida (`mares/2026.json`). Todas as decisões de regras tomadas (secções 5 e 6).
+- Fases 4–6 por fazer (secção 8). O repositório é **privado** (13/10/2026): o GitHub Pages grátis não serve; decidir o alojamento na Fase 4.
+- **Objectivo alargado (14/10/2026):** o utilizador quer uma app **como a app de referência** ([endereço retirado]), em português, melhorada e só para uso pessoal; **web app** (PWA) para **Android**. Ecrãs "iguais à app de referência" (cartões de favoritos com nota, mapa, meteograma hora a hora, curva de maré, comparador, diário…), mas com as regras e fontes deste projecto. Não copiar código, imagens, marca nem camadas pagas da app de referência; a pasta `recolha/` serve só de referência.
 
 Estrutura actual (Fase 2):
 
@@ -74,24 +76,26 @@ Para facilitar a revisão, manter os PR pequenos: uma fase ou um tema por PR.
 | # | Pesqueiro | Espécie | Notas |
 |---|---|---|---|
 | 1 | Ria Formosa (interior, Faro) | dourada | |
-| 2 | Praia de Faro (mar de fora) + bicos das barras | robalo | |
-| 3 | Praia do Ancão (mar de fora, Loulé) + bico da barra do Ancão | robalo | |
-| 4 | Praia do Almargem (mar de fora, Quarteira, Loulé) | robalo | O utilizador pesca só do lado do mar. **Não** mostrar avisos sobre a reserva natural. |
+| 2 | Praia de Faro (mar de fora) + bicos das barras | robalo | Ponto app de referência «Faro - Mar Poente» 37.0133, -8.00567 |
+| 3 | Praia do Ancão (mar de fora, Loulé) + bico da barra do Ancão | robalo | Ponto app de referência «Ancão» 37.0322, -8.03852 |
+| 4 | Praia do Almargem (mar de fora, Quarteira, Loulé) | robalo | Ponto app de referência «Forte Novo» 37.062, -8.09016 (a app de referência não tem Almargem). O utilizador pesca só do lado do mar. **Não** mostrar avisos sobre a reserva natural. |
 | 5 | Molhe de Quarteira | robalo e dourada | Lado **poente** (Vilamoura) ou **nascente** (praia de Quarteira) |
 
-Coordenadas (config): Faro mar 36.97,-7.98 · Faro terra 37.01,-7.93 · Quarteira mar 37.05,-8.10 · Quarteira terra 37.07,-8.10.
+Coordenadas (config, decisão C de 14/10/2026): **praias com os pontos da app de referência** (acima), o mesmo ponto para ondulação e vento. Ria e molhe não têm ponto na app de referência: ficam Faro terra 37.01,-7.93 (Ria; água de Faro mar 36.97,-7.98) e Quarteira mar 37.05,-8.10 / terra 37.07,-8.10 (molhe) até o utilizador dar coordenadas. Os bicos usam o ponto da sua praia (sem a regra de segurança, deixaram de ser pesqueiros separados).
 
 ---
 
 ## 5. Regras (especificação do utilizador)
 
-**Prioridade em conflito:** Segurança > Limo > Marés > Potência > Pressão > Temperatura.
+**Prioridade em conflito:** Limo > Marés > Potência > Pressão > Temperatura. (A segurança foi retirada da app: ver regra 1.)
 Valores marcados *provisório* não estão validados no terreno: aplicar, mas mostrar sempre como provisórios na interface.
 
-1. **Segurança** — aviso IPMA **amarelo ou superior** de *Agitação Marítima* (área `FAR`) → desaconselhar expressamente os bicos das barras (Faro e Ancão) e o molhe de Quarteira. Prevalece sobre tudo. Nunca recomendar o molhe nesse caso.
+1. **Segurança — RETIRADA por decisão do utilizador (13/10/2026).** A app não consulta avisos do IPMA nem desaconselha pesqueiros: a avaliação de segurança é do utilizador. Bicos e molhe têm nota como os outros pesqueiros. Não reintroduzir sem pedido expresso do utilizador.
 2. **Limo e mar mexido** — mar mexido = Hs ≥ 1,0 m **ou** potência ≥ 1,5 kW/m (*provisório*).
    - Faro, Ancão, Almargem: vento, ondulação de fundo ou vaga de vento de Sudeste/Levante **com mar mexido** = mar de fora impossível (limo) → robalo 1/5 nesses pesqueiros. Norte/Noroeste = mar limpo. Oeste/Sudoeste: avaliar pela intensidade e estado do mar, sem assumir limo.
-   - Molhe: vaga/ondulação de Sudeste → lado poente; de Oeste/Sudoeste → lado nascente. O lado segue a direcção da vaga/ondulação; o vento só decide quando não há vaga relevante. Avisar sempre que o lado abrigado pode acumular limo à deriva.
+   - Molhe: vaga/ondulação de Sudeste → lado poente; de Oeste/Sudoeste → lado nascente. O lado segue a direcção da vaga/ondulação; o vento só decide quando não há vaga relevante. Avisar sempre que o lado abrigado pode acumular limo à deriva. **Robalo no molhe com Sudeste e mar mexido: nota normal pela potência, para o lado poente, com o aviso de limo** (decisão 2b, 14/10/2026) — o limo não baixa a nota no molhe.
+   - **Mar de Sul [157,5°, 202,5°): «por confirmar»** (14/10/2026; a regra só fala de Oeste/Sudoeste e o utilizador vai confirmar no terreno). Molhe: lado «por confirmar». Praias (decisão c): robalo com P ≥ 1,5 kW/m «por confirmar» se todas as horas com P ≥ 1,5 do período tiverem onda dominante de Sul; basta uma fora do Sul para a base 4. «Mar de» = onda dominante (maior Hs² × T, Hs ≥ 0,2 m); o vento não conta. Faixa em `config.json` (`mar.sulPorConfirmarGraus`): retirar quando houver decisão. Não muda o limo.
+   - O limo só conta enquanto houver Sudeste com mar mexido; não persiste nos dias seguintes (decisão 4a, 14/10/2026). Vento a 0 nós não tem direcção e não conta como componente.
 3. **Vento e ondulação** — analisar sempre separadamente vento local, ondulação de fundo e vaga de vento. **Qualquer componente com período < 6 s é vaga de vento**, mesmo que a fonte a classifique como swell.
 4. **Marés (Ria Formosa)** — amplitude em metros (nunca coeficientes):
    - > 3 m (vivas): Ria inútil para dourada; apostar no robalo no mar/bicos nos repontos, se não houver limo.
@@ -100,9 +104,9 @@ Valores marcados *provisório* não estão validados no terreno: aplicar, mas mo
 5. **Potência** — hora a hora: `P ≈ 0,49 × Hs² × T` (kW/m), Hs total e T da **mesma hora**. Usar período médio (ou de energia); se não houver, período de pico com aviso. Mostrar máximo do dia e hora. **P < 1 kW/m → robalo obrigatoriamente 1/5.**
 6. **Pressão** — descida ≥ 5 hPa em 24 h = peixe activo. Pressão alta e estável = menos actividade.
 7. **Temperatura da água** — dourada prefere ~20 ºC. Comparar com a semana anterior (histórico da fonte). Sem histórico → "comparação não possível". Descida ≥ 2 ºC afasta a dourada.
-8. **Água doce** — chuva forte nos dias anteriores → avisar Ria turva / excesso de água doce, mesmo em marés mortas; o mesmo na foz da ribeira do Almargem e no molhe.
+8. **Água doce** — chuva forte nos dias anteriores → avisar Ria turva / excesso de água doce, mesmo em marés mortas; o mesmo na foz da ribeira do Almargem e no molhe. **Chuva forte = ≥ 20 mm nas 48 h antes do dia** (decisão 1a, 14/10/2026; provisório). No Open-Meteo, `precipitation` é a soma da hora anterior.
 9. **Alinhamento prioritário** — reponto de maré a ≤ ~1 h do nascer ou pôr do Sol → destacar no topo.
-10. **Valores anómalos** — ex.: rajada > 3× o vento médio → assinalar "confirmar antes de sair".
+10. **Valores anómalos** — ex.: rajada > 3× o vento médio → assinalar "confirmar antes de sair". **Só com vento médio ≥ 5 nós** (decisão 3b, 14/10/2026): com brisa fraca a razão dispara sem significado.
 11. **Dourada no molhe** — viável só com P < 1,5 kW/m (*provisório*) e sem água turva por chuva forte; senão 1/5. A amplitude não bloqueia este pesqueiro; os repontos são as melhores janelas.
 
 ---
@@ -116,13 +120,15 @@ Valores marcados *provisório* não estão validados no terreno: aplicar, mas mo
   - Dourada molhe: base 3; mesmos ajustes; limite obrigatório da regra 11.
   - Robalo mar: P < 1 → 1; 1 ≤ P < 1,5 → 3; P ≥ 1,5 com N/NO ou O/SO sem limo → 4; +1 alinhamento; +1 descida de pressão ≥ 5 hPa.
   - Limites obrigatórios sobrepõem-se à soma.
-- **Dados em falta:** potência não obtida → robalo `n.d.` (nunca 1/5 por defeito). Avisos IPMA falharam → "segurança por verificar": não recomendar bicos nem molhe; Ria e praias permitidas com aviso. Para lá do alcance dos avisos (~3 dias) → "aviso ainda não emitido".
-- **Avisos:** amarelo+ válido em qualquer momento do dia local bloqueia bicos e molhe nesse dia inteiro.
+- **Dados em falta:** potência não obtida → robalo `n.d.` (nunca 1/5 por defeito).
+- **Avisos IPMA:** retirados (regra 1).
 - **Mar mexido:** avaliado no mar **total**. Com mar mexido, há limo se **qualquer** componente (vento, fundo, vaga) vier do sector Levante/Sudeste.
 - **Sectores (provisórios):** Levante/Sudeste [67,5°, 157,5°); Sul/Sudoeste/Oeste [157,5°, 292,5°); Norte/Noroeste [292,5°, 67,5°) atravessando 0°. Intervalos semi-abertos.
 - **Lado do molhe com componentes em conflito:** decide a de maior energia (Hs² × T); se nenhuma tiver Hs ≥ 0,2 m (provisório), decide o vento.
 - **Alcance:** cada fonte mostrada até onde existir; dias seguintes marcados "fora do alcance de <fonte>".
 - **Marés vivas/mortas da "próxima semana":** mesmos limiares de amplitude, aplicados à tabela local.
+- **Notas por período (decisão B, opção C, 14/10/2026):** potência, limo e alinhamento avaliados por período — madrugada 00–06, manhã 06–12, tarde 12–18, noite 18–24 (hora de Lisboa; provisório). Pressão, água e amplitude são diárias. A nota do dia é a do melhor período, com o nome do período.
+- **Notas incompletas (revisões do ChatGPT, 14/10/2026):** a nota mostra todas as parcelas (aplicada / não aplicada / não avaliada), `completa` e o `intervalo` possível (o que as parcelas por avaliar podiam somar ou tirar). Um limite obrigatório já aplicado decide, mesmo com outro por verificar. Período `n.d.` → a nota do dia é a melhor conhecida, com `periodosSemNota` e intervalo até 5. A nota mais alta ganha mesmo incompleta (política da secção 6); a interface mostra sempre a incompletude.
 - **Melhores dias:** ordenar pela nota máxima do dia; desempate por alinhamento, depois nota da outra espécie, depois o dia mais próximo.
 - **Sol e Lua:** só SunCalc (local). Não usar sunrise/sunset do Open-Meteo.
 - **Registos:** IndexedDB + exportar/importar JSON versionado + lembrete de cópia de segurança (30 dias).
@@ -153,8 +159,8 @@ Menores:
 
 ## 8. Fases seguintes
 
-- **Fase 3 — Motor de regras** (`js/regras/*.js`, funções puras sem rede nem storage) + testes de fronteira: P 0,99/1,0/1,5; amplitude 1,99/2,00/3,00/3,01; período 5,9/6,0 s; aviso amarelo a anular molhe; IPMA em falha; sectores nos limites; rajada 3×; DST 25/10.
-- **Fase 4 — Interface móvel**: resumo de 3 linhas (melhores dias/horas/pesqueiros) + alinhamentos + avisos; tabela "Mar e vento" (Faro e Quarteira: vento dir/vel/rajada; fundo e vaga separadas; potência máx. e hora); tabela "Marés e outros" (PM/BM, amplitude, nascer/pôr, pressão e tendência, água); análise por dia terminando em `[Robalo: X/5] | [Dourada: Y/5]`; "próxima semana" (Lua, próximas vivas/mortas). Cada valor com fonte e hora de leitura. Hora legal de Portugal continental. Deploy GitHub Pages.
+- **Fase 3 — Motor de regras** (`js/regras/*.js`, funções puras sem rede nem storage) + testes de fronteira: P 0,99/1,0/1,5; amplitude 1,99/2,00/3,00/3,01; período 5,9/6,0 s; sectores nos limites; rajada 3×; DST 25/10.
+- **Fase 4 — Interface móvel** (obrigatório, pedido nas revisões da Fase 3: nunca mostrar uma nota incompleta como definitiva — mostrar `completa`, o `intervalo`, os `periodosSemNota`, as parcelas não avaliadas com o motivo, e os estados `n.d.` e «por confirmar»): resumo de 3 linhas (melhores dias/horas/pesqueiros) + alinhamentos; tabela "Mar e vento" (Faro e Quarteira: vento dir/vel/rajada; fundo e vaga separadas; potência máx. e hora); tabela "Marés e outros" (PM/BM, amplitude, nascer/pôr, pressão e tendência, água); análise por dia terminando em `[Robalo: X/5] | [Dourada: Y/5]`; "próxima semana" (Lua, próximas vivas/mortas). Cada valor com fonte e hora de leitura. Hora legal de Portugal continental. Deploy: decidir alojamento (repositório privado).
 - **Fase 5 — Diário de saídas**: formulário (data, pesqueiro, hora, capturas, notas) que grava as condições do momento; ecrã que compara registos com condições e sugere ajustes aos valores provisórios, separando "confirmado pelos registos" de "hipótese". Os registos nunca alteram limiares automaticamente.
 - **Fase 6 (opcional)** — proxy mínimo Cloudflare Worker só se alguma API bloquear CORS no browser (o proxy não calcula nada).
 
@@ -166,10 +172,12 @@ Menores:
 |---|---|---|
 | Open-Meteo Marine | `https://marine-api.open-meteo.com/v1/marine` | Variáveis: `wave_height`, `wave_direction`, `wave_period`, `wind_wave_*`, `swell_wave_*`, `sea_surface_temperature`. `wave_peak_period` veio **null** nestes pontos. Confirmar na documentação que `wave_period` é o período médio. Componentes "swell" com T < 6 s são frequentes aqui → tratar como vaga (regra 3). `past_days` dá histórico para a regra 7. |
 | Open-Meteo Forecast | `https://api.open-meteo.com/v1/forecast` | `wind_speed_10m`, `wind_direction_10m`, `wind_gusts_10m`, `pressure_msl`, `precipitation`; `wind_speed_unit=kn`. |
-| IPMA avisos | `https://api.ipma.pt/open-data/forecast/warnings/warnings_www.json` | Array; filtrar `idAreaAviso=="FAR"` e `awarenessTypeName=="Agitação Marítima"`; níveis `green/yellow/orange/red`; horas UTC sem `Z`; alcance ~3 dias. |
+| IPMA avisos (**não usado**: regra 1 retirada) | `https://api.ipma.pt/open-data/forecast/warnings/warnings_www.json` | Array; filtrar `idAreaAviso=="FAR"` e `awarenessTypeName=="Agitação Marítima"`; níveis `green/yellow/orange/red`; horas UTC sem `Z`; alcance ~3 dias. |
 | IPMA estado do mar | `https://api.ipma.pt/open-data/forecast/oceanography/daily/hp-daily-sea-forecast-day{0,1,2}.json` | Faro = `globalIdLocal 1080526` (lat 37.1933, lon -8.0). **Não há ponto em Quarteira.** Campos: `waveHighMin/Max`, `wavePeriodMin/Max`, `predWaveDir`, `sstMin/Max`, `totalSeaMin/Max`. Só referência diária. |
-| Marés | `mares/2026.json` (local) | Fonte oficial: **Instituto Hidrográfico, Faro-Olhão** — o utilizador fornece a tabela. Não usar `sea_level_height` do Open-Meteo. tabuademares.com (tem página de Quarteira) e MeteoConsult servem só para conferir; não fazer scraping. |
+| Marés | `mares/2026.json` (local) | Fonte oficial: **Instituto Hidrográfico, Faro-Olhão** (Tabela de Marés 2026, Vol. I, págs. 2-121 a 2-124). Horas em **TU (UTC)**; alturas ao **zero hidrográfico** (2,00 m abaixo do NM, Cascais 1938); resolução 0,1 m; marégrafo no cais da Culatra (dentro da Ria). Convertida com `ferramentas/mares_ih.py`. O IH publica concordâncias para portos secundários (págs. 3-2/3-3): **Barra do Ancão** −0 h 03 a +0 h 13 em relação a Faro-Olhão → a tabela de Faro-Olhão serve para o mar de fora. (As marés da app de referência vêm do IHM espanhol e estão 40–55 min adiantadas: não usar.) Não usar `sea_level_height` do Open-Meteo. tabuademares.com (tem página de Quarteira) e MeteoConsult servem só para conferir; não fazer scraping. |
 | Sol e Lua | SunCalc em `vendor/` | Cálculo local. |
+
+Rede: no ambiente do Claude Code, o `fetch` do Node só passa pelo proxy com `NODE_USE_ENV_PROXY=1 NODE_EXTRA_CA_CERTS=/root/.ccr/ca-bundle.crt`. O Open-Meteo Forecast pode responder HTTP 429 (limite gratuito, partilhado pelo IP do ambiente).
 
 Não usar como fonte de dados (decidido): Windguru (sem API pública; a estação da Praia de Faro pode ser um link "leitura actual"), Beachcam, Facebook.
 

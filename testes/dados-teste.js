@@ -45,21 +45,6 @@ export const TIDE_FIXTURE = Object.freeze({
   ]
 });
 
-// Formato do warnings_www.json do IPMA: array; níveis green/yellow/orange/red;
-// startTime/endTime em UTC sem fuso. Os textos são inventados para teste.
-export const IPMA_WARNING_FIXTURE = Object.freeze([
-  { text: "Ondas de sudoeste com 3 a 4 metros.", awarenessTypeName: "Agitação Marítima",
-    idAreaAviso: "FAR", startTime: "2026-10-04T08:43:00", awarenessLevelID: "yellow",
-    endTime: "2026-10-04T18:00:00" },
-  { text: "", awarenessTypeName: "Agitação Marítima", idAreaAviso: "FAR",
-    startTime: "2026-10-05T00:00:00", awarenessLevelID: "green", endTime: "2026-10-05T23:59:00" },
-  { text: "Rajadas até 70 km/h.", awarenessTypeName: "Vento", idAreaAviso: "FAR",
-    startTime: "2026-10-04T06:00:00", awarenessLevelID: "orange", endTime: "2026-10-04T21:00:00" },
-  { text: "Ondas de noroeste com 4 a 5 metros.", awarenessTypeName: "Agitação Marítima",
-    idAreaAviso: "LSB", startTime: "2026-10-04T06:00:00", awarenessLevelID: "orange",
-    endTime: "2026-10-04T21:00:00" }
-]);
-
 // Estado do mar IPMA (hp-daily-sea-forecast-dayN.json). Valores inventados para teste;
 // nomes dos campos conforme a secção 9 do CLAUDE.md.
 export function ipmaMarFixture(forecastDate) {

@@ -21,7 +21,6 @@ test("config.json tem os URL correctos das fontes", () => {
   assert.deepEqual(config.fontes, {
     marineBase: "https://marine-api.open-meteo.com/v1/marine",
     forecastBase: "https://api.open-meteo.com/v1/forecast",
-    ipmaWarnings: "https://api.ipma.pt/open-data/forecast/warnings/warnings_www.json",
     ipmaSeaForecastBase: "https://api.ipma.pt/open-data/forecast/oceanography/daily/"
   });
 });
@@ -30,11 +29,11 @@ test("nenhum URL de API escrito em js/ (fonte única: config.json)", () => {
   for (const f of ficheirosJs("js")) assert.doesNotMatch(ler(f), /https?:\/\//, f);
 });
 
-test("app.js consulta Faro e Quarteira (marine + forecast)", () => {
+test("app.js consulta os pontos de todos os pesqueiros (via pontosNecessarios)", () => {
   const app = ler("js/app.js");
-  for (const local of ["faroMar", "faroTerra", "quarteiraMar", "quarteiraTerra"]) {
-    assert.match(app, new RegExp(`locais\\.${local}`), local);
-  }
+  assert.match(app, /pontosNecessarios\(config\)/);
+  assert.match(app, /pontos\.mar\.map/);
+  assert.match(app, /pontos\.terra\.map/);
 });
 
 // ---------- Service worker, executado num contexto falso ----------
@@ -106,7 +105,7 @@ test("sw: a instalação guarda a shell completa e todos os ficheiros existem", 
   const sw = carregarSw({ rede: "ok" });
   const instalados = await sw.instalar();
   const esperado = ["./", "./index.html", "./manifest.webmanifest", "./css/base.css",
-    ...ficheirosJs("js").map(f => "./" + f.split("\\").join("/"))];
+    ...[...ficheirosJs("js"), ...ficheirosJs("vendor")].map(f => "./" + f.split("\\").join("/"))];
   assert.deepEqual([...instalados].sort(), [...esperado].sort());
   for (const f of instalados.filter(f => f !== "./")) {
     assert.doesNotThrow(() => statSync(join(raiz, f)), `${f} não existe`);
