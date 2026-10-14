@@ -24,7 +24,7 @@ O utilizador é pescador experiente e exige rigor: verificar o significado de ca
 
 - **Fase 1 (arquitectura): aprovada.** Decisões na secção 6.
 - **Fase 2 (fontes de dados): entregue pelo ChatGPT** e corrigida (secção 7) no PR #1, já integrado no `main`.
-- **Fase 3 (motor de regras): em curso** no ramo `claude/new-session-ywtpsk`. Tabela de marés oficial de 2026 já convertida (`mares/2026.json`).
+- **Fase 3 (motor de regras): concluída** no ramo `claude/new-session-ywtpsk` (PR para revisão do ChatGPT). Tabela de marés oficial de 2026 convertida (`mares/2026.json`). Todas as decisões de regras tomadas (secções 5 e 6).
 - Fases 4–6 por fazer (secção 8). O repositório é **privado** (13/10/2026): o GitHub Pages grátis não serve; decidir o alojamento na Fase 4.
 - **Objectivo alargado (14/10/2026):** o utilizador quer uma app **como a Fizk** (fizk.com), em português, melhorada e só para uso pessoal; **web app** (PWA) para **Android**. Ecrãs "iguais à Fizk" (cartões de favoritos com nota, mapa, meteograma hora a hora, curva de maré, comparador, diário…), mas com as regras e fontes deste projecto. Não copiar código, imagens, marca nem camadas pagas da Fizk; a pasta `recolha/` serve só de referência.
 
