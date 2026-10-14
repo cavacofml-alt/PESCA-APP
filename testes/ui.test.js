@@ -41,7 +41,8 @@ test("ecrã: um cartão por pesqueiro, com nota, períodos, fontes e créditos d
   assert.match(html, /Dados lidos às 10:46/);
   assert.equal((html.match(/<h4>Fontes<\/h4>/g) ?? []).length, Object.keys(config.pesqueiros).length);
   assert.match(html, /Open-Meteo Marine \(37\.0133, -8\.00567\) · previsto · lido às 10:46/);
-  assert.match(html, /CC BY-SA 4\.0/);
+  assert.ok(!/Wikimedia Commons/.test(html), "créditos das fotos fora dos cartões (página Fontes)");
+  assert.match(html, /Créditos das fotografias na página <a href="\.\/diagnostico\.html">Fontes<\/a>/);
   assert.match(html, /Vento agora \(Windguru\): <a href="https:\/\/www\.windguru\.cz\/station\/3324"/);
   assert.match(html, /notas provisórias/);
 });
@@ -104,4 +105,18 @@ test("chuva: as 48 h todas em falta → «não obtida», sem 0 mm", () => {
   assert.equal(r.turva, null);
   assert.equal(r.chuva48hMm, null);
   assert.equal(r.motivo, "chuva das 48 h anteriores não obtida");
+});
+
+test("ecrã: marés por extenso (preia-mar / baixa-mar), sem PM nem BM", () => {
+  const html = renderInicio(contexto());
+  assert.match(html, /preia-mar \d\d:\d\d( e \d\d:\d\d)? · baixa-mar \d\d:\d\d/);
+  assert.ok(!/\b(PM|BM) \d\d:\d\d/.test(html));
+});
+
+test("Fontes: créditos de todas as fotografias, com autor e licença", () => {
+  const src = readFileSync(new URL("js/diagnostico.js", raiz), "utf8");
+  assert.match(src, /Créditos das fotografias/);
+  for (const pq of Object.values(config.pesqueiros)) {
+    assert.ok(pq.foto.autor && pq.foto.licenca && pq.foto.pagina, pq.nomeCurto);
+  }
 });
