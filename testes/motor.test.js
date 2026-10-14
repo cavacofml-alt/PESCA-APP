@@ -6,6 +6,7 @@ import { readFileSync } from "node:fs";
 import { limitesDiaLisboa, utcToLisbon } from "../js/normalizacao.js";
 import { marMexido, limoDaHora, limoDoDia } from "../js/regras/limo.js";
 import { ladoDaHora, ladosDoDia, LADO, AVISO_LIMO_DERIVA } from "../js/regras/molhe.js";
+import { marForteForaDoSul, ondaDominante } from "../js/regras/sul.js";
 import { pressaoDoDia } from "../js/regras/pressao.js";
 import { aguaDoDia } from "../js/regras/agua.js";
 import { alinhamentosDoDia } from "../js/regras/alinhamento.js";
@@ -306,7 +307,8 @@ test("repontos do dia: null quando a tabela não cobre o dia (não é 'sem repon
 
 const base = {
   classeMare: CLASSE_MARE.MORTA, alinhado: false,
-  descidaPressao: false, altaEstavel: false, aguaAfasta: false, turva: false, potenciaMax: 1.2, limo: false
+  descidaPressao: false, altaEstavel: false, aguaAfasta: false, turva: false, potenciaMax: 1.2, limo: false,
+  marForaDoSul: true
 };
 const robalo = (f, opt) => notaRobalo({ ...base, ...f }, config.pontuacao, config.mar, opt);
 
@@ -555,12 +557,18 @@ test("revisão 2: nota com parcelas por avaliar fica completa=false; em empate p
   assert.equal(ria20.notas.dourada.completa, true);
 });
 
-test("revisão 3 (rejeitado, documentado): Sul pertence ao sector S/SO/O aprovado na Fase 1 → sem limo → 4", () => {
-  // Sectores aprovados: Levante/Sudeste [67,5; 157,5[, Sul/Sudoeste/Oeste [157,5; 292,5[, Norte/Noroeste [292,5; 67,5[.
-  // Cobrem 360°: com P ≥ 1,5 e sem limo, todas as componentes estão em N/NO ou S/SO/O.
+test("ponto 3 (decisão c do utilizador): mar de Sul nas praias com P ≥ 1,5 → por confirmar; o limo não muda", () => {
+  // O sector do limo não muda: Sul com mar mexido continua sem limo; 150° é Sudeste.
   assert.equal(limoDaHora(mar(1.2, 180, 8), terra(10, 200), cfgMar).limo, false);
-  assert.equal(robalo({ potenciaMax: 1.8, limo: false }).nota, 4);
   assert.equal(limoDaHora(mar(1.2, 150, 8), terra(10, 200), cfgMar).limo, true, "150° é Sudeste");
+  const sul = robalo({ potenciaMax: 1.8, limo: false, marForaDoSul: false, motivoSul: "mar de Sul" });
+  assert.equal(sul.estado, ESTADO_NOTA.POR_CONFIRMAR);
+  assert.equal(sul.nota, null);
+  assert.equal(robalo({ potenciaMax: 1.8, limo: false, marForaDoSul: null }).estado, ESTADO_NOTA.ND);
+  assert.equal(robalo({ potenciaMax: 1.8, limo: false, marForaDoSul: true }).nota, 4);
+  // Abaixo de 1,5 a regra não depende da direcção; no molhe vale a decisão 2b.
+  assert.equal(robalo({ potenciaMax: 1.2, marForaDoSul: false }).nota, 3);
+  assert.equal(robalo({ potenciaMax: 1.8, marForaDoSul: false }, { tipo: "molhe" }).nota, 4);
 });
 
 test("revisão 5: limo com uma hora do mar em falta → indeterminado (salvo se outra hora já tiver limo)", () => {
@@ -750,4 +758,61 @@ test("2.ª revisão, ponto 9: média do dia inválida → comparação não poss
   assert.equal(aguaDoDia(horas, "2026-10-20", config.temperaturaAgua).afastaDourada, false);
   const n = ria({ aguaAfasta: r.afastaDourada, motivoAgua: r.motivo });
   assert.equal(n.parcelas.find(x => x.descricao.startsWith("descida da água")).estado, "não avaliada");
+});
+
+// ---------- Terceira revisão do ChatGPT e decisão c) (mar de Sul nas praias) ----------
+
+test("mar de Sul nas praias: decide a onda dominante das horas com P ≥ 1,5; basta uma hora fora do Sul", () => {
+  const h = (i, dir, extra) => ({ instante: esp20[i], ...mar(1.0, dir, 10, extra) }); // P = 4,9 kW/m
+  const fraca = (i, dir) => ({ instante: esp20[i], ...mar(0.4, dir, 8) });              // P = 0,63 kW/m
+  assert.equal(marForteForaDoSul([h(0, 180), h(1, 180)], cfgMar).valor, false);
+  assert.equal(marForteForaDoSul([h(0, 180), h(1, 180)], cfgMar).motivo, "mar de Sul com P ≥ 1,5 kW/m: nota por confirmar no terreno");
+  assert.equal(marForteForaDoSul([h(0, 180), h(1, 240)], cfgMar).valor, true);
+  // Limites da faixa de Sul: 157,4 é Sudeste (fora), 157,5 e 202,4 são Sul, 202,5 é Sudoeste.
+  assert.equal(marForteForaDoSul([h(0, 157.4)], cfgMar).valor, true);
+  assert.equal(marForteForaDoSul([h(0, 157.5)], cfgMar).valor, false);
+  assert.equal(marForteForaDoSul([h(0, 202.4)], cfgMar).valor, false);
+  assert.equal(marForteForaDoSul([h(0, 202.5)], cfgMar).valor, true);
+  // Horas fracas de Oeste não contam para a base 4.
+  assert.equal(marForteForaDoSul([h(0, 180), fraca(1, 270)], cfgMar).valor, false);
+  // Onda dominante: fundo de Sul mais fraco que a vaga de Sudoeste → fora do Sul.
+  const misto = h(0, 180, { swell_wave_height: 0.5, swell_wave_period: 9, wind_wave_height: 0.9, wind_wave_direction: 240, wind_wave_period: 5 });
+  assert.equal(ondaDominante(misto, cfgMar).componente.direcao, 240);
+  assert.equal(marForteForaDoSul([misto], cfgMar).valor, true);
+  // O vento não conta: mar de Sudoeste com vento de Sul → fora do Sul.
+  assert.equal(marForteForaDoSul([h(0, 240)], cfgMar).valor, true);
+  // Hora esperada sem dados podia ser forte e de Oeste → indeterminado.
+  assert.equal(marForteForaDoSul([h(0, 180)], cfgMar, esp20.slice(0, 2)).valor, null);
+  assert.equal(marForteForaDoSul([h(0, 180), h(1, 180)], cfgMar, esp20.slice(0, 2)).valor, false);
+});
+
+test("análise: mar forte de Sul → robalo por confirmar nas praias; molhe com nota (2b) e lado por confirmar", () => {
+  const e = entrada();
+  const json = serie(["2026-10-13", "2026-10-18", "2026-10-19", "2026-10-20"], () => mar(1.0, 180, 10));
+  for (const k of pontosNecessarios(config).mar) e.pontos.mar[k] = { ...e.pontos.mar[k], data: json };
+  const p = analisarDias(e).dias[0].pesqueiros;
+  for (const id of ["praia_faro", "ancao", "almargem"]) {
+    assert.equal(p[id].limo.limo, false, `${id}: Sul não é limo`);
+    assert.equal(p[id].notas.robalo.estado, ESTADO_NOTA.POR_CONFIRMAR, id);
+    assert.match(p[id].notas.robalo.motivo, /mar de Sul/);
+  }
+  assert.equal(p.molhe_quarteira.notas.robalo.estado, ESTADO_NOTA.OK);
+  assert.equal(p.molhe_quarteira.notas.robalo.nota, 4);
+  assert.deepEqual(p.molhe_quarteira.lados.intervalos.map(i => i.lado), [LADO.POR_CONFIRMAR]);
+});
+
+test("3.ª revisão: água — D com média válida e D−7 sem dados → comparação não possível", () => {
+  const horas = instantesDoDia("2026-10-20").map(t => ({ instante: t, sea_surface_temperature: 21 }));
+  const r = aguaDoDia(horas, "2026-10-20", config.temperaturaAgua);
+  assert.equal(r.media, 21);
+  assert.equal(r.afastaDourada, null);
+  assert.match(r.motivo, /2026-10-13/);
+});
+
+test("3.ª revisão: o intervalo nunca junta factores exclusivos — pressão por avaliar dá −1 ou +1, nunca os dois", () => {
+  // «Descida ≥ 5 hPa» (+1) e «alta e estável» (−1) excluem-se. O mínimo só usa as parcelas
+  // negativas e o máximo só as positivas, por isso nenhum extremo as combina.
+  const r = ria({ descidaPressao: null, altaEstavel: null });
+  assert.equal(r.nota, 4);
+  assert.deepEqual(r.intervalo, { min: 3, max: 5 });
 });
