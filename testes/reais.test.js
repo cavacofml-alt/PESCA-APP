@@ -127,7 +127,15 @@ test("motor completo com dados reais de 14/10: 7 dias, todos os pesqueiros com n
       }
     }
   }
-  // 14/10: ondulação de SE com mar mexido (o IPMA também previa SE) → limo em Faro → robalo 1.
-  assert.equal(res[0].pesqueiros.praia_faro.limo.limo, true);
-  assert.equal(res[0].pesqueiros.praia_faro.notas.robalo.nota, 1);
+  // 14/10: ondulação de SE com mar mexido a partir da manhã (o IPMA também previa SE) → limo
+  // em Faro → robalo 1 nos períodos com limo; de madrugada ainda não havia mar mexido.
+  const faro14 = res[0].pesqueiros.praia_faro;
+  assert.equal(faro14.limo.limo, true);
+  const porNome = Object.fromEntries(faro14.periodos.map(p => [p.nome, p]));
+  for (const nome of ["manhã", "tarde", "noite"]) {
+    assert.equal(porNome[nome].limo.limo, true, nome);
+    assert.equal(porNome[nome].notas.robalo.nota, 1, nome);
+  }
+  assert.equal(porNome.madrugada.limo.limo, false);
+  assert.equal(faro14.notas.robalo.periodo, "madrugada");
 });
