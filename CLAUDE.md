@@ -93,7 +93,8 @@ Valores marcados *provisório* não estão validados no terreno: aplicar, mas mo
 1. **Segurança — RETIRADA por decisão do utilizador (13/10/2026).** A app não consulta avisos do IPMA nem desaconselha pesqueiros: a avaliação de segurança é do utilizador. Bicos e molhe têm nota como os outros pesqueiros. Não reintroduzir sem pedido expresso do utilizador.
 2. **Limo e mar mexido** — mar mexido = Hs ≥ 1,0 m **ou** potência ≥ 1,5 kW/m (*provisório*).
    - Faro, Ancão, Almargem: vento, ondulação de fundo ou vaga de vento de Sudeste/Levante **com mar mexido** = mar de fora impossível (limo) → robalo 1/5 nesses pesqueiros. Norte/Noroeste = mar limpo. Oeste/Sudoeste: avaliar pela intensidade e estado do mar, sem assumir limo.
-   - Molhe: vaga/ondulação de Sudeste → lado poente; de Oeste/Sudoeste → lado nascente. O lado segue a direcção da vaga/ondulação; o vento só decide quando não há vaga relevante. Avisar sempre que o lado abrigado pode acumular limo à deriva.
+   - Molhe: vaga/ondulação de Sudeste → lado poente; de Oeste/Sudoeste → lado nascente. O lado segue a direcção da vaga/ondulação; o vento só decide quando não há vaga relevante. Avisar sempre que o lado abrigado pode acumular limo à deriva. **Robalo no molhe com Sudeste e mar mexido: nota normal pela potência, para o lado poente, com o aviso de limo** (decisão 2b, 14/10/2026) — o limo não baixa a nota no molhe.
+   - O limo só conta enquanto houver Sudeste com mar mexido; não persiste nos dias seguintes (decisão 4a, 14/10/2026). Vento a 0 nós não tem direcção e não conta como componente.
 3. **Vento e ondulação** — analisar sempre separadamente vento local, ondulação de fundo e vaga de vento. **Qualquer componente com período < 6 s é vaga de vento**, mesmo que a fonte a classifique como swell.
 4. **Marés (Ria Formosa)** — amplitude em metros (nunca coeficientes):
    - > 3 m (vivas): Ria inútil para dourada; apostar no robalo no mar/bicos nos repontos, se não houver limo.
@@ -102,9 +103,9 @@ Valores marcados *provisório* não estão validados no terreno: aplicar, mas mo
 5. **Potência** — hora a hora: `P ≈ 0,49 × Hs² × T` (kW/m), Hs total e T da **mesma hora**. Usar período médio (ou de energia); se não houver, período de pico com aviso. Mostrar máximo do dia e hora. **P < 1 kW/m → robalo obrigatoriamente 1/5.**
 6. **Pressão** — descida ≥ 5 hPa em 24 h = peixe activo. Pressão alta e estável = menos actividade.
 7. **Temperatura da água** — dourada prefere ~20 ºC. Comparar com a semana anterior (histórico da fonte). Sem histórico → "comparação não possível". Descida ≥ 2 ºC afasta a dourada.
-8. **Água doce** — chuva forte nos dias anteriores → avisar Ria turva / excesso de água doce, mesmo em marés mortas; o mesmo na foz da ribeira do Almargem e no molhe.
+8. **Água doce** — chuva forte nos dias anteriores → avisar Ria turva / excesso de água doce, mesmo em marés mortas; o mesmo na foz da ribeira do Almargem e no molhe. **Chuva forte = ≥ 20 mm nas 48 h antes do dia** (decisão 1a, 14/10/2026; provisório). No Open-Meteo, `precipitation` é a soma da hora anterior.
 9. **Alinhamento prioritário** — reponto de maré a ≤ ~1 h do nascer ou pôr do Sol → destacar no topo.
-10. **Valores anómalos** — ex.: rajada > 3× o vento médio → assinalar "confirmar antes de sair".
+10. **Valores anómalos** — ex.: rajada > 3× o vento médio → assinalar "confirmar antes de sair". **Só com vento médio ≥ 5 nós** (decisão 3b, 14/10/2026): com brisa fraca a razão dispara sem significado.
 11. **Dourada no molhe** — viável só com P < 1,5 kW/m (*provisório*) e sem água turva por chuva forte; senão 1/5. A amplitude não bloqueia este pesqueiro; os repontos são as melhores janelas.
 
 ---

@@ -80,7 +80,7 @@ export function analisarDias({ dias, pontos, mares, sol, config }) {
       const limo = mar ? limoDoDia(mar.doDia, terra?.doDia ?? [], cfgMar) : null;
       const pressao = terra ? pressaoDoDia(terra.doDia, terra.todas, config.pressao) : null;
       const aguaT = agua ? aguaDoDia(agua.todas, dia, config.temperaturaAgua) : null;
-      const chuva = aguaTurvaDoDia(terra?.doDia ?? [], dia, config.chuva);
+      const chuva = aguaTurvaDoDia(terra?.todas ?? [], dia, config.chuva);
       const s = sol ? sol(dia, pq.terra) : null;
       const alinhamento = alinhamentosDoDia(repontos, s, config.alinhamento);
       const anomalias = terra ? anomaliasDoDia(terra.doDia, config.anomalias) : null;
@@ -123,12 +123,16 @@ export function analisarDias({ dias, pontos, mares, sol, config }) {
       }
       if (lados) avisosTexto.push(lados.aviso);
       if (anomalias?.assinalar) avisosTexto.push(`Valores anómalos de vento/rajada: ${anomalias.mensagem}.`);
-      if (chuva.turva === null) avisosTexto.push(chuva.motivo);
+      if (chuva.turva === true) {
+        const onde = pq.tipo === "ria" ? "Ria turva / excesso de água doce" : pq.tipo === "molhe" ? "água turva junto ao molhe" : "água doce na foz da ribeira";
+        if (pq.tipo !== "praia" || id === "almargem") avisosTexto.push(`Chuva forte nos dias anteriores (${chuva.chuva48hMm} mm em 48 h): ${onde}.`);
+      }
+      if (chuva.turva === null) avisosTexto.push(`Chuva: ${chuva.motivo}`);
       if (potencia?.avisos?.length) avisosTexto.push(...potencia.avisos);
 
       pesqueiros[id] = { nome: pq.nome, pontos: { mar: pq.mar, terra: pq.terra, agua: pq.agua },
         notas, periodos, potencia, limo: limo && { limo: limo.limo, motivo: limo.motivo ?? null, horasComLimo: limo.horasComLimo ?? [] },
-        lados, pressao, agua: aguaT, alinhamento, anomalias, avisos: avisosTexto };
+        lados, pressao, agua: aguaT, chuva, alinhamento, anomalias, avisos: avisosTexto };
     }
 
     const melhor = especie => {

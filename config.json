@@ -35,9 +35,10 @@
     }
   },
   "chuva": {
-    "limiar48hMm": 20.0,
+    "limiar48hMm": 20,
+    "janelaHoras": 48,
     "provisorio": true,
-    "pendenteAprovacao": true
+    "decisao": "1a do utilizador (14/10/2026): ≥ 20 mm nas 48 h antes do dia"
   },
   "pressao": {
     "descidaAtiva24hHpa": 5.0,
@@ -100,9 +101,11 @@
     "mostrarAvisoAlternativa": true
   },
   "anomalias": {
-    "rajadaSobreVentoMedioMaximo": 3.0,
+    "rajadaSobreVentoMedioMaximo": 3,
+    "ventoMedioMinimoNos": 5,
     "confirmarAntesDeSair": true,
-    "provisorio": true
+    "provisorio": true,
+    "decisao": "3b do utilizador (14/10/2026): só avaliar com vento médio ≥ 5 nós"
   },
   "persistencia": {
     "backend": "IndexedDB",

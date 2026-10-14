@@ -10,7 +10,7 @@ import { pressaoDoDia } from "../js/regras/pressao.js";
 import { aguaDoDia } from "../js/regras/agua.js";
 import { alinhamentosDoDia } from "../js/regras/alinhamento.js";
 import { anomaliasDoDia, CONFIRMAR } from "../js/regras/anomalias.js";
-import { aguaTurvaDoDia, CHUVA_PENDENTE } from "../js/regras/chuva.js";
+import { aguaTurvaDoDia } from "../js/regras/chuva.js";
 import { amplitudeDoDia, repontosDoDia, CLASSE_MARE } from "../js/regras/mares.js";
 import { notaRobalo, notaDouradaRia, notaDouradaMolhe, ordenarMelhoresDias, ESTADO_NOTA } from "../js/regras/notas.js";
 import { analisarDias } from "../js/regras/analise.js";
@@ -221,26 +221,43 @@ test("alinhamento: reponto a 60 min do Sol conta; a 61 não; sem Sol ou marés �
 
 // ---------- Anomalias (regra 10) ----------
 
-test("rajada: 3× não assinala, acima de 3× assinala; vento 0 com rajada → inconsistente", () => {
+test("rajada (3b): só com vento médio ≥ 5 nós; 3× não assinala, acima de 3× assinala", () => {
   const h = ([v, g]) => ({ instante: 0, wind_speed_10m: v, wind_gusts_10m: g });
-  assert.equal(anomaliasDoDia([h([10, 30])], config.anomalias).assinalar, false);
-  const r = anomaliasDoDia([h([10, 30.1])], config.anomalias);
+  const cfg = config.anomalias;
+  assert.equal(cfg.ventoMedioMinimoNos, 5);
+  assert.equal(anomaliasDoDia([h([10, 30])], cfg).assinalar, false);
+  const r = anomaliasDoDia([h([10, 30.1])], cfg);
   assert.equal(r.assinalar, true);
   assert.equal(r.mensagem, CONFIRMAR);
-  const z = anomaliasDoDia([h([0, 5])], config.anomalias);
-  assert.equal(z.assinalar, true);
-  assert.equal(z.inconsistentes.length, 1);
-  assert.equal(anomaliasDoDia([h([0, 0])]).assinalar, false);
-  assert.equal(anomaliasDoDia([h([null, 5])]).horasSemDados, 1);
+  // Vento fraco: não se avalia, mesmo com razão alta.
+  const fraco = anomaliasDoDia([h([4.9, 20]), h([1, 4]), h([0, 5])], cfg);
+  assert.equal(fraco.assinalar, false);
+  assert.equal(fraco.horasAbaixoDoMinimo, 3);
+  assert.equal(anomaliasDoDia([h([5, 15.1])], cfg).assinalar, true, "5 nós já conta");
+  // Sem mínimo (0): vento 0 com rajada é inconsistente.
+  assert.equal(anomaliasDoDia([h([0, 5])], { rajadaSobreVentoMedioMaximo: 3, ventoMedioMinimoNos: 0 }).inconsistentes.length, 1);
+  assert.equal(anomaliasDoDia([h([null, 5])], cfg).horasSemDados, 1);
 });
 
-// ---------- Chuva (regra 8, pendente) ----------
+// ---------- Chuva (regra 8, decisão 1a) ----------
 
-test("chuva: enquanto pendente nunca devolve 'sem água turva'", () => {
-  const r = aguaTurvaDoDia([], "2026-10-20", config.chuva);
-  assert.equal(config.chuva.pendenteAprovacao, true);
+test("chuva (1a): ≥ 20 mm nas 48 h antes do dia → turva; 19,9 não; horas em falta → indeterminado", () => {
+  const dia = "2026-10-20";
+  const ini = limitesDiaLisboa(dia).inicio;
+  // Precipitação = soma da hora anterior: o valor marcado às 00:00 do dia conta (chuva 23–24 h).
+  const chuva = valorEm => horasDe(serie(["2026-10-18", "2026-10-19", dia], (i, t) => ({ precipitation: valorEm(t) })));
+  const em = (mm, ...instantes) => t => (instantes.includes(t) ? mm : 0);
+  assert.equal(aguaTurvaDoDia(chuva(em(10, ini, ini - 47 * H)), dia, config.chuva).turva, true);  // 20 mm nas pontas da janela
+  assert.equal(aguaTurvaDoDia(chuva(em(10, ini, ini - 48 * H)), dia, config.chuva).turva, false); // −48 h já fica fora
+  assert.equal(aguaTurvaDoDia(chuva(em(10, ini + H, ini - 47 * H)), dia, config.chuva).turva, false); // 01:00 do próprio dia não conta
+  assert.equal(aguaTurvaDoDia(chuva(t => (t === ini ? 19.9 : 0)), dia, config.chuva).turva, false);
+  assert.equal(aguaTurvaDoDia(chuva(t => (t === ini ? 19.9 : 0)), dia, config.chuva).chuva48hMm, 19.9);
+  const lacuna = chuva(t => (t === ini - 5 * H ? null : 0));
+  const r = aguaTurvaDoDia(lacuna, dia, config.chuva);
   assert.equal(r.turva, null);
-  assert.equal(r.motivo, CHUVA_PENDENTE);
+  assert.match(r.motivo, /1 h sem valor/);
+  // Com lacunas mas já ≥ 20 mm nas horas obtidas → turva.
+  assert.equal(aguaTurvaDoDia(chuva(t => (t === ini - 5 * H ? null : t === ini ? 25 : 0)), dia, config.chuva).turva, true);
 });
 
 // ---------- Amplitude do dia (decisão A) ----------
@@ -327,11 +344,15 @@ test("robalo: ajuste sem dados fica 'não avaliado' e não soma", () => {
   assert.deepEqual(r.naoAvaliadas, ["descida de pressão ≥ 5 hPa/24 h"]);
 });
 
-test("robalo no molhe com P ≥ 1,5 e limo: regra não definida → n.d.", () => {
+test("robalo no molhe com P ≥ 1,5 e Sudeste com mar mexido (2b): nota normal, lado poente, aviso de limo", () => {
   const r = robalo({ potenciaMax: 2, limo: true }, { tipo: "molhe" });
-  assert.equal(r.estado, ESTADO_NOTA.ND);
-  assert.match(r.motivo, /regra não definida/);
+  assert.equal(r.estado, ESTADO_NOTA.OK);
+  assert.equal(r.nota, 4);
+  assert.match(r.observacao, /lado poente/);
+  assert.match(r.observacao, /limo à deriva/);
   assert.equal(robalo({ potenciaMax: 2, limo: false }, { tipo: "molhe" }).nota, 4);
+  assert.equal(robalo({ potenciaMax: 2, limo: null }, { tipo: "molhe" }).nota, 4, "no molhe o limo não decide a nota");
+  assert.equal(robalo({ potenciaMax: 2, limo: true }, { tipo: "praia" }).nota, 1, "nas praias continua 1");
 });
 
 const ria = f => notaDouradaRia({ ...base, ...f }, config.pontuacao);
@@ -345,9 +366,11 @@ test("dourada Ria: base pela maré e limites 1–5", () => {
   assert.equal(ria({ classeMare: CLASSE_MARE.MORTA, turva: true }).nota, 2);
 });
 
-test("dourada Ria: sem amplitude → n.d.; chuva pendente → parcela não avaliada", () => {
+const CHUVA_INCOMPLETA = "chuva das 48 h anteriores incompleta (3 h sem valor; 0 mm nas restantes)";
+
+test("dourada Ria: sem amplitude → n.d.; chuva por verificar → parcela não avaliada", () => {
   assert.equal(ria({ classeMare: null }).estado, ESTADO_NOTA.ND);
-  const r = ria({ turva: null, motivoChuva: CHUVA_PENDENTE });
+  const r = ria({ turva: null, motivoChuva: CHUVA_INCOMPLETA });
   assert.equal(r.nota, 4);
   assert.ok(r.naoAvaliadas.includes("água turva por chuva"));
 });
@@ -360,10 +383,10 @@ test("dourada molhe: P 1,49 viável; 1,50 → 1; água turva → 1", () => {
   assert.equal(molhe({ potenciaMax: 0.5, turva: true }).nota, 1);
 });
 
-test("dourada molhe: limite por verificar (chuva pendente ou P em falta) → n.d.", () => {
-  assert.equal(molhe({ turva: null, motivoChuva: CHUVA_PENDENTE }).estado, ESTADO_NOTA.ND);
+test("dourada molhe: limite por verificar (chuva incompleta ou P em falta) → n.d.", () => {
+  assert.equal(molhe({ turva: null, motivoChuva: CHUVA_INCOMPLETA }).estado, ESTADO_NOTA.ND);
   assert.equal(molhe({ potenciaMax: null }).estado, ESTADO_NOTA.ND);
-  // P ≥ 1,5 já decide 1, mesmo com a chuva pendente.
+  // P ≥ 1,5 já decide 1, mesmo com a chuva por verificar.
   assert.equal(molhe({ potenciaMax: 2, turva: null }).nota, 1);
 });
 
@@ -424,7 +447,7 @@ test("melhores dias: nota máxima, depois alinhamento, depois a outra espécie, 
 // Pontos sintéticos para todos os pontos que o config.json usa. falha: pontos que falham.
 function entrada({ falha = [], mares = TABELA } = {}) {
   const dias = ["2026-10-20"];
-  const anteriores = ["2026-10-13", "2026-10-19"];
+  const anteriores = ["2026-10-13", "2026-10-18", "2026-10-19"];
   const todos = [...anteriores, ...dias];
   const marJson = serie(todos, () => mar(0.9, 300, 9));
   const terraJson = serie(todos, () => terra(8, 330, 12, 1012));
@@ -479,10 +502,26 @@ test("análise: sem tabela de marés → dourada Ria n.d. e alinhamento indeterm
   assert.ok(ria.notas.dourada.motivo.includes("amplitude não obtida"));
 });
 
-test("análise: a dourada no molhe fica n.d. enquanto a regra da chuva estiver pendente", () => {
+test("análise: sem chuva nas 48 h → sem água turva; dourada no molhe decidida pela potência", () => {
   const { dias } = analisarDias(entrada());
-  const n = dias[0].pesqueiros.molhe_quarteira.notas.dourada;
-  // P = 3,57 ≥ 1,5 → o limite da potência já decide 1, sem precisar da chuva.
-  assert.equal(n.nota, 1);
-  assert.ok(dias[0].pesqueiros.molhe_quarteira.avisos.includes(CHUVA_PENDENTE));
+  const p = dias[0].pesqueiros;
+  assert.equal(p.ria.chuva.turva, false);
+  assert.equal(p.ria.chuva.chuva48hMm, 0);
+  // P = 3,57 ≥ 1,5 → limite da regra 11 → 1.
+  assert.equal(p.molhe_quarteira.notas.dourada.nota, 1);
+  assert.ok(!Object.values(p).some(x => x.avisos.some(a => a.startsWith("Chuva"))));
+});
+
+test("análise: chuva forte (25 mm em 48 h) → Ria −2, avisos na Ria, no molhe e no Almargem", () => {
+  const e = entrada();
+  const terraChuva = serie(["2026-10-13", "2026-10-18", "2026-10-19", "2026-10-20"], (i, t) =>
+    ({ ...terra(8, 330, 12, 1012), precipitation: t === limitesDiaLisboa("2026-10-20").inicio - 6 * H ? 25 : 0 }));
+  for (const k of pontosNecessarios(config).terra) e.pontos.terra[k] = { ...e.pontos.terra[k], data: terraChuva };
+  const p = analisarDias(e).dias[0].pesqueiros;
+  assert.equal(p.ria.chuva.turva, true);
+  assert.ok(p.ria.notas.dourada.parcelas.some(x => x.descricao === "água turva por chuva" && x.valor === -2));
+  assert.ok(p.ria.avisos.some(a => a.includes("Ria turva")));
+  assert.ok(p.molhe_quarteira.avisos.some(a => a.includes("junto ao molhe")));
+  assert.ok(p.almargem.avisos.some(a => a.includes("foz da ribeira")));
+  assert.ok(!p.praia_faro.avisos.some(a => a.startsWith("Chuva")), "sem aviso de chuva na Praia de Faro");
 });

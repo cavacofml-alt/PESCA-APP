@@ -106,11 +106,15 @@ export function notaRobalo(f, cfgPontuacao, cfgMar, { tipo = "praia" } = {}) {
   if (p < cfgMar.potenciaRobaloIntermediaKWm) {
     return resultado(ESTADO_NOTA.OK, somar({ descricao: "base: 1 ≤ P < 1,5 kW/m", valor: pesos.potenciaDe1Abaixo15 }, fatores, cfgPontuacao));
   }
-  // P ≥ 1,5: 4 com N/NO ou O/SO sem limo. No molhe, com limo (SE com mar mexido) a nota não
-  // está definida na especificação (o lado abrigado decide-se à parte).
+  // P ≥ 1,5: 4 com N/NO ou O/SO sem limo. No molhe (decisão 2b do utilizador, 14/10/2026), o
+  // limo não baixa a nota: com Sudeste e mar mexido pesca-se do lado poente (abrigado), com
+  // o aviso de limo à deriva.
   if (tipo === "molhe") {
-    if (f.limo === true) return resultado(ESTADO_NOTA.ND, { motivo: "regra não definida: robalo no molhe com P ≥ 1,5 kW/m e Levante/Sudeste com mar mexido" });
-    if (f.limo !== false) return resultado(ESTADO_NOTA.ND, { motivo: `limo por verificar${f.motivoLimo ? `: ${f.motivoLimo}` : ""}` });
+    const s = somar({ descricao: "base: P ≥ 1,5 kW/m (molhe)", valor: pesos.potencia15OuMaisSemLimo }, fatores, cfgPontuacao);
+    const observacao = f.limo === true
+      ? "Sudeste com mar mexido: pescar do lado poente (abrigado); o lado abrigado pode acumular limo à deriva."
+      : null;
+    return resultado(ESTADO_NOTA.OK, { ...s, observacao });
   }
   return resultado(ESTADO_NOTA.OK, somar({ descricao: "base: P ≥ 1,5 kW/m sem limo", valor: pesos.potencia15OuMaisSemLimo }, fatores, cfgPontuacao));
 }
