@@ -25,7 +25,7 @@ O utilizador é pescador experiente e exige rigor: verificar o significado de ca
 - **Fase 1 (arquitectura): aprovada.** Decisões na secção 6.
 - **Fase 2 (fontes de dados): entregue pelo ChatGPT** e corrigida (secção 7) no PR #1, já integrado no `main`.
 - **Fase 3 (motor de regras): concluída** e integrada no `main` (PR #2, 14/10/2026, após três revisões do ChatGPT). Tabela de marés oficial de 2026 convertida (`mares/2026.json`); conferida com a Tábua de Marés a 14/10 (diferenças ≤ 6 min).
-- **Fase 4 (interface): em curso.** Parte 1 (PR #3, aprovada pelo utilizador sem revisão do ChatGPT): ecrã inicial com cartões por pesqueiro, publicação no Cloudflare. Falta: ecrã de cada pesqueiro (tabela hora a hora, curva de maré), mapa, «próxima semana».
+- **Fase 4 (interface): em curso.** Parte 1 (PR #3, aprovada pelo utilizador sem revisão do ChatGPT): ecrã inicial com cartões por pesqueiro, publicação no Cloudflare. Parte 2 (14/10/2026): escolha da espécie (robalo/dourada) e painel «hora a hora» por pesqueiro, à maneira da Fizk (a curva da maré entre preia-mar e baixa-mar é só ilustrativa; os valores são os da tabela). Falta: mapa, «próxima semana», dourada nas praias (regra por decidir).
 - **Alojamento (14/10/2026): Cloudflare Workers** (site estático), projecto `pesca-app`, ramo de produção `main`, endereço **https://pesca-app.cavacofml.workers.dev/** (no ar desde o merge do PR #3). O domínio `workers.dev` está bloqueado na rede do ambiente do Claude Code, salvo se o utilizador o autorizar. `wrangler.jsonc` corre `ferramentas/publicar.mjs`, que publica só a app — **nunca a pasta `recolha/`** (o site é público; o repositório é privado por causa do material da Fizk).
 - **Molhes (14/10/2026):** há dois — o do porto de pesca de Quarteira (pesqueiro 5) e o da marina de Vilamoura (favorito «Vilamoura» da Fizk; coordenadas do utilizador em `config.locais.vilamouraMolheOeste`). Por decidir: Vilamoura como pesqueiro à parte e com que regras; coordenadas exactas do molhe de Quarteira (proposta: farolim do molhe este, 37,0666, −8,1100, segundo o Wikimedia).
 - **Favoritos da Fizk** (Claude web, 14/10/2026; `recolha/2026-10-14/claude-web/`): Vilamoura 3894 (37.0719, −8.11896; praia a nascente da marina, não no molhe), Faro - Mar Poente 3817, Falésia Alfamar 3922 (37.0834, −8.15912) e Ancão 3619. Vilamoura e Falésia ainda não são pesqueiros (por decidir). A Fizk não tem pontos em molhes do Algarve, salvo VRSA.
@@ -84,9 +84,14 @@ Para facilitar a revisão, manter os PR pequenos: uma fase ou um tema por PR.
 | 2 | Praia de Faro (mar de fora) + bicos das barras | robalo | Ponto Fizk «Faro - Mar Poente» 37.0133, -8.00567 |
 | 3 | Praia do Ancão (mar de fora, Loulé) + bico da barra do Ancão | robalo | Ponto Fizk «Ancão» 37.0322, -8.03852 |
 | 4 | Praia do Almargem (mar de fora, Quarteira, Loulé) | robalo | Ponto Fizk «Forte Novo» 37.062, -8.09016 (a Fizk não tem Almargem). O utilizador pesca só do lado do mar. **Não** mostrar avisos sobre a reserva natural. |
-| 5 | Molhe de Quarteira | robalo e dourada | Lado **poente** (Vilamoura) ou **nascente** (praia de Quarteira) |
+| 5 | Molhe de Quarteira | robalo e dourada | Lado **poente** (Vilamoura) ou **nascente** (praia de Quarteira). Farolim do molhe este, 37.066552, -8.11001 (confirmado a 14/10/2026) |
+| 6 | Praia de Vilamoura (mar de fora, a nascente da marina) | robalo | Ponto Fizk «Vilamoura» 3894, 37.0719, -8.11896. Regras das praias (decisão c, 14/10/2026) |
+| 7 | Molhe de Vilamoura (molhe oeste da marina) | robalo e dourada | 37.0696033, -8.1243409 (link do utilizador, «Farol de Vilamoura Oeste»). Regras do molhe |
+| 8 | Falésia Alfamar (mar de fora) | robalo | Ponto Fizk 3922, 37.0834, -8.15912. Regras das praias (decisão de 14/10/2026) |
 
-Coordenadas (config, decisão C de 14/10/2026): **praias com os pontos da Fizk** (acima), o mesmo ponto para ondulação e vento. Ria e molhe não têm ponto na Fizk: ficam Faro terra 37.01,-7.93 (Ria; água de Faro mar 36.97,-7.98) e Quarteira mar 37.05,-8.10 / terra 37.07,-8.10 (molhe) até o utilizador dar coordenadas. Os bicos usam o ponto da sua praia (sem a regra de segurança, deixaram de ser pesqueiros separados).
+**Todas as praias devem ter nota de robalo e de dourada** (utilizador, 14/10/2026). A regra da dourada nas praias **ainda não está decidida**: até lá, a app diz «regra por decidir». A Ria só tem dourada.
+
+Coordenadas (config, decisão C de 14/10/2026): **praias com os pontos da Fizk** (acima), o mesmo ponto para ondulação e vento; os molhes usam as coordenadas da tabela, também para ondulação, vento e água. A Ria não tem ponto na Fizk: fica Faro terra 37.01,-7.93 (água de Faro mar 36.97,-7.98) até o utilizador dar coordenadas. Os bicos usam o ponto da sua praia (sem a regra de segurança, deixaram de ser pesqueiros separados).
 
 ---
 
