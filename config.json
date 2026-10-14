@@ -156,46 +156,59 @@
   "pesqueiros": {
     "ria": {
       "nome": "Ria Formosa (interior, Faro)",
+      "nomeCurto": "Ria Formosa",
       "especies": [
         "dourada"
       ],
       "tipo": "ria",
       "mar": null,
       "terra": "faroTerra",
-      "agua": "faroMar"
+      "agua": "faroMar",
+      "foto": {"ficheiro": "assets/fotos/ria.jpg", "autor": "Jules Verne Times Two", "licenca": "CC BY-SA 4.0", "pagina": "https://commons.wikimedia.org/wiki/File:Anchored_small_boats,_Ria_Formosa,_Faro,_Portugal_julesvernex2.jpg"},
+      "camaras": [{"nome": "Ilha da Culatra (farol)", "url": "https://beachcam.meo.pt/livecams/ilha-do-farol-culatra/"}]
     },
     "praia_faro": {
       "nome": "Praia de Faro (mar de fora) e bicos das barras",
+      "nomeCurto": "Praia de Faro",
       "especies": [
         "robalo"
       ],
       "tipo": "praia",
       "mar": "faroMarPoente",
       "terra": "faroMarPoente",
-      "agua": null
+      "agua": null,
+      "foto": {"ficheiro": "assets/fotos/praia_faro.jpg", "autor": "Kritzolina", "licenca": "CC BY-SA 4.0", "pagina": "https://commons.wikimedia.org/wiki/File:Praia_de_Faro_March_2026_01.jpg"},
+      "camaras": [{"nome": "Praia de Faro", "url": "https://beachcam.meo.pt/livecams/faro/"}, {"nome": "Praia de Faro Oeste", "url": "https://beachcam.meo.pt/livecams/faro-oeste/"}]
     },
     "ancao": {
       "nome": "Praia do Ancão (mar de fora) e bico da barra do Ancão",
+      "nomeCurto": "Ancão",
       "especies": [
         "robalo"
       ],
       "tipo": "praia",
       "mar": "ancaoPraia",
       "terra": "ancaoPraia",
-      "agua": null
+      "agua": null,
+      "foto": {"ficheiro": "assets/fotos/ancao.jpg", "autor": "Vitor Oliveira", "licenca": "CC BY-SA 2.0", "pagina": "https://commons.wikimedia.org/wiki/File:Praia_do_Anc%C3%A3o_-_Portugal_(4496510936).jpg"},
+      "camaras": [{"nome": "Praia de Faro Oeste", "url": "https://beachcam.meo.pt/livecams/faro-oeste/"}]
     },
     "almargem": {
       "nome": "Praia do Almargem (mar de fora, Quarteira)",
+      "nomeCurto": "Almargem",
       "especies": [
         "robalo"
       ],
       "tipo": "praia",
       "mar": "forteNovo",
       "terra": "forteNovo",
-      "agua": null
+      "agua": null,
+      "foto": {"ficheiro": "assets/fotos/almargem.jpg", "autor": "Jose A.", "licenca": "CC BY 2.0", "pagina": "https://commons.wikimedia.org/wiki/File:Praia_do_Almargem_(Portugal)_(51896821991).jpg"},
+      "camaras": [{"nome": "Praia de Quarteira Este", "url": "https://beachcam.meo.pt/livecams/praia-quarteira-este/"}]
     },
     "molhe_quarteira": {
       "nome": "Molhe de Quarteira",
+      "nomeCurto": "Molhe de Quarteira",
       "especies": [
         "robalo",
         "dourada"
@@ -203,7 +216,9 @@
       "tipo": "molhe",
       "mar": "quarteiraMar",
       "terra": "quarteiraTerra",
-      "agua": "quarteiraMar"
+      "agua": "quarteiraMar",
+      "foto": {"ficheiro": "assets/fotos/molhe_quarteira.jpg", "autor": "Kolforn", "licenca": "CC BY-SA 4.0", "pagina": "https://commons.wikimedia.org/wiki/File:17-05-2017_Farol_de_Quarteira_Molhe_Este.JPG"},
+      "camaras": [{"nome": "Praia de Quarteira Oeste", "url": "https://beachcam.meo.pt/livecams/praia-quarteira-oeste/"}, {"nome": "Vilamoura", "url": "https://beachcam.meo.pt/livecams/vilamoura/"}]
     }
   },
   "periodos": [
