@@ -3,19 +3,23 @@
 // Requisitos das revisões da Fase 3: nunca mostrar uma nota incompleta como definitiva —
 // intervalo, períodos sem nota, parcelas por avaliar, n.d. e «por confirmar» sempre visíveis.
 // Função pura: devolve HTML (texto escapado).
-import { esc, hora, horaIso, num, rotuloDia, classeNota, textoNota, NOME_ESPECIE, PERIODO_CURTO } from "./formato.js";
+import { esc, hora, horaIso, num, rotuloDia, classeNota, textoNota, NOME_ESPECIE, PERIODO_CURTO, NOME_MARE } from "./formato.js";
+import { ordenarMelhoresDias } from "../regras/notas.js";
 
-const melhorNotaDoDia = d => {
-  const v = [d.melhorRobalo, d.melhorDourada].filter(x => typeof x === "number");
-  return v.length ? Math.max(...v) : null;
+export const ESPECIES = ["robalo", "dourada"];
+
+// Melhor nota do dia para a espécie escolhida.
+const melhorNotaDoDia = (d, esp) => {
+  const v = esp === "dourada" ? d.melhorDourada : d.melhorRobalo;
+  return typeof v === "number" ? v : null;
 };
 
 // Melhor combinação pesqueiro/espécie de um dia (só notas "ok").
-function melhorDoDia(d, config) {
+function melhorDoDia(d, config, especie) {
   let melhor = null;
   for (const [id, p] of Object.entries(d.pesqueiros)) {
     for (const [esp, n] of Object.entries(p.notas)) {
-      if (n?.estado !== "ok") continue;
+      if (esp !== especie || n?.estado !== "ok") continue;
       if (!melhor || n.nota > melhor.n.nota) melhor = { id, esp, n, nome: config.pesqueiros[id]?.nomeCurto ?? id };
     }
   }
@@ -35,7 +39,6 @@ function alinhamentosDoDia(d) {
 }
 
 // «preia-mar 05:13 e 17:31 · baixa-mar 11:03 e 23:13» (por extenso, sem PM/BM).
-const NOME_MARE = { PM: "preia-mar", BM: "baixa-mar" };
 function maresPorTipo(repontos) {
   return ["PM", "BM"].map(t => {
     const horas = repontos.filter(r => r.tipo === t).map(r => hora(r.instante));
@@ -46,14 +49,13 @@ function maresPorTipo(repontos) {
 const textoAlinhamento = a =>
   `${a.tipo === "PM" ? "Preia-mar" : "Baixa-mar"} às ${hora(a.reponto)}, a ${a.minutos} min do ${a.evento}`;
 
-function resumo(analise, indice, config) {
+function resumo(analise, indice, config, especie) {
   const d = analise.dias[indice];
-  const melhoresDias = analise.melhoresDias.slice(0, 3).map(dia => {
-    const i = analise.dias.findIndex(x => x.dia === dia);
-    const m = melhorNotaDoDia(analise.dias[i]);
-    return m === null ? null : `${rotuloDia(dia, i)} (${m})`;
+  const melhoresDias = ordenarMelhoresDias(analise.dias, especie).slice(0, 3).map(dd => {
+    const m = melhorNotaDoDia(dd, especie);
+    return m === null ? null : `${rotuloDia(dd.dia, dd.indice)} (${m})`;
   }).filter(Boolean);
-  const m = melhorDoDia(d, config);
+  const m = melhorDoDia(d, config, especie);
   const ali = alinhamentosDoDia(d);
   return `<section class="resumo" aria-label="Resumo">
     <p><span class="rot">Melhores dias</span><span>${melhoresDias.length ? esc(melhoresDias.join(" · ")) : "sem notas"}</span></p>
@@ -66,9 +68,9 @@ function resumo(analise, indice, config) {
   </section>`;
 }
 
-function faixaDias(analise, indice) {
+function faixaDias(analise, indice, especie) {
   return `<nav class="dias" aria-label="Dias">${analise.dias.map((d, i) => {
-    const m = melhorNotaDoDia(d);
+    const m = melhorNotaDoDia(d, especie);
     return `<button type="button" class="dia${i === indice ? " sel" : ""}" data-dia="${i}" aria-pressed="${i === indice}">
       <span>${esc(rotuloDia(d.dia, i))}</span><b class="mini ${m === null ? "nd" : `n${m}`}">${m ?? "—"}</b>${d.alinhado ? '<i class="ponto-ali" title="alinhamento"></i>' : ""}</button>`;
   }).join("")}</nav>`;
@@ -128,7 +130,7 @@ function parcelas(esp, n) {
 }
 
 // Fontes dos valores do cartão: fonte, tipo e hora de leitura (critério 10).
-function fontesDoCartao(pq, contexto) {
+export function fontesDoCartao(pq, contexto) {
   const linhas = [];
   const ponto = (tipo, k, nomeFonte) => {
     if (!k) return;
@@ -186,10 +188,19 @@ function avisosDoCartao(p, pq, contexto) {
 const ligacoes = (titulo, lista) => (lista?.length
   ? `${esc(titulo)}: ${lista.map(c => `<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.nome)}</a>`).join(" · ")}<br>` : "");
 
+// Pesqueiro sem nota para a espécie escolhida.
+function semEspecie(esp, pq) {
+  const texto = pq.tipo === "ria" ? "não se aplica na Ria (interior)"
+    : esp === "dourada" && pq.tipo === "praia" ? "regra para a dourada nas praias por decidir" : "sem regra para este pesqueiro";
+  return `<div class="especie sem"><div class="esp-topo"><span class="esp-nome">${esc(NOME_ESPECIE[esp])}</span><span class="nota nd">—</span></div><p class="motivo">${esc(texto)}</p></div>`;
+}
+
 function cartao(id, p, d, contexto) {
   const pq = contexto.config.pesqueiros[id];
   const especies = Object.keys(p.notas);
-  const melhor = especies.map(e => p.notas[e]).filter(n => n?.estado === "ok").sort((a, b) => b.nota - a.nota)[0] ?? null;
+  const esp = contexto.especie ?? "robalo";
+  const nEsp = p.notas[esp];
+  const melhor = nEsp?.estado === "ok" ? nEsp : null;
   const foto = pq.foto;
   const ali = alinhamentosDoDia({ pesqueiros: { [id]: p } });
   return `<article class="cartao" id="pq-${esc(id)}">
@@ -199,7 +210,8 @@ function cartao(id, p, d, contexto) {
     </div>
     <div class="corpo">
       ${ali.length ? `<div class="alinhamento"><b>Alinhamento</b> ${ali.map(a => esc(textoAlinhamento(a))).join("; ")}</div>` : ""}
-      ${especies.map(e => linhaEspecie(e, p.notas[e], p.periodos)).join("")}
+      ${nEsp ? linhaEspecie(esp, nEsp, p.periodos) : semEspecie(esp, pq)}
+      <button type="button" class="btn-horas" data-pq="${esc(id)}">Hora a hora ›</button>
       ${factos(p, pq)}
       ${avisosDoCartao(p, pq, contexto)}
       ${detalhes(p, pq, d, contexto)}
@@ -209,14 +221,22 @@ function cartao(id, p, d, contexto) {
 }
 
 // contexto: { analise, config, pontos, mares, sol, lidoEm, indice }
+// Escolha da espécie, como na Fizk: as notas, a faixa de dias e o resumo seguem-na.
+function escolhaEspecie(especie) {
+  return `<nav class="especies" aria-label="Espécie">${ESPECIES.map(e =>
+    `<button type="button" class="especie-btn${e === especie ? " sel" : ""}" data-especie="${e}" aria-pressed="${e === especie}">${esc(NOME_ESPECIE[e])}</button>`).join("")}</nav>`;
+}
+
 export function renderInicio(contexto) {
   const { analise, indice = 0, lidoEm } = contexto;
+  const especie = contexto.especie ?? "robalo";
   const d = analise.dias[indice];
   return `<header class="topo"><div><h1>Surfcasting Algarve</h1>
       <p class="lido">Dados lidos às ${esc(horaIso(lidoEm))} · notas provisórias</p></div>
       <button type="button" id="actualizar" class="btn-actualizar" aria-label="Actualizar dados">↻</button></header>
-    ${faixaDias(analise, indice)}
-    ${resumo(analise, indice, contexto.config)}
+    ${escolhaEspecie(especie)}
+    ${faixaDias(analise, indice, especie)}
+    ${resumo(analise, indice, contexto.config, especie)}
     <section class="cartoes">${Object.entries(d.pesqueiros).map(([id, p]) => cartao(id, p, d, contexto)).join("")}</section>
     <p class="legenda">Créditos das fotografias na página <a href="./diagnostico.html">Fontes</a>.</p>
     <p class="legenda">Notas de 1 a 5 por período (madrugada 00–06, manhã 06–12, tarde 12–18, noite 18–24, hora de Portugal continental). <b class="mini nd">n.d.</b> sem dados suficientes · <b class="mini pc">?</b> por confirmar no terreno. Todas as notas são provisórias.</p>`;

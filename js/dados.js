@@ -26,6 +26,16 @@ export function solDoDia(SunCalc, config) {
   };
 }
 
+// Fase da Lua ao meio-dia de Lisboa (SunCalc, cálculo local): fracção iluminada e fase (0–1).
+export function luaDoDia(SunCalc) {
+  return dia => {
+    const limites = limitesDiaLisboa(dia);
+    if (!SunCalc || !limites) return null;
+    const m = SunCalc.getMoonIllumination(new Date(limites.inicio + 12 * 3600000));
+    return Number.isFinite(m.fraction) && Number.isFinite(m.phase) ? { fracao: m.fraction, fase: m.phase } : null;
+  };
+}
+
 export async function carregarDados({ config, fetchImpl = fetch, SunCalc = globalThis.SunCalc,
   agora = new Date(), urlMares = "./mares/2026.json" }) {
   const pts = pontosNecessarios(config);
@@ -44,6 +54,7 @@ export async function carregarDados({ config, fetchImpl = fetch, SunCalc = globa
     pontos: { mar, terra },
     mares,
     sol: SunCalc ? solDoDia(SunCalc, config) : null,
+    lua: SunCalc ? luaDoDia(SunCalc) : null,
     dias: diasDoHorizonte(agora, config.horizonteDias ?? 7),
     lidoEm: agora.toISOString()
   };
