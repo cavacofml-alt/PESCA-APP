@@ -24,16 +24,25 @@ import { aguaTurvaDoDia } from "./chuva.js";
 import { notaDouradaRia, notaDouradaMolhe, notaRobalo, ordenarMelhoresDias, ESTADO_NOTA } from "./notas.js";
 import { porPeriodo, PERIODOS_PADRAO } from "./periodos.js";
 
-// Nota do dia = a do melhor período (com o nome do período). Em empate, prefere-se a nota
-// completa (sem parcelas por avaliar); o campo "completa" acompanha a nota do dia. Sem nenhum
-// período com nota → n.d. do primeiro período, com o motivo.
-function melhorDosPeriodos(periodos, especie) {
+// Nota do dia = a do melhor período (com o nome do período; decisão aprovada na Fase 1). Em
+// empate, prefere-se a nota completa (sem parcelas por avaliar). Se algum período ficou n.d.,
+// a nota do dia é só a melhor conhecida: completa=false, periodosSemNota com os nomes e o
+// intervalo do dia vai até ao máximo da escala (o período sem nota podia ter nota mais alta).
+// Sem nenhum período com nota → n.d. do primeiro período, com o motivo.
+function melhorDosPeriodos(periodos, especie, maximo = 5) {
   const comNota = periodos.map(p => ({ p, n: p.notas[especie] })).filter(x => x.n);
   if (!comNota.length) return undefined;
   const ok = comNota.filter(x => x.n.estado === ESTADO_NOTA.OK);
+  if (!ok.length) return { ...comNota[0].n, periodo: comNota[0].p.nome };
   const melhor = (a, b) => (b.n.nota > a.n.nota || (b.n.nota === a.n.nota && b.n.completa && !a.n.completa) ? b : a);
-  const escolhido = ok.length ? ok.reduce(melhor) : comNota[0];
-  return { ...escolhido.n, periodo: escolhido.p.nome };
+  const escolhido = ok.reduce(melhor);
+  const periodosSemNota = comNota.filter(x => x.n.estado !== ESTADO_NOTA.OK).map(x => x.p.nome);
+  const intervalo = {
+    min: Math.max(...ok.map(x => x.n.intervalo.min)),
+    max: periodosSemNota.length ? maximo : Math.max(...ok.map(x => x.n.intervalo.max))
+  };
+  return { ...escolhido.n, periodo: escolhido.p.nome, intervalo, periodosSemNota,
+    completa: escolhido.n.completa && periodosSemNota.length === 0 };
 }
 
 function prepararPontos(pontos) {
@@ -121,7 +130,7 @@ export function analisarDias({ dias, pontos, mares, sol, config }) {
         return { nome, notas: notasP, potencia: pot, limo: lim && { limo: lim.limo, motivo: lim.motivo ?? null }, alinhamento: ali };
       });
       const notas = {};
-      for (const especie of pq.especies) notas[especie] = melhorDosPeriodos(periodos, especie);
+      for (const especie of pq.especies) notas[especie] = melhorDosPeriodos(periodos, especie, config.pontuacao.maximo ?? 5);
 
       const avisosTexto = [];
       if (pq.tipo === "ria" && amplitude.classe === CLASSE_MARE.VIVA) {

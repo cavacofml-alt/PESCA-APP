@@ -3,7 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { limitesDiaLisboa } from "../js/normalizacao.js";
+import { limitesDiaLisboa, utcToLisbon } from "../js/normalizacao.js";
 import { marMexido, limoDaHora, limoDoDia } from "../js/regras/limo.js";
 import { ladoDaHora, ladosDoDia, LADO, AVISO_LIMO_DERIVA } from "../js/regras/molhe.js";
 import { pressaoDoDia } from "../js/regras/pressao.js";
@@ -15,7 +15,7 @@ import { amplitudeDoDia, repontosDoDia, CLASSE_MARE } from "../js/regras/mares.j
 import { notaRobalo, notaDouradaRia, notaDouradaMolhe, ordenarMelhoresDias, ESTADO_NOTA } from "../js/regras/notas.js";
 import { analisarDias } from "../js/regras/analise.js";
 import { horasOpenMeteo } from "../js/regras/serie.js";
-import { periodoDe } from "../js/regras/periodos.js";
+import { periodoDe, porPeriodo } from "../js/regras/periodos.js";
 import { instantesDoDia } from "../js/regras/serie.js";
 import { potenciaMaximaDoDia } from "../js/regras/potencia.js";
 import { mediaDoDia } from "../js/regras/agua.js";
@@ -640,4 +640,114 @@ test("revisão 1 (análogo no robalo): limo confirmado na praia dá 1/5 mesmo co
   // Sem limo confirmado, a regra da Fase 1 mantém-se: potência não obtida → n.d.
   assert.equal(robalo({ potenciaMax: null, limo: false }).estado, ESTADO_NOTA.ND);
   assert.equal(robalo({ potenciaMax: null, limo: null }).estado, ESTADO_NOTA.ND);
+});
+
+// ---------- Segunda revisão do ChatGPT da Fase 3 ----------
+
+test("molhe: mar de Sul [157,5°; 202,5°[ → lado por confirmar (decisão pendente do utilizador)", () => {
+  for (const d of [157.5, 180, 202.4]) {
+    const r = ladoDaHora(mar(0.8, d, 8), terra(5, 300), cfgMar);
+    assert.equal(r.lado, LADO.POR_CONFIRMAR, `${d}°`);
+    assert.match(r.motivo, /Sul/);
+  }
+  assert.equal(ladoDaHora(mar(0.8, 157.4, 8), terra(5, 300), cfgMar).lado, LADO.POENTE);
+  assert.equal(ladoDaHora(mar(0.8, 202.5, 8), terra(5, 300), cfgMar).lado, LADO.NASCENTE);
+  // Sem vaga relevante decide o vento: vento de Sul → por confirmar.
+  assert.equal(ladoDaHora(mar(0.1, 240, 8), terra(10, 180), cfgMar).lado, LADO.POR_CONFIRMAR);
+  // O limo nas praias não muda: Sul com mar mexido continua sem limo.
+  assert.equal(limoDaHora(mar(1.2, 180, 8), terra(10, 180), cfgMar).limo, false);
+});
+
+test("2.ª revisão, ponto 1′: nota decidida por limite tem intervalo de um só valor, mesmo incompleta", () => {
+  const a = robalo({ potenciaMax: null, limo: true });
+  assert.equal(a.completa, false);
+  assert.ok(a.limite);
+  assert.deepEqual(a.intervalo, { min: 1, max: 1 });
+});
+
+test("2.ª revisão, ponto 2: política aprovada — a nota mais alta ganha mesmo incompleta, com o intervalo à vista", () => {
+  const inc = ria({ alinhado: true, descidaPressao: null, altaEstavel: null, motivoPressao: "pressão não obtida" });
+  assert.equal(inc.nota, 5);
+  assert.equal(inc.completa, false);
+  assert.deepEqual(inc.intervalo, { min: 4, max: 5 }, "pressão por avaliar: −1 ou +1");
+  const comp = ria({});
+  assert.equal(comp.nota, 4);
+  assert.deepEqual(comp.intervalo, { min: 4, max: 4 });
+  // Melhores dias (secção 6): ordena pela nota; o 5 incompleto fica à frente do 4 completo.
+  const d = (indice, g) => ({ dia: `d${indice}`, indice, melhorRobalo: null, melhorDourada: g, alinhado: false });
+  assert.deepEqual(ordenarMelhoresDias([d(0, 4), d(1, 5)]).map(x => x.dia), ["d1", "d0"]);
+});
+
+test("2.ª revisão, ponto 8 (integração): uma hora de ondulação em falta na tarde → tarde n.d.; nota do dia marcada como incompleta", () => {
+  const e = entrada();
+  // 0,49 × 0,6² × 5,4 = 0,95 kW/m → robalo 1 nas horas conhecidas.
+  const json = serie(["2026-10-13", "2026-10-18", "2026-10-19", "2026-10-20"], () => mar(0.6, 300, 5.4));
+  const i = json.hourly.time.indexOf((limitesDiaLisboa("2026-10-20").inicio + 14 * H) / 1000);
+  assert.ok(i > 0);
+  for (const k of Object.keys(json.hourly)) json.hourly[k].splice(i, 1);
+  e.pontos.mar.faroMarPoente = { ...e.pontos.mar.faroMarPoente, data: json };
+  const pf = analisarDias(e).dias[0].pesqueiros.praia_faro;
+  const tarde = pf.periodos.find(p => p.nome === "tarde");
+  assert.equal(tarde.potencia.completa, false);
+  assert.equal(tarde.notas.robalo.estado, ESTADO_NOTA.ND);
+  assert.match(tarde.notas.robalo.motivo, /potência incompleta/);
+  assert.equal(pf.periodos.find(p => p.nome === "manhã").notas.robalo.nota, 1);
+  const r = pf.notas.robalo;
+  assert.equal(r.nota, 1);
+  assert.equal(r.completa, false);
+  assert.deepEqual(r.periodosSemNota, ["tarde"]);
+  assert.deepEqual(r.intervalo, { min: 1, max: 5 }, "a tarde podia ter nota mais alta");
+  assert.equal(pf.potencia.completa, false);
+  // Os outros pesqueiros não são afectados.
+  assert.deepEqual(analisarDias(e).dias[0].pesqueiros.ancao.notas.robalo.periodosSemNota, []);
+});
+
+test("2.ª revisão, ponto 5: dia de 23 horas (29/03/2026) — sem a 01:00; 22 registos → limo indeterminado", () => {
+  const esp = instantesDoDia("2026-03-29");
+  assert.equal(esp.length, 23);
+  assert.ok(!esp.some(t => utcToLisbon(new Date(t)).slice(11, 13) === "01"));
+  const t = esp.map(i => ({ instante: i, ...terra(5, 300) }));
+  const m = esp.map(i => ({ instante: i, ...mar(0.5, 300, 8) }));
+  assert.equal(limoDoDia(m, t, cfgMar, esp).limo, false);
+  assert.equal(limoDoDia(m.slice(1), t, cfgMar, esp).limo, null);
+});
+
+test("2.ª revisão: os períodos partem o dia sem sobreposições nem horas perdidas (23, 24 e 25 horas)", () => {
+  for (const [dia, n] of [["2026-03-29", 23], ["2026-10-20", 24], ["2026-10-25", 25]]) {
+    const p = porPeriodo(instantesDoDia(dia).map(t => ({ instante: t })), config.periodos);
+    const todas = [...p.values()].flat().map(r => r.instante);
+    assert.equal(todas.length, n, dia);
+    assert.equal(new Set(todas).size, n, dia);
+    assert.ok([...p.values()].every(rs => rs.length > 0), `${dia}: nenhum período vazio`);
+  }
+});
+
+test("2.ª revisão, ponto 6: falta a pressão de 24 h antes de uma hora → sem conclusão de descida nem de estabilidade", () => {
+  const ini = limitesDiaLisboa("2026-10-20").inicio;
+  const todas = [];
+  for (let i = -24; i < 24; i++) if (i !== -10) todas.push({ instante: ini + i * H, pressure_msl: 1021 });
+  const r = pressaoDoDia([], todas, config.pressao, esp20);
+  assert.equal(r.altaEstavel.valor, null);
+  assert.equal(r.descida.activo, null);
+});
+
+test("2.ª revisão, ponto 7: sem dados do Sol (sol ausente ou null) → alinhamento indeterminado, sem erro", () => {
+  assert.equal(alinhamentosDoDia([], null, config.alinhamento).alinhado, null);
+  for (const sol of [undefined, () => null, () => ({ nascer: null, por: null })]) {
+    const p = analisarDias({ ...entrada(), sol }).dias[0].pesqueiros.ria;
+    assert.equal(p.alinhamento.alinhado, null);
+    assert.equal(p.notas.dourada.completa, false);
+    assert.equal(p.notas.dourada.parcelas.find(x => x.descricao.startsWith("alinhamento")).estado, "não avaliada");
+  }
+});
+
+test("2.ª revisão, ponto 9: média do dia inválida → comparação não possível e parcela da água não avaliada", () => {
+  const horas = [...instantesDoDia("2026-10-13"), ...instantesDoDia("2026-10-20")].map(t => ({ instante: t, sea_surface_temperature: 20 }));
+  const sem = horas.filter((_, i) => i !== 30); // falta uma hora de 20/10
+  const r = aguaDoDia(sem, "2026-10-20", config.temperaturaAgua);
+  assert.equal(r.afastaDourada, null);
+  assert.match(r.motivo, /comparação não possível/);
+  assert.equal(aguaDoDia(horas, "2026-10-20", config.temperaturaAgua).afastaDourada, false);
+  const n = ria({ aguaAfasta: r.afastaDourada, motivoAgua: r.motivo });
+  assert.equal(n.parcelas.find(x => x.descricao.startsWith("descida da água")).estado, "não avaliada");
 });
