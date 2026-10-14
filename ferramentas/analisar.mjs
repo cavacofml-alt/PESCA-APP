@@ -1,30 +1,60 @@
-// Corre o motor de regras sobre respostas do Open-Meteo guardadas em ficheiros e imprime um
-// resumo por dia. Ferramenta de verificação (não faz parte da app). Uso:
-//   node ferramentas/analisar.mjs <pasta-com-json> [primeiro-dia AAAA-MM-DD] [n.º de dias]
-// A pasta tem de ter openmeteo_marine_{faro,quarteira}_*.json e openmeteo_forecast_{faro,quarteira}_*.json.
+// Corre o motor de regras e imprime um resumo por dia e por período. Ferramenta de
+// verificação (não faz parte da app). Uso:
+//   node ferramentas/analisar.mjs --rede [AAAA-MM-DD] [dias]     vai buscar os dados agora e guarda-os
+//   node ferramentas/analisar.mjs <pasta> [AAAA-MM-DD] [dias]   usa ficheiros guardados
+// Ficheiros: openmeteo_marine_<ponto>_*.json e openmeteo_forecast_<ponto>_*.json, com <ponto> = chave
+// de config.locais (os pontos de que os pesqueiros precisam).
+// Atrás de um proxy (ex.: ambiente do Claude Code), correr com
+//   NODE_USE_ENV_PROXY=1 NODE_EXTRA_CA_CERTS=<certificados> node --no-warnings ferramentas/analisar.mjs --rede
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { analisarDias } from "../js/regras/analise.js";
 import { validateTides } from "../js/fontes/mares-locais.js";
+import { getMarine } from "../js/fontes/open-meteo-marine.js";
+import { getForecast } from "../js/fontes/open-meteo-forecast.js";
+import { pontosNecessarios } from "../js/pontos.js";
 import { lisbonDate, limitesDiaLisboa, utcToLisbon } from "../js/normalizacao.js";
 
-const [pasta, primeiro, nDias = "7"] = process.argv.slice(2);
-if (!pasta) { console.error("Uso: node ferramentas/analisar.mjs <pasta> [AAAA-MM-DD] [dias]"); process.exit(1); }
+const [origem, primeiro, nDias = "7"] = process.argv.slice(2);
+if (!origem) { console.error("Uso: node ferramentas/analisar.mjs --rede|<pasta> [AAAA-MM-DD] [dias]"); process.exit(1); }
 const raiz = new URL("..", import.meta.url);
 const config = JSON.parse(fs.readFileSync(new URL("config.json", raiz), "utf8"));
 const SunCalc = createRequire(import.meta.url)("../vendor/suncalc.js");
+const pts = pontosNecessarios(config);
 
-const ficheiro = prefixo => {
-  const f = fs.readdirSync(pasta).filter(x => x.startsWith(prefixo)).sort().pop();
-  if (!f) return { ok: false, data: null, error: `ficheiro ${prefixo}* em falta`, source: prefixo };
-  const st = fs.statSync(path.join(pasta, f));
-  return { ok: true, data: JSON.parse(fs.readFileSync(path.join(pasta, f), "utf8")), source: f, readAt: st.mtime.toISOString() };
-};
-const pontos = {
-  faroMar: ficheiro("openmeteo_marine_faro"), quarteiraMar: ficheiro("openmeteo_marine_quarteira"),
-  faroTerra: ficheiro("openmeteo_forecast_faro"), quarteiraTerra: ficheiro("openmeteo_forecast_quarteira")
-};
+async function daRede() {
+  const agora = new Date();
+  const carimbo = utcToLisbon(agora).replace(/[-:]/g, "").replace("T", "_").slice(0, 13);
+  const pasta = new URL(`recolha/${lisbonDate(agora)}/apis/`, raiz);
+  fs.mkdirSync(pasta, { recursive: true });
+  const guardar = (tipo, k, r) => {
+    if (r.ok) fs.writeFileSync(new URL(`openmeteo_${tipo}_${k}_${carimbo}.json`, pasta), JSON.stringify(r.data));
+    else console.error(`  ${tipo} ${k}: não obtido — ${r.error}`);
+    return r;
+  };
+  const mar = {};
+  const terra = {};
+  for (const k of pts.mar) mar[k] = guardar("marine", k, await getMarine({ ...config.locais[k], baseUrl: config.fontes.marineBase }));
+  for (const k of pts.terra) terra[k] = guardar("forecast", k, await getForecast({ ...config.locais[k], baseUrl: config.fontes.forecastBase }));
+  console.log(`Dados lidos às ${utcToLisbon(agora).slice(11, 16)} e guardados em recolha/${lisbonDate(agora)}/apis/`);
+  return { mar, terra };
+}
+
+function deFicheiros(pasta) {
+  const ler = (tipo, k) => {
+    const f = fs.readdirSync(pasta).filter(x => x.startsWith(`openmeteo_${tipo}_${k}_`)).sort().pop();
+    if (!f) return { ok: false, data: null, error: `ficheiro openmeteo_${tipo}_${k}_* em falta`, source: k };
+    return { ok: true, data: JSON.parse(fs.readFileSync(path.join(pasta, f), "utf8")), source: f,
+      readAt: fs.statSync(path.join(pasta, f)).mtime.toISOString() };
+  };
+  return {
+    mar: Object.fromEntries(pts.mar.map(k => [k, ler("marine", k)])),
+    terra: Object.fromEntries(pts.terra.map(k => [k, ler("forecast", k)]))
+  };
+}
+
+const pontos = origem === "--rede" ? await daRede() : deFicheiros(origem);
 const mares = validateTides(JSON.parse(fs.readFileSync(new URL("mares/2026.json", raiz), "utf8"))).events;
 const inicio = primeiro ?? lisbonDate(new Date());
 const dias = Array.from({ length: Number(nDias) }, (_, i) => lisbonDate(new Date(limitesDiaLisboa(inicio).inicio + 12 * 3600000), i));
@@ -35,24 +65,25 @@ const sol = (dia, ponto) => {
 };
 
 const hora = ms => (ms === null || ms === undefined ? "—" : utcToLisbon(new Date(ms)).slice(11, 16));
-const nota = n => (!n ? "" : n.estado === "ok" ? `${n.nota}/5${n.naoAvaliadas.length ? "*" : ""}` : `n.d. (${n.motivo})`);
+const nota = n => (!n ? "—" : n.estado === "ok" ? `${n.nota}${n.naoAvaliadas.length ? "*" : ""}` : "n.d.");
 const { dias: res, melhoresDias } = analisarDias({ dias, pontos, mares, sol, config });
 
 for (const d of res) {
   const a = d.amplitude;
-  console.log(`\n=== ${d.dia}  maré: ${a.amplitude ?? "não obtida"} m ${a.classe ?? ""}  repontos: ${(d.repontos ?? []).map(r => `${r.tipo} ${hora(r.instante)}`).join(" · ") || "não obtidos"}`);
+  console.log(`\n=== ${d.dia}  maré ${a.amplitude ?? "não obtida"} m ${a.classe ?? ""} · repontos ${(d.repontos ?? []).map(r => `${r.tipo} ${hora(r.instante)}`).join(" ") || "não obtidos"}`);
   for (const [id, p] of Object.entries(d.pesqueiros)) {
-    const pot = p.potencia ? `P máx ${p.potencia.valor ?? "n.o."} kW/m às ${hora(p.potencia.instante)}` : "";
-    const limo = p.limo ? `limo ${p.limo.limo === null ? "indeterminado" : p.limo.limo ? "SIM" : "não"}` : "";
-    const lados = p.lados ? `lados: ${p.lados.intervalos.map(i => `${i.lado ?? "?"} ${i.deLocal}–${i.ateLocal}`).join(", ")}` : "";
-    const ns = Object.entries(p.notas).map(([e, n]) => `${e} ${nota(n)}`).join(" | ");
-    console.log(`  ${id.padEnd(16)} ${ns.padEnd(34)} ${pot} ${limo} ${lados}`.trimEnd());
-    if (p.alinhamento.alinhado) console.log(`  ${"".padEnd(16)} ALINHAMENTO: ${p.alinhamento.alinhamentos.map(x => `${x.tipo} ${hora(x.reponto)} a ${x.minutos} min do ${x.evento}`).join("; ")}`);
+    const esp = Object.keys(p.notas);
+    const porPeriodo = p.periodos.map(per => `${per.nome.slice(0, 5)} ${esp.map(e => nota(per.notas[e])).join("/")}`).join("  ");
+    const melhor = esp.map(e => `${e} ${nota(p.notas[e])}${p.notas[e]?.periodo ? ` (${p.notas[e].periodo})` : ""}`).join(" | ");
+    console.log(`  ${id.padEnd(16)} ${melhor.padEnd(38)} [${porPeriodo}]`);
+    const nd = esp.map(e => p.notas[e]).filter(n => n?.estado !== "ok" && n?.motivo);
+    if (nd.length) console.log(`  ${"".padEnd(16)} n.d.: ${nd.map(n => n.motivo).join("; ")}`);
+    if (p.potencia) console.log(`  ${"".padEnd(16)} P máx ${p.potencia.valor ?? "n.o."} kW/m às ${hora(p.potencia.instante)} · limo ${p.limo.limo === null ? "indeterminado" : p.limo.limo ? "SIM" : "não"}${p.lados ? ` · lados ${p.lados.intervalos.map(i => `${i.lado ?? "?"} ${i.deLocal}–${i.ateLocal}`).join(", ")}` : ""}`);
+    const ali = p.periodos.flatMap(per => per.alinhamento.alinhamentos ?? []);
+    if (ali.length) console.log(`  ${"".padEnd(16)} ALINHAMENTO: ${ali.map(x => `${x.tipo} ${hora(x.reponto)} a ${x.minutos} min do ${x.evento}`).join("; ")}`);
   }
   const ria = d.pesqueiros.ria;
-  console.log(`  pressão (Faro): descida ${ria.pressao.descida.activo} (${ria.pressao.descida.descidaHpa?.toFixed?.(1) ?? "—"} hPa) · alta/estável ${ria.pressao.altaEstavel.valor} · água ${ria.agua?.media ?? "—"} °C (vs D−7: ${ria.agua?.variacao ?? ria.agua?.motivo})`);
-  const an = d.pesqueiros.praia_faro.anomalias;
-  if (an?.assinalar) console.log(`  rajada > 3× (Faro): ${an.anomalas.map(x => hora(x.instante)).join(", ")}${an.inconsistentes.length ? ` · inconsistentes ${an.inconsistentes.length}` : ""}`);
+  console.log(`  pressão: descida ${ria.pressao.descida.activo} (${ria.pressao.descida.descidaHpa?.toFixed?.(1) ?? "—"} hPa) · alta/estável ${ria.pressao.altaEstavel.valor} · água ${ria.agua?.media ?? "—"} °C (vs D−7 ${ria.agua?.variacao ?? "n.d."})`);
 }
 console.log(`\nMelhores dias: ${melhoresDias.join(", ")}`);
-console.log("* = nota com parcelas não avaliadas (ex.: chuva pendente)");
+console.log("Períodos: madrugada/manhã/tarde/noite. * = parcelas não avaliadas (ex.: chuva pendente). Notas provisórias.");
