@@ -13,7 +13,7 @@ O repositório é privado, por isso o GitHub Pages grátis não serve. O Cloudfl
 1. Criar conta em <https://dash.cloudflare.com/sign-up>.
 2. **Workers e Pages → Criar → importar um repositório**, autorizar o GitHub e escolher este repositório (nome do projecto: `pesca-app`, ramo de produção `main`).
 3. Não é preciso configurar mais nada: o `wrangler.jsonc` na raiz diz ao Cloudflare para correr `node ferramentas/publicar.mjs` e servir só a pasta `publicar/`. O comando de deploy fica o predefinido (`npx wrangler deploy`).
-4. O endereço fica `https://pesca-app.<subdomínio>.workers.dev`. Cada merge para `main` volta a publicar sozinho; os outros ramos geram uma versão de pré-visualização com endereço próprio.
+4. O endereço fica `https://pesca-app.<subdomínio>.workers.dev` (o desta app: <https://pesca-app.cavacofml.workers.dev/>). Cada merge para `main` volta a publicar sozinho; os outros ramos geram uma versão de pré-visualização com endereço próprio.
 
 `ferramentas/publicar.mjs` copia só os ficheiros da app. **A pasta `recolha/` (material da app de referência) nunca é publicada**, nem os testes e os documentos de trabalho: o site publicado é público, ao contrário do repositório. Um teste confirma-o.
 
