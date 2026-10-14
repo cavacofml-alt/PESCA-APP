@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b3b53">
+  <title>Surfcasting Algarve — diagnóstico das fontes</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./css/base.css">
+</head>
+<body>
+  <main>
+    <h1>Surfcasting Algarve</h1>
+    <p>Diagnóstico das fontes de dados · <a href="./index.html">voltar ao início</a></p>
+    <p class="notice">Os valores abaixo são dados reais obtidos no momento do pedido. Falhas são apresentadas como «não obtido»; esta página não calcula notas de pesca.</p>
+    <button id="refresh" type="button">Actualizar fontes</button>
+    <p id="updated">Ainda não consultado.</p>
+    <section id="results" aria-live="polite"></section>
+  </main>
+  <script src="./vendor/suncalc.js"></script>
+  <script type="module" src="./js/diagnostico.js"></script>
+</body>
+</html>
