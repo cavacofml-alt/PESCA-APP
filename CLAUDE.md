@@ -59,6 +59,7 @@ Regras de trabalho:
 - Sem dependências de runtime nem build. Testes com `node --test` (Node ≥ 20, sem pacotes) e um `testes/runner.html` opcional para o browser. Os testes têm de correr **sem Internet**.
 - GitHub Actions: workflow que corre `node --test` em cada push/PR. Publicação: Cloudflare (secção 2), a cada merge para `main`.
 - Bibliotecas de terceiros (ex.: SunCalc, licença BSD-2) ficam em `vendor/` com o ficheiro de licença.
+- Ao mudar qualquer ficheiro da shell do `sw.js` (JS, CSS, HTML, fotos): `node ferramentas/versao-sw.mjs` antes do commit. Sem isso o telemóvel fica com o código antigo e a config nova (aconteceu no PR #6); um teste falha se for esquecido.
 
 ---
 
