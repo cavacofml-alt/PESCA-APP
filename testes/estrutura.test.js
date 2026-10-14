@@ -29,11 +29,11 @@ test("nenhum URL de API escrito em js/ (fonte única: config.json)", () => {
   for (const f of ficheirosJs("js")) assert.doesNotMatch(ler(f), /https?:\/\//, f);
 });
 
-test("app.js consulta Faro e Quarteira (marine + forecast)", () => {
+test("app.js consulta os pontos de todos os pesqueiros (via pontosNecessarios)", () => {
   const app = ler("js/app.js");
-  for (const local of ["faroMar", "faroTerra", "quarteiraMar", "quarteiraTerra"]) {
-    assert.match(app, new RegExp(`locais\\.${local}`), local);
-  }
+  assert.match(app, /pontosNecessarios\(config\)/);
+  assert.match(app, /pontos\.mar\.map/);
+  assert.match(app, /pontos\.terra\.map/);
 });
 
 // ---------- Service worker, executado num contexto falso ----------

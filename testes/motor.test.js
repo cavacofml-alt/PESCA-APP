@@ -16,6 +16,7 @@ import { notaRobalo, notaDouradaRia, notaDouradaMolhe, ordenarMelhoresDias, ESTA
 import { analisarDias } from "../js/regras/analise.js";
 import { horasOpenMeteo } from "../js/regras/serie.js";
 import { periodoDe } from "../js/regras/periodos.js";
+import { pontosNecessarios } from "../js/pontos.js";
 
 const config = JSON.parse(readFileSync(new URL("../config.json", import.meta.url), "utf8"));
 const cfgMar = { ...config.mar, coeficiente: config.potenciaOndas.coeficiente };
@@ -391,7 +392,7 @@ test("análise por períodos: potência alta só de madrugada → 4 de madrugada
   // 0,49 × 0,9² × 9 = 3,57 de madrugada; 0,49 × 0,6² × 7 = 1,23 no resto do dia.
   const m = serie(["2026-10-13", "2026-10-19", dia], (i, t) =>
     (t >= limitesDiaLisboa(dia).inicio && t < limitesDiaLisboa(dia).inicio + 6 * H ? mar(0.9, 300, 9) : mar(0.6, 300, 7)));
-  for (const k of Object.keys(e.pontos)) if (/Mar$/.test(k)) e.pontos[k] = { ...e.pontos[k], data: m };
+  for (const k of pontosNecessarios(config).mar) e.pontos.mar[k] = { ...e.pontos.mar[k], data: m };
   const pf = analisarDias({ ...e, mares: null }).dias[0].pesqueiros.praia_faro;
   const n = Object.fromEntries(pf.periodos.map(p => [p.nome, p.notas.robalo.nota]));
   assert.deepEqual(n, { madrugada: 4, "manhã": 3, tarde: 3, noite: 3 });
@@ -420,18 +421,20 @@ test("melhores dias: nota máxima, depois alinhamento, depois a outra espécie, 
 
 // ---------- Análise completa: falhas das fontes ----------
 
-function entrada({ faroMarOk = true, mares = TABELA } = {}) {
+// Pontos sintéticos para todos os pontos que o config.json usa. falha: pontos que falham.
+function entrada({ falha = [], mares = TABELA } = {}) {
   const dias = ["2026-10-20"];
   const anteriores = ["2026-10-13", "2026-10-19"];
   const todos = [...anteriores, ...dias];
   const marJson = serie(todos, () => mar(0.9, 300, 9));
   const terraJson = serie(todos, () => terra(8, 330, 12, 1012));
   const ok = data => ({ ok: true, data, source: "teste", readAt: "2026-10-20T06:00:00.000Z" });
+  const falhou = { ok: false, data: null, error: "HTTP 500", source: "teste" };
   return {
     dias,
     pontos: {
-      faroMar: faroMarOk ? ok(marJson) : { ok: false, data: null, error: "HTTP 500", source: "teste" },
-      faroTerra: ok(terraJson), quarteiraMar: ok(marJson), quarteiraTerra: ok(terraJson)
+      mar: Object.fromEntries(pontosNecessarios(config).mar.map(k => [k, falha.includes(k) ? falhou : ok(marJson)])),
+      terra: Object.fromEntries(pontosNecessarios(config).terra.map(k => [k, falha.includes(k) ? falhou : ok(terraJson)]))
     },
     mares,
     sol: () => ({ nascer: Date.parse("2026-10-20T06:45:00Z"), por: Date.parse("2026-10-20T17:55:00Z") }),
@@ -446,30 +449,26 @@ test("análise: dia normal produz notas com fonte dos pontos e parcelas", () => 
   assert.equal(d.pesqueiros.praia_faro.potencia.valor, 3.57);
   assert.equal(d.pesqueiros.praia_faro.notas.robalo.nota, 4);
   assert.equal(d.pesqueiros.ria.notas.dourada.estado, ESTADO_NOTA.OK);
-  assert.deepEqual(d.pesqueiros.almargem.pontos, { mar: "quarteiraMar", terra: "quarteiraTerra", agua: null });
+  // Decisão C: pontos da app de referência nas praias.
+  assert.deepEqual(d.pesqueiros.almargem.pontos, { mar: "forteNovo", terra: "forteNovo", agua: null });
+  assert.deepEqual(d.pesqueiros.praia_faro.pontos, { mar: "faroMarPoente", terra: "faroMarPoente", agua: null });
   assert.deepEqual(melhoresDias, ["2026-10-20"]);
 });
 
-test("análise: sem regra de segurança — bicos e molhe têm nota como as praias", () => {
+test("análise: sem regra de segurança — o molhe tem nota e não há avisos de segurança", () => {
   const { dias } = analisarDias(entrada());
   const p = dias[0].pesqueiros;
   assert.equal(dias[0].seguranca, undefined);
-  for (const id of ["bicos_faro", "bico_ancao"]) {
-    assert.equal(p[id].notas.robalo.estado, ESTADO_NOTA.OK, id);
-    assert.equal(p[id].notas.robalo.nota, p.praia_faro.notas.robalo.nota, id);
-  }
   assert.equal(p.molhe_quarteira.notas.robalo.estado, ESTADO_NOTA.OK);
   assert.ok(Object.values(p).every(x => !x.avisos.some(a => /segurança|desaconselh/i.test(a))));
 });
 
-test("análise: Faro mar em falta → robalo n.d. em Faro/Ancão, sem usar Quarteira em silêncio", () => {
-  const { dias } = analisarDias(entrada({ faroMarOk: false }));
+test("análise: ponto de Faro em falta → robalo n.d. em Faro, sem usar outro ponto em silêncio", () => {
+  const { dias } = analisarDias(entrada({ falha: ["faroMarPoente"] }));
   const p = dias[0].pesqueiros;
-  for (const id of ["praia_faro", "ancao"]) {
-    assert.equal(p[id].notas.robalo.estado, ESTADO_NOTA.ND, id);
-    assert.equal(p[id].pontos.mar, "faroMar");
-  }
-  assert.equal(p.almargem.notas.robalo.estado, ESTADO_NOTA.OK, "Quarteira não é afectada");
+  assert.equal(p.praia_faro.notas.robalo.estado, ESTADO_NOTA.ND);
+  assert.equal(p.praia_faro.pontos.mar, "faroMarPoente");
+  for (const id of ["ancao", "almargem"]) assert.equal(p[id].notas.robalo.estado, ESTADO_NOTA.OK, `${id} não é afectado`);
 });
 
 test("análise: sem tabela de marés → dourada Ria n.d. e alinhamento indeterminado", () => {

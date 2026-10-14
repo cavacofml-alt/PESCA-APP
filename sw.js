@@ -1,8 +1,8 @@
 // Mudar a versão sempre que a shell mudar: a activação apaga as caches antigas.
-const CACHE = "surfcasting-shell-v4";
+const CACHE = "surfcasting-shell-v5";
 const SHELL = [
   "./", "./index.html", "./manifest.webmanifest", "./css/base.css",
-  "./js/app.js", "./js/normalizacao.js",
+  "./js/app.js", "./js/normalizacao.js", "./js/pontos.js",
   "./js/fontes/http.js", "./js/fontes/open-meteo-tempo.js",
   "./js/fontes/open-meteo-marine.js", "./js/fontes/open-meteo-forecast.js",
   "./js/fontes/ipma-mar.js",

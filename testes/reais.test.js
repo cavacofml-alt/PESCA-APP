@@ -10,6 +10,7 @@ import { getMarine } from "../js/fontes/open-meteo-marine.js";
 import { getSeaForecastDay } from "../js/fontes/ipma-mar.js";
 import { analisarDias } from "../js/regras/analise.js";
 import { createRequire } from "node:module";
+import { pontosNecessarios } from "../js/pontos.js";
 import { limitesDiaLisboa, lisbonDate } from "../js/normalizacao.js";
 
 const ler = rel => JSON.parse(readFileSync(new URL(rel, import.meta.url), "utf8"));
@@ -108,14 +109,20 @@ test("IPMA estado do mar real (14/10): forecastDate certo e registo de Faro", as
 test("motor completo com dados reais de 14/10: 7 dias, todos os pesqueiros com nota ou n.d. justificado", () => {
   const SunCalc = createRequire(import.meta.url)("../vendor/suncalc.js");
   const ponto = (tipo, f) => ({ ok: true, data: ler(`./reais/openmeteo_${tipo}_${f}_20261014_0946.json`), source: "teste", readAt: "2026-10-14T08:46:00Z" });
+  // Os ficheiros reais foram pedidos para os pontos antigos (Faro 36.97/-7.98, Quarteira 37.05/-8.1):
+  // aqui servem para todos os pontos do lado de Faro ou de Quarteira.
+  const ladoDe = k => (/Quarteira|ForteNovo/i.test(k) ? "quarteira" : "faro");
+  const pts = pontosNecessarios(config);
+  const pontos = {
+    mar: Object.fromEntries(pts.mar.map(k => [k, ponto("marine", ladoDe(k))])),
+    terra: Object.fromEntries(pts.terra.map(k => [k, ponto("forecast", ladoDe(k))]))
+  };
   const dias = Array.from({ length: 7 }, (_, i) => lisbonDate(new Date("2026-10-14T12:00:00Z"), i));
   const sol = (dia, p) => {
     const t = SunCalc.getTimes(new Date(limitesDiaLisboa(dia).inicio + 12 * 3600000), config.locais[p].latitude, config.locais[p].longitude);
     return { nascer: t.sunrise.getTime(), por: t.sunset.getTime() };
   };
-  const { dias: res, melhoresDias } = analisarDias({ dias, mares: events, sol, config, pontos: {
-    faroMar: ponto("marine", "faro"), quarteiraMar: ponto("marine", "quarteira"),
-    faroTerra: ponto("forecast", "faro"), quarteiraTerra: ponto("forecast", "quarteira") } });
+  const { dias: res, melhoresDias } = analisarDias({ dias, mares: events, sol, config, pontos });
   assert.equal(res.length, 7);
   assert.equal(melhoresDias.length, 7);
   for (const d of res) {

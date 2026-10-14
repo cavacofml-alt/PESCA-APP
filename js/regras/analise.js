@@ -4,8 +4,9 @@
 //
 // entrada = {
 //   dias: ["AAAA-MM-DD", ...]          dias civis de Lisboa a analisar (índice 0 = hoje)
-//   pontos: { faroMar, faroTerra, quarteiraMar, quarteiraTerra }   resultados das fontes
-//           ({ ok, data } do Open-Meteo); série completa, com os dias anteriores
+//   pontos: { mar: { <ponto>: resultado do Open-Meteo Marine }, terra: { <ponto>: resultado do
+//           Open-Meteo Forecast } } — chaves de config.locais; séries completas, com os dias
+//           anteriores. Mar e terra separados: o mesmo ponto pode ter as duas fontes.
 //   mares: eventos validados (validateTides) ou null se a tabela não foi obtida
 //   sol: (dia, ponto) => { nascer: ms|null, por: ms|null }   (SunCalc, pelo chamador)
 //   config
@@ -51,7 +52,7 @@ function analisarPonto(p, dia) {
 }
 
 export function analisarDias({ dias, pontos, mares, sol, config }) {
-  const P = prepararPontos(pontos);
+  const P = { mar: prepararPontos(pontos?.mar), terra: prepararPontos(pontos?.terra) };
   const cfgMar = cfgMarDe(config);
   const periodosCfg = config.periodos ?? PERIODOS_PADRAO;
   const resultado = dias.map((dia, indice) => {
@@ -60,18 +61,20 @@ export function analisarDias({ dias, pontos, mares, sol, config }) {
 
     // Cálculos por ponto (cada um uma vez).
     const porPonto = {};
-    const calcularPonto = nome => {
-      if (porPonto[nome] !== undefined) return porPonto[nome];
-      const a = analisarPonto(P[nome], dia);
-      porPonto[nome] = a && { ...a, fonte: P[nome].fonte, lidoEm: P[nome].lidoEm, obtido: P[nome].obtido };
-      return porPonto[nome];
+    const calcularPonto = (tipo, nome) => {
+      const chave = `${tipo}:${nome}`;
+      if (porPonto[chave] !== undefined) return porPonto[chave];
+      const fonte = P[tipo][nome];
+      const a = analisarPonto(fonte, dia);
+      porPonto[chave] = a && { ...a, fonte: fonte.fonte, lidoEm: fonte.lidoEm, obtido: fonte.obtido };
+      return porPonto[chave];
     };
 
     const pesqueiros = {};
     for (const [id, pq] of Object.entries(config.pesqueiros)) {
-      const mar = pq.mar ? calcularPonto(pq.mar) : null;
-      const terra = calcularPonto(pq.terra);
-      const agua = pq.agua ? calcularPonto(pq.agua) : null;
+      const mar = pq.mar ? calcularPonto("mar", pq.mar) : null;
+      const terra = calcularPonto("terra", pq.terra);
+      const agua = pq.agua ? calcularPonto("mar", pq.agua) : null;
 
       const potencia = mar ? potenciaMaximaDoDia(mar.doDia, cfgMar.coeficiente) : null;
       const limo = mar ? limoDoDia(mar.doDia, terra?.doDia ?? [], cfgMar) : null;
