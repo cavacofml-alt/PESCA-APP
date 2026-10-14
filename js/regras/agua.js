@@ -3,17 +3,18 @@
 // todas as horas do dia civil de Lisboa com valor; caso contrário "comparação não possível".
 // Descida ≥ 2 ºC afasta a dourada.
 import { limitesDiaLisboa, lisbonDate, roundTo } from "../normalizacao.js";
+import { instantesDoDia } from "./serie.js";
 
 const valorAgua = v => typeof v === "number" && Number.isFinite(v);
 
+// Cada instante esperado do dia tem de ter valor (duplicados não compensam horas em falta).
 export function mediaDoDia(horasDoDia, dia, campo = "sea_surface_temperature") {
-  const limites = limitesDiaLisboa(dia);
-  if (!limites) return { media: null, motivo: "dia inválido" };
-  const esperadas = Math.round((limites.fim - limites.inicio) / 3600000);
-  const valores = horasDoDia.filter(r => r.dia === dia).map(r => r[campo]);
-  const validos = valores.filter(valorAgua);
-  if (validos.length !== esperadas) {
-    return { media: null, motivo: `${validos.length} de ${esperadas} horas com valor` };
+  const esperados = instantesDoDia(dia);
+  if (!esperados.length) return { media: null, motivo: "dia inválido" };
+  const porInstante = new Map(horasDoDia.map(r => [r.instante, r]));
+  const validos = esperados.map(t => porInstante.get(t)?.[campo]).filter(valorAgua);
+  if (validos.length !== esperados.length) {
+    return { media: null, motivo: `${validos.length} de ${esperados.length} horas com valor` };
   }
   return { media: validos.reduce((a, b) => a + b, 0) / validos.length };
 }

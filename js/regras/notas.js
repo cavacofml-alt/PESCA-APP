@@ -1,41 +1,51 @@
 // Notas de 1 a 5 (secção 6 do CLAUDE.md; tudo provisório). Função pura.
-// Cada nota mostra as parcelas. Ajuste cujo dado não foi obtido → parcela "não avaliada"
-// (não soma nem subtrai) e a nota fica marcada como incompleta. Limite obrigatório cujo dado
-// não foi obtido → nota n.d. (o limite podia aplicar-se). Limites sobrepõem-se à soma.
+// Cada nota mostra TODAS as parcelas, com o estado: "aplicada", "não aplicada" (avaliada e a
+// condição não se verificou) ou "não avaliada" (dado em falta: não soma nem subtrai, e a nota
+// fica com completa=false). Limites obrigatórios sobrepõem-se à soma; um limite que já se
+// aplica decide, mesmo que outro esteja por verificar; só se nenhum se aplica e algum está
+// por verificar é que a nota fica n.d. (o limite podia aplicar-se).
 import { CLASSE_MARE } from "./mares.js";
 
 export const ESTADO_NOTA = Object.freeze({ OK: "ok", ND: "n.d." });
 
 function limitar(v, min, max) { return Math.min(max, Math.max(min, v)); }
 
+export const ESTADO_PARCELA = Object.freeze({ APLICADA: "aplicada", NAO_APLICADA: "não aplicada", NAO_AVALIADA: "não avaliada" });
+
 // fatores: [{ descricao, condicao: true|false|null, valor }]
 function somar(base, fatores, { minimo = 1, maximo = 5 }) {
-  const parcelas = [{ descricao: base.descricao, valor: base.valor, avaliada: true }];
+  const parcelas = [{ descricao: base.descricao, peso: base.valor, valor: base.valor, estado: ESTADO_PARCELA.APLICADA }];
   let soma = base.valor;
   const naoAvaliadas = [];
   for (const f of fatores) {
     if (f.condicao === null || f.condicao === undefined) {
-      parcelas.push({ descricao: f.descricao, valor: null, avaliada: false, motivo: f.motivo ?? null });
+      parcelas.push({ descricao: f.descricao, peso: f.valor, valor: null, estado: ESTADO_PARCELA.NAO_AVALIADA, motivo: f.motivo ?? null });
       naoAvaliadas.push(f.descricao);
     } else if (f.condicao) {
-      parcelas.push({ descricao: f.descricao, valor: f.valor, avaliada: true });
+      parcelas.push({ descricao: f.descricao, peso: f.valor, valor: f.valor, estado: ESTADO_PARCELA.APLICADA });
       soma += f.valor;
+    } else {
+      parcelas.push({ descricao: f.descricao, peso: f.valor, valor: 0, estado: ESTADO_PARCELA.NAO_APLICADA });
     }
   }
-  return { nota: limitar(soma, minimo, maximo), parcelas, naoAvaliadas };
+  return { nota: limitar(soma, minimo, maximo), parcelas, naoAvaliadas, completa: naoAvaliadas.length === 0 };
 }
 
 function resultado(estado, extra) {
-  return { estado, nota: null, parcelas: [], limite: null, naoAvaliadas: [], provisorio: true, ...extra };
+  return { estado, nota: null, parcelas: [], limite: null, naoAvaliadas: [], completa: false, provisorio: true, ...extra };
 }
 
-// Limites: [{ descricao, aplica: true|false|null, valor }]. O primeiro que se aplica decide;
-// um indeterminado (null) antes de algum aplicado torna a nota n.d.
+// Limites: [{ descricao, aplica: true|false|null, valor }]. Um limite que se aplica decide
+// (o de valor mais baixo, se houver vários), mesmo que outro esteja por verificar. Só quando
+// nenhum se aplica e algum está por verificar é que o resultado fica indeterminado.
 function aplicarLimites(soma, limites) {
-  for (const l of limites) {
-    if (l.aplica === true) return { ...soma, nota: l.valor, limite: { descricao: l.descricao, valor: l.valor } };
-    if (l.aplica === null || l.aplica === undefined) return { indeterminado: l };
+  const aplicados = limites.filter(l => l.aplica === true);
+  if (aplicados.length) {
+    const l = aplicados.reduce((a, b) => (b.valor < a.valor ? b : a));
+    return { ...soma, nota: l.valor, limite: { descricao: l.descricao, valor: l.valor } };
   }
+  const porVerificar = limites.find(l => l.aplica === null || l.aplica === undefined);
+  if (porVerificar) return { indeterminado: porVerificar };
   return { ...soma, limite: null };
 }
 
@@ -72,9 +82,11 @@ export function notaDouradaMolhe(f, cfgPontuacao, cfgMar) {
   const lim = cfgPontuacao.limitesObrigatorios;
   const s = somar({ descricao: "base", valor: pesos.base }, fatoresDourada(f, pesos), cfgPontuacao);
   const p = f.potenciaMax;
+  // Máximo com horas em falta só serve para confirmar que o limite se aplica (não pode descer).
+  const aplicaPotencia = p === null ? null : p >= cfgMar.potenciaDouradaMolheMaximaKWm ? true : f.potenciaCompleta === false ? null : false;
   const r = aplicarLimites(s, [
     { descricao: `potência ≥ ${cfgMar.potenciaDouradaMolheMaximaKWm} kW/m`, valor: lim.douradaMolhePotencia15OuMais,
-      aplica: p === null ? null : p >= cfgMar.potenciaDouradaMolheMaximaKWm },
+      aplica: aplicaPotencia },
     { descricao: "água turva por chuva", valor: lim.douradaMolheAguaTurva, aplica: f.turva }
   ]);
   if (r.indeterminado) return resultado(ESTADO_NOTA.ND, { motivo: `limite obrigatório por verificar: ${r.indeterminado.descricao}${r.indeterminado.descricao.includes("chuva") && f.motivoChuva ? ` (${f.motivoChuva})` : ""}` });
@@ -86,7 +98,19 @@ export function notaRobalo(f, cfgPontuacao, cfgMar, { tipo = "praia" } = {}) {
   const pesos = cfgPontuacao.robaloMar;
   const lim = cfgPontuacao.limitesObrigatorios;
   const p = f.potenciaMax;
+  const limiteLimo = { descricao: "limo (Levante/Sudeste com mar mexido)", valor: lim.robaloComLimoFaroAncaoAlmargem };
+  // Limo confirmado nas praias decide (prioridade Limo > Potência), mesmo com a potência
+  // desconhecida ou incompleta: o limite aplica-se de qualquer forma.
+  if (tipo === "praia" && f.limo === true && (p === null || (f.potenciaCompleta === false && p < cfgMar.potenciaRobaloIntermediaKWm))) {
+    return resultado(ESTADO_NOTA.OK, { nota: lim.robaloComLimoFaroAncaoAlmargem, limite: limiteLimo,
+      naoAvaliadas: ["potência"], motivo: p === null ? "potência não obtida" : "potência incompleta" });
+  }
   if (p === null) return resultado(ESTADO_NOTA.ND, { motivo: "potência não obtida" });
+  // Com horas sem potência, o máximo pode estar subestimado: abaixo de 1,5 kW/m uma hora em
+  // falta pode mudar a base (1 → 3 ou 3 → 4), por isso a nota fica n.d.
+  if (f.potenciaCompleta === false && p < cfgMar.potenciaRobaloIntermediaKWm) {
+    return resultado(ESTADO_NOTA.ND, { motivo: `potência incompleta (máximo conhecido ${Math.round(p * 100) / 100} kW/m, com horas sem valor)` });
+  }
   const fatores = fatoresComuns(f, pesos);
   // P < 1 → 1 obrigatório, independentemente do resto.
   if (p < cfgMar.potenciaRobaloMinimaKWm) {
@@ -98,8 +122,7 @@ export function notaRobalo(f, cfgPontuacao, cfgMar, { tipo = "praia" } = {}) {
   if (tipo === "praia") {
     if (f.limo === true) {
       const s = somar({ descricao: "base", valor: p < cfgMar.potenciaRobaloIntermediaKWm ? pesos.potenciaDe1Abaixo15 : pesos.potencia15OuMaisSemLimo }, fatores, cfgPontuacao);
-      return resultado(ESTADO_NOTA.OK, { ...s, nota: lim.robaloComLimoFaroAncaoAlmargem,
-        limite: { descricao: "limo (Levante/Sudeste com mar mexido)", valor: lim.robaloComLimoFaroAncaoAlmargem } });
+      return resultado(ESTADO_NOTA.OK, { ...s, nota: lim.robaloComLimoFaroAncaoAlmargem, limite: limiteLimo });
     }
     if (f.limo !== false) return resultado(ESTADO_NOTA.ND, { motivo: `limo por verificar${f.motivoLimo ? `: ${f.motivoLimo}` : ""}` });
   }

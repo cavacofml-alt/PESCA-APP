@@ -32,19 +32,22 @@ export function potenciaDoRegisto(r, coeficiente) {
   }, coeficiente) };
 }
 
-// Máximo do dia e hora em que ocorre. Horas sem valor não entram no máximo; se as houver,
-// o resultado diz quantas foram (o máximo pode estar subestimado: nunca se estima).
-export function potenciaMaximaDoDia(registosDoDia, coeficiente) {
-  const horas = registosDoDia.map(r => potenciaDoRegisto(r, coeficiente));
+// Máximo do dia (ou período) e hora em que ocorre. Horas sem valor — incluindo horas
+// esperadas que nem existem nos registos — não entram no máximo; nesse caso completa=false
+// (o máximo pode estar subestimado: nunca se estima).
+export function potenciaMaximaDoDia(registosDoDia, coeficiente, esperados = null) {
+  const porInstante = new Map(registosDoDia.map(r => [r.instante, r]));
+  const registos = esperados ? esperados.map(t => porInstante.get(t) ?? { instante: t }) : registosDoDia;
+  const horas = registos.map(r => potenciaDoRegisto(r, coeficiente));
   const obtidas = horas.filter(h => h.status === ESTADO.OBTIDO);
   const semValor = horas.length - obtidas.length;
   if (obtidas.length === 0) {
-    return { valor: null, status: ESTADO.NAO_OBTIDO, instante: null, horasSemValor: semValor, avisos: [] };
+    return { valor: null, status: ESTADO.NAO_OBTIDO, instante: null, horasSemValor: semValor, completa: false, avisos: [] };
   }
   const max = obtidas.reduce((a, b) => (b.valor > a.valor ? b : a));
   const avisos = [...new Set(obtidas.map(h => h.aviso).filter(Boolean))];
   return {
     valor: roundTo(max.valor, 2), valorExacto: max.valor, status: ESTADO.OBTIDO,
-    instante: max.instante, periodo: max.periodo, horasSemValor: semValor, avisos
+    instante: max.instante, periodo: max.periodo, horasSemValor: semValor, completa: semValor === 0, avisos
   };
 }

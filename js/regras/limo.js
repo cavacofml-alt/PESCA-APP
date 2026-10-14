@@ -6,7 +6,7 @@
 import { classificarComponentes } from "./componentes.js";
 import { potenciaHora } from "./potencia.js";
 import { sectorDaDirecao } from "./sectores.js";
-import { valido } from "./serie.js";
+import { valido, emFalta } from "./serie.js";
 
 export const SECTOR_LIMO = "levanteSudeste";
 
@@ -52,14 +52,17 @@ export function limoDaHora(regMar, regTerra, cfg) {
   return { ...base, limo: false };
 }
 
-// Dia: limo se alguma hora tiver limo; senão indeterminado se alguma hora for indeterminada
-// ou se faltarem horas do mar; senão sem limo.
-export function limoDoDia(horasMar, horasTerra, cfg) {
+// Dia (ou período): limo se alguma hora tiver limo; senão indeterminado se alguma hora for
+// indeterminada ou se faltarem horas do mar (esperados = instantes que deviam existir);
+// senão sem limo.
+export function limoDoDia(horasMar, horasTerra, cfg, esperados = null) {
   const terraPorInstante = new Map(horasTerra.map(r => [r.instante, r]));
   const horas = horasMar.map(r => ({ instante: r.instante, ...limoDaHora(r, terraPorInstante.get(r.instante), cfg) }));
   if (horas.length === 0) return { limo: null, horas, motivo: "sem dados do mar para o dia" };
   const comLimo = horas.filter(h => h.limo === true);
   if (comLimo.length) return { limo: true, horas, horasComLimo: comLimo.map(h => h.instante) };
+  const faltam = esperados ? emFalta(horasMar, esperados) : [];
+  if (faltam.length) return { limo: null, horas, motivo: `${faltam.length} hora(s) sem dados do mar` };
   const indet = horas.filter(h => h.limo === null);
   if (indet.length) return { limo: null, horas, motivo: `${indet.length} hora(s) sem dados suficientes` };
   return { limo: false, horas };

@@ -16,5 +16,10 @@ export function alinhamentosDoDia(repontos, sol, { distanciaMaximaSolRepontoMinu
       if (diferenca <= limite) alinhamentos.push({ evento, sol: t, reponto: r.instante, tipo: r.tipo, minutos: Math.round(diferenca / 60000) });
     }
   }
-  return { alinhado: alinhamentos.length > 0, alinhamentos };
+  if (alinhamentos.length) return { alinhado: true, alinhamentos };
+  // Sem um dos eventos solares não se pode concluir "sem alinhamento".
+  if (sol.nascer === null || sol.por === null) {
+    return { alinhado: null, alinhamentos, motivo: `${sol.nascer === null ? "nascer" : "pôr"} do Sol não obtido` };
+  }
+  return { alinhado: false, alinhamentos };
 }

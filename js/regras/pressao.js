@@ -17,11 +17,14 @@ function variacoes(horasDoDia, porInstante) {
 }
 
 // todasAsHoras: série completa do ponto (inclui dias anteriores, para as 24 h antes).
+// esperados: instantes que o dia devia ter; uma hora ausente conta como sem comparação
+// (nunca como "observada e sem descida").
 export function pressaoDoDia(horasDoDia, todasAsHoras, {
   descidaAtiva24hHpa = 5, altaEstavelMinHpa = 1020, variacaoEstavelMaxExclusivaHpa = 2
-} = {}) {
+} = {}, esperados = null) {
   const porInstante = new Map(todasAsHoras.map(r => [r.instante, r]));
-  const v = variacoes(horasDoDia, porInstante);
+  const doDia = esperados ? esperados.map(t => porInstante.get(t) ?? { instante: t, pressure_msl: null }) : horasDoDia;
+  const v = variacoes(doDia, porInstante);
   const comVar = v.filter(x => x.variacao !== null);
   const completo = v.length > 0 && comVar.length === v.length;
 

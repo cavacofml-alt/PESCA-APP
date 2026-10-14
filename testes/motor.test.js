@@ -16,6 +16,9 @@ import { notaRobalo, notaDouradaRia, notaDouradaMolhe, ordenarMelhoresDias, ESTA
 import { analisarDias } from "../js/regras/analise.js";
 import { horasOpenMeteo } from "../js/regras/serie.js";
 import { periodoDe } from "../js/regras/periodos.js";
+import { instantesDoDia } from "../js/regras/serie.js";
+import { potenciaMaximaDoDia } from "../js/regras/potencia.js";
+import { mediaDoDia } from "../js/regras/agua.js";
 import { pontosNecessarios } from "../js/pontos.js";
 
 const config = JSON.parse(readFileSync(new URL("../config.json", import.meta.url), "utf8"));
@@ -524,4 +527,117 @@ test("análise: chuva forte (25 mm em 48 h) → Ria −2, avisos na Ria, no molh
   assert.ok(p.molhe_quarteira.avisos.some(a => a.includes("junto ao molhe")));
   assert.ok(p.almargem.avisos.some(a => a.includes("foz da ribeira")));
   assert.ok(!p.praia_faro.avisos.some(a => a.startsWith("Chuva")), "sem aviso de chuva na Praia de Faro");
+});
+
+// ---------- Revisão do ChatGPT da Fase 3 (regressões) ----------
+
+const esp20 = instantesDoDia("2026-10-20");
+const mar20 = esp20.map(t => ({ instante: t, ...mar(0.5, 300, 8) }));
+const terra20 = esp20.map(t => ({ instante: t, ...terra(5, 300) }));
+
+test("revisão 1: água turva confirmada decide 1/5 no molhe mesmo com a potência desconhecida", () => {
+  const r = molhe({ potenciaMax: null, turva: true });
+  assert.equal(r.estado, ESTADO_NOTA.OK);
+  assert.equal(r.nota, 1);
+  assert.match(r.limite.descricao, /água turva/);
+  // Sem nenhum limite aplicado e um por verificar → n.d.
+  assert.equal(molhe({ potenciaMax: null, turva: false }).estado, ESTADO_NOTA.ND);
+});
+
+test("revisão 2: nota com parcelas por avaliar fica completa=false; em empate prefere-se a completa", () => {
+  assert.equal(ria({}).completa, true);
+  const inc = ria({ descidaPressao: null, motivoPressao: "pressão não obtida" });
+  assert.equal(inc.completa, false);
+  assert.equal(inc.nota, 4);
+  // Períodos com a mesma nota: a completa ganha, mesmo vindo depois.
+  const { dias } = analisarDias(entrada());
+  const ria20 = dias[0].pesqueiros.ria;
+  assert.equal(ria20.notas.dourada.completa, true);
+});
+
+test("revisão 3 (rejeitado, documentado): Sul pertence ao sector S/SO/O aprovado na Fase 1 → sem limo → 4", () => {
+  // Sectores aprovados: Levante/Sudeste [67,5; 157,5[, Sul/Sudoeste/Oeste [157,5; 292,5[, Norte/Noroeste [292,5; 67,5[.
+  // Cobrem 360°: com P ≥ 1,5 e sem limo, todas as componentes estão em N/NO ou S/SO/O.
+  assert.equal(limoDaHora(mar(1.2, 180, 8), terra(10, 200), cfgMar).limo, false);
+  assert.equal(robalo({ potenciaMax: 1.8, limo: false }).nota, 4);
+  assert.equal(limoDaHora(mar(1.2, 150, 8), terra(10, 200), cfgMar).limo, true, "150° é Sudeste");
+});
+
+test("revisão 5: limo com uma hora do mar em falta → indeterminado (salvo se outra hora já tiver limo)", () => {
+  const sem14 = mar20.filter((_, i) => i !== 14);
+  assert.equal(limoDoDia(sem14, terra20, cfgMar, esp20).limo, null);
+  assert.match(limoDoDia(sem14, terra20, cfgMar, esp20).motivo, /1 hora/);
+  const comLimo = sem14.map((r, i) => (i === 3 ? { ...r, ...mar(1.2, 120, 8) } : r));
+  assert.equal(limoDoDia(comLimo, terra20, cfgMar, esp20).limo, true);
+  assert.equal(limoDoDia(mar20, terra20, cfgMar, esp20).limo, false);
+});
+
+test("revisão 5 (25/10): o dia de 25 horas com só 24 registos não conclui 'sem limo'", () => {
+  const esp25 = instantesDoDia("2026-10-25");
+  assert.equal(esp25.length, 25);
+  const m = esp25.slice(0, 24).map(t => ({ instante: t, ...mar(0.5, 300, 8) }));
+  const t = esp25.map(i => ({ instante: i, ...terra(5, 300) }));
+  assert.equal(limoDoDia(m, t, cfgMar, esp25).limo, null);
+});
+
+test("revisão 6: pressão com registos inteiros em falta → indeterminado, nunca 'alta e estável'", () => {
+  const H = 3600000;
+  const ini = limitesDiaLisboa("2026-10-20").inicio;
+  const todas = [];
+  for (let i = -24; i < 24; i++) if (i < 20) todas.push({ instante: ini + i * H, pressure_msl: 1021 });
+  const r = pressaoDoDia([], todas, config.pressao, esp20);
+  assert.equal(r.altaEstavel.valor, null);
+  assert.equal(r.descida.activo, null);
+  // Com as 24 horas → alta e estável.
+  const completas = [];
+  for (let i = -24; i < 24; i++) completas.push({ instante: ini + i * H, pressure_msl: 1021 });
+  assert.equal(pressaoDoDia([], completas, config.pressao, esp20).altaEstavel.valor, true);
+});
+
+test("revisão 7: sem o pôr (ou o nascer) do Sol, 'sem alinhamento' passa a indeterminado", () => {
+  const ini = limitesDiaLisboa("2026-10-20").inicio;
+  const rep = [{ instante: ini + 18 * 3600000, tipo: "PM" }];
+  assert.equal(alinhamentosDoDia(rep, { nascer: ini + 6 * 3600000, por: null }, config.alinhamento).alinhado, null);
+  assert.equal(alinhamentosDoDia(rep, { nascer: null, por: ini + 18.5 * 3600000 }, config.alinhamento).alinhado, true, "alinhamento encontrado com o evento que existe");
+});
+
+test("revisão 8: potência com horas em falta — máximo conhecido < 1,5 → robalo n.d.; ≥ 1,5 → nota normal", () => {
+  const m = mar20.map((r, i) => (i === 14 ? { ...r, wave_height: null } : { ...r, wave_height: 0.6, wave_period: 5.4 }));
+  const p = potenciaMaximaDoDia(m, 0.49, esp20);
+  assert.equal(p.completa, false);
+  assert.equal(p.horasSemValor, 1);
+  assert.equal(robalo({ potenciaMax: p.valorExacto, potenciaCompleta: p.completa }).estado, ESTADO_NOTA.ND);
+  assert.equal(robalo({ potenciaMax: 1.6, potenciaCompleta: false }).nota, 4, "uma hora em falta não baixa um máximo ≥ 1,5");
+  // Registo inteiro ausente também conta como hora sem valor.
+  assert.equal(potenciaMaximaDoDia(mar20.slice(1), 0.49, esp20).completa, false);
+  // Dourada no molhe: < 1,5 incompleto → limite por verificar; ≥ 1,5 → 1.
+  assert.equal(molhe({ potenciaMax: 1.0, potenciaCompleta: false }).estado, ESTADO_NOTA.ND);
+  assert.equal(molhe({ potenciaMax: 1.6, potenciaCompleta: false }).nota, 1);
+});
+
+test("revisão 9: média da água com um instante duplicado (falta uma hora) → não calculada", () => {
+  const ag = esp20.map(t => ({ instante: t, dia: "2026-10-20", sea_surface_temperature: 20 }));
+  ag[5] = { ...ag[4] };
+  assert.equal(mediaDoDia(ag, "2026-10-20").media, null);
+  assert.equal(mediaDoDia(esp20.map(t => ({ instante: t, sea_surface_temperature: 20 })), "2026-10-20").media, 20);
+});
+
+test("revisão 10: todas as parcelas aparecem, com estado aplicada / não aplicada / não avaliada", () => {
+  const r = ria({ descidaPressao: true, altaEstavel: false, aguaAfasta: null, motivoAgua: "comparação não possível" });
+  const estado = Object.fromEntries(r.parcelas.map(p => [p.descricao, p.estado]));
+  assert.equal(estado["descida de pressão ≥ 5 hPa/24 h"], "aplicada");
+  assert.equal(estado["pressão alta e estável"], "não aplicada");
+  assert.equal(estado["descida da água ≥ 2 ºC (vs. D−7)"], "não avaliada");
+  assert.equal(r.parcelas.length, 6);
+});
+
+test("revisão 1 (análogo no robalo): limo confirmado na praia dá 1/5 mesmo com a potência desconhecida ou incompleta", () => {
+  const a = robalo({ potenciaMax: null, limo: true });
+  assert.equal(a.estado, ESTADO_NOTA.OK);
+  assert.equal(a.nota, 1);
+  assert.match(a.limite.descricao, /limo/);
+  assert.equal(robalo({ potenciaMax: 1.2, potenciaCompleta: false, limo: true }).nota, 1);
+  // Sem limo confirmado, a regra da Fase 1 mantém-se: potência não obtida → n.d.
+  assert.equal(robalo({ potenciaMax: null, limo: false }).estado, ESTADO_NOTA.ND);
+  assert.equal(robalo({ potenciaMax: null, limo: null }).estado, ESTADO_NOTA.ND);
 });
