@@ -1,6 +1,6 @@
 // Converte a série horária do Open-Meteo (timeformat=unixtime) em registos por hora,
 // com o dia civil de Lisboa. Função pura.
-import { lisbonDate, parseUnixSeconds } from "../normalizacao.js";
+import { lisbonDate, parseUnixSeconds, limitesDiaLisboa } from "../normalizacao.js";
 
 export function horasOpenMeteo(json) {
   const h = json?.hourly;
@@ -27,3 +27,21 @@ export function porDia(registos) {
 
 // Número finito e não negativo? (alturas, períodos, velocidades)
 export const valido = v => typeof v === "number" && Number.isFinite(v) && v >= 0;
+
+// Instantes (ms) das horas que um dia civil de Lisboa deve ter: 23, 24 ou 25.
+export function instantesDoDia(dia) {
+  const l = limitesDiaLisboa(dia);
+  if (!l) return [];
+  const out = [];
+  for (let t = l.inicio; t < l.fim; t += 3600000) out.push(t);
+  return out;
+}
+
+// Instantes esperados que faltam nos registos (ou cujo campo não tem valor válido, se
+// `campo` for dado). Registos duplicados não contam a dobrar.
+export function emFalta(registos, esperados, campo = null) {
+  const presentes = new Set((registos ?? [])
+    .filter(r => campo === null || valido(r[campo]))
+    .map(r => r.instante));
+  return esperados.filter(t => !presentes.has(t));
+}

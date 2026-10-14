@@ -11,7 +11,7 @@
 //   sol: (dia, ponto) => { nascer: ms|null, por: ms|null }   (SunCalc, pelo chamador)
 //   config
 // }
-import { horasOpenMeteo, porDia } from "./serie.js";
+import { horasOpenMeteo, porDia, instantesDoDia } from "./serie.js";
 import { potenciaMaximaDoDia } from "./potencia.js";
 import { limoDoDia } from "./limo.js";
 import { ladosDoDia } from "./molhe.js";
@@ -24,13 +24,15 @@ import { aguaTurvaDoDia } from "./chuva.js";
 import { notaDouradaRia, notaDouradaMolhe, notaRobalo, ordenarMelhoresDias, ESTADO_NOTA } from "./notas.js";
 import { porPeriodo, PERIODOS_PADRAO } from "./periodos.js";
 
-// Nota do dia = a do melhor período (com o nome do período). Sem nenhum período com nota
-// → n.d. do primeiro período, com o motivo.
+// Nota do dia = a do melhor período (com o nome do período). Em empate, prefere-se a nota
+// completa (sem parcelas por avaliar); o campo "completa" acompanha a nota do dia. Sem nenhum
+// período com nota → n.d. do primeiro período, com o motivo.
 function melhorDosPeriodos(periodos, especie) {
   const comNota = periodos.map(p => ({ p, n: p.notas[especie] })).filter(x => x.n);
   if (!comNota.length) return undefined;
   const ok = comNota.filter(x => x.n.estado === ESTADO_NOTA.OK);
-  const escolhido = ok.length ? ok.reduce((a, b) => (b.n.nota > a.n.nota ? b : a)) : comNota[0];
+  const melhor = (a, b) => (b.n.nota > a.n.nota || (b.n.nota === a.n.nota && b.n.completa && !a.n.completa) ? b : a);
+  const escolhido = ok.length ? ok.reduce(melhor) : comNota[0];
   return { ...escolhido.n, periodo: escolhido.p.nome };
 }
 
@@ -58,6 +60,10 @@ export function analisarDias({ dias, pontos, mares, sol, config }) {
   const resultado = dias.map((dia, indice) => {
     const amplitude = amplitudeDoDia(mares, dia, config.mares);
     const repontos = repontosDoDia(mares, dia);
+    // Horas que o dia e cada período deviam ter (23, 24 ou 25 no dia): detectar lacunas.
+    const esperadosDia = instantesDoDia(dia);
+    const esperadosP = new Map([...porPeriodo(esperadosDia.map(t => ({ instante: t })), config.periodos ?? PERIODOS_PADRAO)]
+      .map(([nome, rs]) => [nome, rs.map(r => r.instante)]));
 
     // Cálculos por ponto (cada um uma vez).
     const porPonto = {};
@@ -76,9 +82,9 @@ export function analisarDias({ dias, pontos, mares, sol, config }) {
       const terra = calcularPonto("terra", pq.terra);
       const agua = pq.agua ? calcularPonto("mar", pq.agua) : null;
 
-      const potencia = mar ? potenciaMaximaDoDia(mar.doDia, cfgMar.coeficiente) : null;
-      const limo = mar ? limoDoDia(mar.doDia, terra?.doDia ?? [], cfgMar) : null;
-      const pressao = terra ? pressaoDoDia(terra.doDia, terra.todas, config.pressao) : null;
+      const potencia = mar ? potenciaMaximaDoDia(mar.doDia, cfgMar.coeficiente, esperadosDia) : null;
+      const limo = mar ? limoDoDia(mar.doDia, terra?.doDia ?? [], cfgMar, esperadosDia) : null;
+      const pressao = terra ? pressaoDoDia(terra.doDia, terra.todas, config.pressao, esperadosDia) : null;
       const aguaT = agua ? aguaDoDia(agua.todas, dia, config.temperaturaAgua) : null;
       const chuva = aguaTurvaDoDia(terra?.todas ?? [], dia, config.chuva);
       const s = sol ? sol(dia, pq.terra) : null;
@@ -100,12 +106,12 @@ export function analisarDias({ dias, pontos, mares, sol, config }) {
       const repP = repontos === null ? null : porPeriodo(repontos, periodosCfg);
       const periodos = periodosCfg.map(({ nome }) => {
         const horasMar = marP.get(nome);
-        const pot = mar ? potenciaMaximaDoDia(horasMar, cfgMar.coeficiente) : null;
-        const lim = mar ? limoDoDia(horasMar, terra?.doDia ?? [], cfgMar) : null;
+        const pot = mar ? potenciaMaximaDoDia(horasMar, cfgMar.coeficiente, esperadosP.get(nome)) : null;
+        const lim = mar ? limoDoDia(horasMar, terra?.doDia ?? [], cfgMar, esperadosP.get(nome)) : null;
         const ali = alinhamentosDoDia(repP === null ? null : repP.get(nome), s, config.alinhamento);
         const fatores = { ...diarios,
           alinhado: ali.alinhado, motivoAlinhamento: ali.motivo,
-          potenciaMax: pot?.status === "obtido" ? pot.valorExacto : null,
+          potenciaMax: pot?.status === "obtido" ? pot.valorExacto : null, potenciaCompleta: pot?.completa ?? false,
           limo: lim?.limo ?? null, motivoLimo: lim?.motivo ?? null };
         const notasP = {};
         if (pq.especies.includes("dourada")) {
