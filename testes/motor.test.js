@@ -120,6 +120,17 @@ test("molhe: intervalos do dia em hora de Lisboa e aviso de limo à deriva", () 
   assert.equal(r.aviso, AVISO_LIMO_DERIVA);
 });
 
+test("molhe: horas seguidas com o mesmo lado ficam num só intervalo, mesmo que mude quem decide", () => {
+  const dia = "2026-10-20";
+  // Fundo de SE até às 11:00; depois só vento de SE (ondas < 0,2 m) → poente o dia todo.
+  const m = horasDe(serie([dia], i => (i < 12 ? mar(0.8, 120, 8) : mar(0.1, 120, 8))));
+  const t = horasDe(serie([dia], () => terra(10, 120)));
+  const r = ladosDoDia(m, t, cfgMar);
+  assert.equal(r.intervalos.length, 1);
+  assert.deepEqual([r.intervalos[0].lado, r.intervalos[0].deLocal, r.intervalos[0].ateLocal], [LADO.POENTE, "00:00", "23:00"]);
+  assert.deepEqual(r.intervalos[0].decide, ["fundo", "vento"]);
+});
+
 // ---------- Pressão (regra 6) ----------
 
 function pressoes(diaAnterior, dia, pAntes, pDepois) {

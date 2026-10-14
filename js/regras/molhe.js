@@ -42,8 +42,13 @@ export function ladosDoDia(horasMar, horasTerra, cfg) {
   for (const r of horasMar) {
     const h = ladoDaHora(r, terra.get(r.instante), cfg);
     const ultimo = intervalos[intervalos.length - 1];
-    if (ultimo && ultimo.lado === h.lado && ultimo.decide === h.decide) ultimo.ate = r.instante;
-    else intervalos.push({ lado: h.lado, decide: h.decide, de: r.instante, ate: r.instante, motivo: h.motivo ?? null });
+    // Junta horas seguidas com o mesmo lado, mesmo que a componente que decide mude.
+    if (ultimo && ultimo.lado === h.lado) {
+      ultimo.ate = r.instante;
+      if (h.decide && !ultimo.decide.includes(h.decide)) ultimo.decide.push(h.decide);
+    } else {
+      intervalos.push({ lado: h.lado, decide: h.decide ? [h.decide] : [], de: r.instante, ate: r.instante, motivo: h.motivo ?? null });
+    }
   }
   for (const i of intervalos) {
     i.deLocal = utcToLisbon(new Date(i.de))?.slice(11, 16) ?? null;
