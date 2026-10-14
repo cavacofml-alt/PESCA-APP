@@ -1,9 +1,9 @@
 // Mudar a versão sempre que a shell mudar: a activação apaga as caches antigas.
-const CACHE = "surfcasting-shell-v8";
+const CACHE = "surfcasting-shell-v9";
 const SHELL = [
   "./", "./index.html", "./diagnostico.html", "./manifest.webmanifest", "./css/base.css", "./css/app.css",
   "./js/app.js", "./js/diagnostico.js", "./js/dados.js", "./js/normalizacao.js", "./js/pontos.js",
-  "./js/ui/formato.js", "./js/ui/inicio.js",
+  "./js/ui/formato.js", "./js/ui/inicio.js", "./js/ui/horario.js",
   "./assets/fotos/ria.jpg", "./assets/fotos/praia_faro.jpg", "./assets/fotos/ancao.jpg",
   "./assets/fotos/almargem.jpg", "./assets/fotos/molhe_quarteira.jpg",
   "./js/fontes/http.js", "./js/fontes/open-meteo-tempo.js",
@@ -13,7 +13,7 @@ const SHELL = [
   "./js/regras/serie.js", "./js/regras/sectores.js", "./js/regras/potencia.js",
   "./js/regras/componentes.js", "./js/regras/mares.js",
   "./js/regras/limo.js", "./js/regras/molhe.js",
-  "./js/regras/sul.js", "./js/regras/pressao.js", "./js/regras/agua.js",
+  "./js/regras/sul.js", "./js/regras/horas.js", "./js/regras/pressao.js", "./js/regras/agua.js",
   "./js/regras/alinhamento.js", "./js/regras/anomalias.js", "./js/regras/chuva.js",
   "./js/regras/notas.js", "./js/regras/analise.js", "./js/regras/periodos.js",
   "./vendor/suncalc.js"
