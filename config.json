@@ -205,5 +205,24 @@
       "terra": "quarteiraTerra",
       "agua": "quarteiraMar"
     }
-  }
+  },
+  "periodos": [
+    {
+      "nome": "madrugada",
+      "inicioHora": 0
+    },
+    {
+      "nome": "manhã",
+      "inicioHora": 6
+    },
+    {
+      "nome": "tarde",
+      "inicioHora": 12
+    },
+    {
+      "nome": "noite",
+      "inicioHora": 18
+    }
+  ],
+  "periodosProvisorio": true
 }

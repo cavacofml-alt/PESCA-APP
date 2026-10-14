@@ -21,6 +21,17 @@ import { alinhamentosDoDia } from "./alinhamento.js";
 import { anomaliasDoDia } from "./anomalias.js";
 import { aguaTurvaDoDia } from "./chuva.js";
 import { notaDouradaRia, notaDouradaMolhe, notaRobalo, ordenarMelhoresDias, ESTADO_NOTA } from "./notas.js";
+import { porPeriodo, PERIODOS_PADRAO } from "./periodos.js";
+
+// Nota do dia = a do melhor período (com o nome do período). Sem nenhum período com nota
+// → n.d. do primeiro período, com o motivo.
+function melhorDosPeriodos(periodos, especie) {
+  const comNota = periodos.map(p => ({ p, n: p.notas[especie] })).filter(x => x.n);
+  if (!comNota.length) return undefined;
+  const ok = comNota.filter(x => x.n.estado === ESTADO_NOTA.OK);
+  const escolhido = ok.length ? ok.reduce((a, b) => (b.n.nota > a.n.nota ? b : a)) : comNota[0];
+  return { ...escolhido.n, periodo: escolhido.p.nome };
+}
 
 function prepararPontos(pontos) {
   const out = {};
@@ -42,6 +53,7 @@ function analisarPonto(p, dia) {
 export function analisarDias({ dias, pontos, mares, sol, config }) {
   const P = prepararPontos(pontos);
   const cfgMar = cfgMarDe(config);
+  const periodosCfg = config.periodos ?? PERIODOS_PADRAO;
   const resultado = dias.map((dia, indice) => {
     const amplitude = amplitudeDoDia(mares, dia, config.mares);
     const repontos = repontosDoDia(mares, dia);
@@ -71,24 +83,36 @@ export function analisarDias({ dias, pontos, mares, sol, config }) {
       const anomalias = terra ? anomaliasDoDia(terra.doDia, config.anomalias) : null;
       const lados = pq.tipo === "molhe" && mar ? ladosDoDia(mar.doDia, terra?.doDia ?? [], cfgMar) : null;
 
-      const fatores = {
+      // Factores diários (iguais em todos os períodos).
+      const diarios = {
         classeMare: amplitude.classe, motivoMare: amplitude.motivo,
-        alinhado: alinhamento.alinhado, motivoAlinhamento: alinhamento.motivo,
         descidaPressao: pressao?.descida.activo ?? null, motivoPressao: pressao?.descida.motivo ?? (pressao ? null : "pressão não obtida"),
         altaEstavel: pressao?.altaEstavel.valor ?? null, motivoAltaEstavel: pressao?.altaEstavel.motivo ?? null,
         aguaAfasta: aguaT?.afastaDourada ?? null, motivoAgua: aguaT?.motivo ?? null,
-        turva: chuva.turva, motivoChuva: chuva.motivo,
-        potenciaMax: potencia?.status === "obtido" ? potencia.valorExacto : null,
-        limo: limo?.limo ?? null, motivoLimo: limo?.motivo ?? null
+        turva: chuva.turva, motivoChuva: chuva.motivo
       };
 
+      // Por período: potência, limo e alinhamento só com as horas/repontos desse período.
+      const marP = porPeriodo(mar?.doDia ?? [], periodosCfg);
+      const repP = repontos === null ? null : porPeriodo(repontos, periodosCfg);
+      const periodos = periodosCfg.map(({ nome }) => {
+        const horasMar = marP.get(nome);
+        const pot = mar ? potenciaMaximaDoDia(horasMar, cfgMar.coeficiente) : null;
+        const lim = mar ? limoDoDia(horasMar, terra?.doDia ?? [], cfgMar) : null;
+        const ali = alinhamentosDoDia(repP === null ? null : repP.get(nome), s, config.alinhamento);
+        const fatores = { ...diarios,
+          alinhado: ali.alinhado, motivoAlinhamento: ali.motivo,
+          potenciaMax: pot?.status === "obtido" ? pot.valorExacto : null,
+          limo: lim?.limo ?? null, motivoLimo: lim?.motivo ?? null };
+        const notasP = {};
+        if (pq.especies.includes("dourada")) {
+          notasP.dourada = pq.tipo === "molhe" ? notaDouradaMolhe(fatores, config.pontuacao, config.mar) : notaDouradaRia(fatores, config.pontuacao);
+        }
+        if (pq.especies.includes("robalo")) notasP.robalo = notaRobalo(fatores, config.pontuacao, config.mar, { tipo: pq.tipo });
+        return { nome, notas: notasP, potencia: pot, limo: lim && { limo: lim.limo, motivo: lim.motivo ?? null }, alinhamento: ali };
+      });
       const notas = {};
-      if (pq.especies.includes("dourada")) {
-        notas.dourada = pq.tipo === "molhe" ? notaDouradaMolhe(fatores, config.pontuacao, config.mar) : notaDouradaRia(fatores, config.pontuacao);
-      }
-      if (pq.especies.includes("robalo")) {
-        notas.robalo = notaRobalo(fatores, config.pontuacao, config.mar, { tipo: pq.tipo });
-      }
+      for (const especie of pq.especies) notas[especie] = melhorDosPeriodos(periodos, especie);
 
       const avisosTexto = [];
       if (pq.tipo === "ria" && amplitude.classe === CLASSE_MARE.VIVA) {
@@ -100,7 +124,7 @@ export function analisarDias({ dias, pontos, mares, sol, config }) {
       if (potencia?.avisos?.length) avisosTexto.push(...potencia.avisos);
 
       pesqueiros[id] = { nome: pq.nome, pontos: { mar: pq.mar, terra: pq.terra, agua: pq.agua },
-        notas, potencia, limo: limo && { limo: limo.limo, motivo: limo.motivo ?? null, horasComLimo: limo.horasComLimo ?? [] },
+        notas, periodos, potencia, limo: limo && { limo: limo.limo, motivo: limo.motivo ?? null, horasComLimo: limo.horasComLimo ?? [] },
         lados, pressao, agua: aguaT, alinhamento, anomalias, avisos: avisosTexto };
     }
 

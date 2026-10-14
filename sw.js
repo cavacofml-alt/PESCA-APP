@@ -11,7 +11,7 @@ const SHELL = [
   "./js/regras/componentes.js", "./js/regras/mares.js",
   "./js/regras/limo.js", "./js/regras/molhe.js", "./js/regras/pressao.js", "./js/regras/agua.js",
   "./js/regras/alinhamento.js", "./js/regras/anomalias.js", "./js/regras/chuva.js",
-  "./js/regras/notas.js", "./js/regras/analise.js",
+  "./js/regras/notas.js", "./js/regras/analise.js", "./js/regras/periodos.js",
   "./vendor/suncalc.js"
 ];
 self.addEventListener("install", event => {

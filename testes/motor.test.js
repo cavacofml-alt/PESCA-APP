@@ -15,6 +15,7 @@ import { amplitudeDoDia, repontosDoDia, CLASSE_MARE } from "../js/regras/mares.j
 import { notaRobalo, notaDouradaRia, notaDouradaMolhe, ordenarMelhoresDias, ESTADO_NOTA } from "../js/regras/notas.js";
 import { analisarDias } from "../js/regras/analise.js";
 import { horasOpenMeteo } from "../js/regras/serie.js";
+import { periodoDe } from "../js/regras/periodos.js";
 
 const config = JSON.parse(readFileSync(new URL("../config.json", import.meta.url), "utf8"));
 const cfgMar = { ...config.mar, coeficiente: config.potenciaOndas.coeficiente };
@@ -363,6 +364,50 @@ test("dourada molhe: limite por verificar (chuva pendente ou P em falta) → n.d
   assert.equal(molhe({ potenciaMax: null }).estado, ESTADO_NOTA.ND);
   // P ≥ 1,5 já decide 1, mesmo com a chuva pendente.
   assert.equal(molhe({ potenciaMax: 2, turva: null }).nota, 1);
+});
+
+// ---------- Períodos (decisão B, opção C) ----------
+
+test("períodos: fronteiras pela hora de Lisboa (06, 12, 18)", () => {
+  const p = iso => periodoDe(Date.parse(iso));
+  assert.equal(p("2026-10-20T04:59:00Z"), "madrugada"); // 05:59 WEST
+  assert.equal(p("2026-10-20T05:00:00Z"), "manhã");     // 06:00
+  assert.equal(p("2026-10-20T10:59:00Z"), "manhã");     // 11:59
+  assert.equal(p("2026-10-20T11:00:00Z"), "tarde");     // 12:00
+  assert.equal(p("2026-10-20T17:00:00Z"), "noite");     // 18:00
+  assert.equal(p("2026-10-20T22:59:00Z"), "noite");     // 23:59
+});
+
+test("períodos: no dia de 25 horas (25/10) as duas 01:00 ficam na madrugada", () => {
+  assert.equal(periodoDe(Date.parse("2026-10-25T00:00:00Z")), "madrugada"); // 01:00 WEST
+  assert.equal(periodoDe(Date.parse("2026-10-25T01:00:00Z")), "madrugada"); // 01:00 WET
+  assert.equal(periodoDe(Date.parse("2026-10-25T05:59:00Z")), "madrugada"); // 05:59 WET
+  assert.equal(periodoDe(Date.parse("2026-10-25T06:00:00Z")), "manhã");
+});
+
+test("análise por períodos: potência alta só de madrugada → 4 de madrugada, 3 no resto; nota do dia = melhor período", () => {
+  const e = entrada();
+  const dia = "2026-10-20";
+  // 0,49 × 0,9² × 9 = 3,57 de madrugada; 0,49 × 0,6² × 7 = 1,23 no resto do dia.
+  const m = serie(["2026-10-13", "2026-10-19", dia], (i, t) =>
+    (t >= limitesDiaLisboa(dia).inicio && t < limitesDiaLisboa(dia).inicio + 6 * H ? mar(0.9, 300, 9) : mar(0.6, 300, 7)));
+  for (const k of Object.keys(e.pontos)) if (/Mar$/.test(k)) e.pontos[k] = { ...e.pontos[k], data: m };
+  const pf = analisarDias({ ...e, mares: null }).dias[0].pesqueiros.praia_faro;
+  const n = Object.fromEntries(pf.periodos.map(p => [p.nome, p.notas.robalo.nota]));
+  assert.deepEqual(n, { madrugada: 4, "manhã": 3, tarde: 3, noite: 3 });
+  assert.equal(pf.notas.robalo.nota, 4);
+  assert.equal(pf.notas.robalo.periodo, "madrugada");
+});
+
+test("análise por períodos: o alinhamento só conta no período do reponto", () => {
+  const { dias } = analisarDias(entrada());
+  // TABELA: BM 02:10Z (03:10), PM 08:20Z (09:20), BM 14:30Z (15:30), PM 20:40Z (21:40); Sol 06:45Z e 17:55Z.
+  // Nenhum reponto a ≤ 60 min do Sol → nenhum período alinhado; mas a tabela cobre o dia (não é null).
+  for (const p of dias[0].pesqueiros.ria.periodos) assert.equal(p.alinhamento.alinhado, false, p.nome);
+  const sol = () => ({ nascer: Date.parse("2026-10-20T07:50:00Z"), por: Date.parse("2026-10-20T17:55:00Z") });
+  const r = analisarDias({ ...entrada(), sol }).dias[0].pesqueiros.ria.periodos;
+  const alinhados = r.filter(p => p.alinhamento.alinhado).map(p => p.nome);
+  assert.deepEqual(alinhados, ["manhã"]); // PM 09:20 a 30 min do nascer (08:50)
 });
 
 // ---------- Melhores dias ----------
