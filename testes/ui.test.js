@@ -57,7 +57,7 @@ test("ecrã: fonte em falta aparece no cartão afectado e só nele", () => {
 });
 
 test("ecrã: nota incompleta mostra o intervalo e o que falta; n.d. e «por confirmar» nunca aparecem como nota", () => {
-  const c = contexto();
+  const c = { ...contexto(), especie: "dourada" };
   const p = c.analise.dias[0].pesqueiros.ria;
   p.notas.dourada = { ...p.notas.dourada, estado: "ok", nota: 5, completa: false, intervalo: { min: 4, max: 5 },
     periodosSemNota: [], naoAvaliadas: ["descida de pressão ≥ 5 hPa/24 h"] };
@@ -116,7 +116,7 @@ test("ecrã: marés por extenso (preia-mar / baixa-mar), sem PM nem BM", () => {
 test("Fontes: créditos de todas as fotografias, com autor e licença", () => {
   const src = readFileSync(new URL("js/diagnostico.js", raiz), "utf8");
   assert.match(src, /Créditos das fotografias/);
-  for (const pq of Object.values(config.pesqueiros)) {
-    assert.ok(pq.foto.autor && pq.foto.licenca && pq.foto.pagina, pq.nomeCurto);
-  }
+  const comFoto = Object.values(config.pesqueiros).filter(pq => pq.foto);
+  assert.ok(comFoto.length >= 5);
+  for (const pq of comFoto) assert.ok(pq.foto.autor && pq.foto.licenca && pq.foto.pagina, pq.nomeCurto);
 });

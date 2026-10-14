@@ -159,11 +159,16 @@ export function notaRobalo(f, cfgPontuacao, cfgMar, { tipo = "praia" } = {}) {
 
 // Melhores dias: nota máxima do dia; desempate por alinhamento, depois nota da outra espécie,
 // depois o dia mais próximo. Notas n.d. contam como ausentes (ficam no fim).
-export function ordenarMelhoresDias(dias) {
+// Com «especie» (escolha da espécie no ecrã), a nota máxima é a dessa espécie e a «outra» é a
+// da outra espécie; sem ela, a maior das duas.
+export function ordenarMelhoresDias(dias, especie = null) {
   const chave = d => {
     const r = d.melhorRobalo ?? -Infinity;
     const g = d.melhorDourada ?? -Infinity;
-    return { max: Math.max(r, g), outra: Math.min(r, g), alinhado: d.alinhado === true ? 1 : 0 };
+    const alinhado = d.alinhado === true ? 1 : 0;
+    if (especie === "robalo") return { max: r, outra: g, alinhado };
+    if (especie === "dourada") return { max: g, outra: r, alinhado };
+    return { max: Math.max(r, g), outra: Math.min(r, g), alinhado };
   };
   return [...dias].sort((a, b) => {
     const ka = chave(a);
