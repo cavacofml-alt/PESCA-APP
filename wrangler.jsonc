@@ -1,0 +1,14 @@
+// Cloudflare Workers (site estático, sem código no servidor).
+// O build corre ferramentas/publicar.mjs, que copia só os ficheiros da app para publicar/:
+// a pasta recolha/ (material da app de referência) nunca é publicada. Sem este ficheiro o Cloudflare
+// tenta adivinhar o tipo de projecto e engana-se (julga que é Hugo por causa do config.json).
+{
+  "name": "pesca-app",
+  "compatibility_date": "2026-10-12",
+  "build": {
+    "command": "node ferramentas/publicar.mjs"
+  },
+  "assets": {
+    "directory": "./publicar"
+  }
+}
