@@ -49,3 +49,16 @@ python3 ferramentas/mares_ih.py pasta mares/AAAA.json $(sha256sum Tabela.pdf | c
 ```
 
 O script recusa escrever se alguma validação falhar (dias seguidos, dia da semana impresso, alternância, intervalos, 365/366 dias). Ajustar `PAGINAS` e o ano no script.
+
+## Motor de regras (Fase 3)
+
+`js/regras/` — funções puras, sem rede nem armazenamento. `analisarDias()` (em `analise.js`) recebe os dados já obtidos (Open-Meteo por ponto, tabela de marés, nascer/pôr do Sol do SunCalc) e devolve, por dia e por pesqueiro: notas de robalo e dourada **por período** (madrugada, manhã, tarde, noite) com as parcelas, potência máxima e hora, limo, lado do molhe, pressão, água, chuva, alinhamentos e avisos. Dado em falta → `n.d.` com o motivo; nunca um valor por defeito.
+
+Os limiares provisórios estão no `config.json` (`mar`, `pressao`, `temperaturaAgua`, `chuva`, `anomalias`, `alinhamento`, `periodos`, `pontuacao`). Os pesqueiros e os pontos de dados estão em `pesqueiros` e `locais`.
+
+Para ver o resultado sem interface:
+
+```
+node ferramentas/analisar.mjs --rede            # vai buscar os dados agora (guarda em recolha/<dia>/apis/)
+node ferramentas/analisar.mjs recolha/2026-10-14/apis 2026-10-14 7   # com ficheiros guardados
+```
