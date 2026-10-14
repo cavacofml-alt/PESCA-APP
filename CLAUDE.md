@@ -24,8 +24,10 @@ O utilizador é pescador experiente e exige rigor: verificar o significado de ca
 
 - **Fase 1 (arquitectura): aprovada.** Decisões na secção 6.
 - **Fase 2 (fontes de dados): entregue pelo ChatGPT** e corrigida (secção 7) no PR #1, já integrado no `main`.
-- **Fase 3 (motor de regras): concluída** no ramo `claude/new-session-ywtpsk` (PR para revisão do ChatGPT). Tabela de marés oficial de 2026 convertida (`mares/2026.json`). Todas as decisões de regras tomadas (secções 5 e 6).
-- Fases 4–6 por fazer (secção 8). O repositório é **privado** (13/10/2026): o GitHub Pages grátis não serve; decidir o alojamento na Fase 4.
+- **Fase 3 (motor de regras): concluída** e integrada no `main` (PR #2, 14/10/2026, após três revisões do ChatGPT). Tabela de marés oficial de 2026 convertida (`mares/2026.json`); conferida com a Tábua de Marés a 14/10 (diferenças ≤ 6 min).
+- **Fase 4 (interface): em curso.** Parte 1 (PR #3, aprovada pelo utilizador sem revisão do ChatGPT): ecrã inicial com cartões por pesqueiro, publicação no Cloudflare. Falta: ecrã de cada pesqueiro (tabela hora a hora, curva de maré), mapa, «próxima semana».
+- **Alojamento (14/10/2026): Cloudflare Workers** (site estático), projecto `pesca-app`, ramo de produção `main`. `wrangler.jsonc` corre `ferramentas/publicar.mjs`, que publica só a app — **nunca a pasta `recolha/`** (o site é público; o repositório é privado por causa do material da app de referência).
+- **Molhes (14/10/2026):** há dois — o do porto de pesca de Quarteira (pesqueiro 5) e o da marina de Vilamoura (favorito «Vilamoura» da app de referência; coordenadas do utilizador em `config.locais.vilamouraMolheOeste`). Por decidir: Vilamoura como pesqueiro à parte e com que regras; coordenadas exactas do molhe de Quarteira (proposta: farolim do molhe este, 37,0666, −8,1100, segundo o Wikimedia).
 - **Objectivo alargado (14/10/2026):** o utilizador quer uma app **como a app de referência** ([endereço retirado]), em português, melhorada e só para uso pessoal; **web app** (PWA) para **Android**. Ecrãs "iguais à app de referência" (cartões de favoritos com nota, mapa, meteograma hora a hora, curva de maré, comparador, diário…), mas com as regras e fontes deste projecto. Não copiar código, imagens, marca nem camadas pagas da app de referência; a pasta `recolha/` serve só de referência.
 
 Estrutura actual (Fase 2):
@@ -52,7 +54,7 @@ Regras de trabalho:
 - Commits pequenos e descritivos em português. Um PR por fase.
 - Antes de assumir algo ambíguo numa regra: **perguntar**. Não escolher em silêncio.
 - Sem dependências de runtime nem build. Testes com `node --test` (Node ≥ 20, sem pacotes) e um `testes/runner.html` opcional para o browser. Os testes têm de correr **sem Internet**.
-- GitHub Actions: workflow que corre `node --test` em cada push/PR. Deploy para GitHub Pages só depois da Fase 4.
+- GitHub Actions: workflow que corre `node --test` em cada push/PR. Publicação: Cloudflare (secção 2), a cada merge para `main`.
 - Bibliotecas de terceiros (ex.: SunCalc, licença BSD-2) ficam em `vendor/` com o ficheiro de licença.
 
 ---
@@ -179,7 +181,7 @@ Menores:
 
 Rede: no ambiente do Claude Code, o `fetch` do Node só passa pelo proxy com `NODE_USE_ENV_PROXY=1 NODE_EXTRA_CA_CERTS=/root/.ccr/ca-bundle.crt`. O Open-Meteo Forecast pode responder HTTP 429 (limite gratuito, partilhado pelo IP do ambiente).
 
-Não usar como fonte de dados (decidido): Windguru (sem API pública; a estação da Praia de Faro pode ser um link "leitura actual"), Beachcam, Facebook.
+Não usar como fonte de dados (decidido): Windguru (sem API pública; os cartões têm ligações «vento agora» às estações 3324 Praia de Faro, 3370 Quarteira e 15198 Vilamoura), Beachcam (só ligações às câmaras), Facebook.
 
 ---
 
@@ -189,4 +191,4 @@ Não usar como fonte de dados (decidido): Windguru (sem API pública; a estaçã
 - Falha de uma fonte nunca bloqueia as outras.
 - Todas as horas apresentadas em `Europe/Lisbon`; cálculos sobre instantes absolutos.
 - `node --test` verde, offline, em CI.
-- README em português: como publicar no GitHub Pages, instalar no telemóvel, actualizar a tabela de marés e editar os limiares provisórios.
+- README em português: como publicar (Cloudflare), instalar no telemóvel, actualizar a tabela de marés e editar os limiares provisórios.
