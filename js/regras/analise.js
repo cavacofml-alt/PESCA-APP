@@ -24,6 +24,7 @@ import { aguaTurvaDoDia } from "./chuva.js";
 import { notaDouradaRia, notaDouradaMolhe, notaRobalo, ordenarMelhoresDias, ESTADO_NOTA } from "./notas.js";
 import { porPeriodo, PERIODOS_PADRAO } from "./periodos.js";
 import { marForteForaDoSul } from "./sul.js";
+import { horasDoPesqueiro } from "./horas.js";
 
 // Nota do dia = a do melhor período (com o nome do período; decisão aprovada na Fase 1). Em
 // empate, prefere-se a nota completa (sem parcelas por avaliar). Se algum período ficou n.d.,
@@ -149,8 +150,11 @@ export function analisarDias({ dias, pontos, mares, sol, config }) {
       if (chuva.turva === null) avisosTexto.push(`Chuva: ${chuva.motivo}`);
       if (potencia?.avisos?.length) avisosTexto.push(...potencia.avisos);
 
+      const horas = horasDoPesqueiro({ esperados: esperadosDia, mar: mar?.doDia ?? null, terra: terra?.doDia ?? [],
+        agua: agua?.doDia ?? null, cfgMar, tipo: pq.tipo, periodos: periodosCfg });
+
       pesqueiros[id] = { nome: pq.nome, pontos: { mar: pq.mar, terra: pq.terra, agua: pq.agua },
-        notas, periodos, potencia, limo: limo && { limo: limo.limo, motivo: limo.motivo ?? null, horasComLimo: limo.horasComLimo ?? [] },
+        notas, periodos, horas, potencia, limo: limo && { limo: limo.limo, motivo: limo.motivo ?? null, horasComLimo: limo.horasComLimo ?? [] },
         lados, pressao, agua: aguaT, chuva, alinhamento, anomalias, avisos: avisosTexto };
     }
 
