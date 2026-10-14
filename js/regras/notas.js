@@ -6,7 +6,8 @@
 // por verificar é que a nota fica n.d. (o limite podia aplicar-se).
 import { CLASSE_MARE } from "./mares.js";
 
-export const ESTADO_NOTA = Object.freeze({ OK: "ok", ND: "n.d." });
+// POR_CONFIRMAR: há dados, mas a regra para o caso ainda não está decidida (mar de Sul).
+export const ESTADO_NOTA = Object.freeze({ OK: "ok", ND: "n.d.", POR_CONFIRMAR: "por confirmar" });
 
 function limitar(v, min, max) { return Math.min(max, Math.max(min, v)); }
 
@@ -149,7 +150,11 @@ export function notaRobalo(f, cfgPontuacao, cfgMar, { tipo = "praia" } = {}) {
       : null;
     return resultado(ESTADO_NOTA.OK, { ...s, observacao });
   }
-  return resultado(ESTADO_NOTA.OK, somar({ descricao: "base: P ≥ 1,5 kW/m sem limo", valor: pesos.potencia15OuMaisSemLimo }, fatores, cfgPontuacao));
+  // Praias: a base 4 exige mar de N/NO ou O/SO (onda dominante numa hora com P ≥ 1,5). Mar de
+  // Sul → por confirmar (decisão do utilizador, 14/10/2026); direcção indeterminada → n.d.
+  if (f.marForaDoSul === false) return resultado(ESTADO_NOTA.POR_CONFIRMAR, { motivo: f.motivoSul ?? "mar de Sul: nota por confirmar no terreno" });
+  if (f.marForaDoSul !== true) return resultado(ESTADO_NOTA.ND, { motivo: `direcção do mar por verificar${f.motivoSul ? `: ${f.motivoSul}` : ""}` });
+  return resultado(ESTADO_NOTA.OK, somar({ descricao: "base: P ≥ 1,5 kW/m, N/NO ou O/SO, sem limo", valor: pesos.potencia15OuMaisSemLimo }, fatores, cfgPontuacao));
 }
 
 // Melhores dias: nota máxima do dia; desempate por alinhamento, depois nota da outra espécie,

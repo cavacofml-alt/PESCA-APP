@@ -23,6 +23,7 @@ import { anomaliasDoDia } from "./anomalias.js";
 import { aguaTurvaDoDia } from "./chuva.js";
 import { notaDouradaRia, notaDouradaMolhe, notaRobalo, ordenarMelhoresDias, ESTADO_NOTA } from "./notas.js";
 import { porPeriodo, PERIODOS_PADRAO } from "./periodos.js";
+import { marForteForaDoSul } from "./sul.js";
 
 // Nota do dia = a do melhor período (com o nome do período; decisão aprovada na Fase 1). Em
 // empate, prefere-se a nota completa (sem parcelas por avaliar). Se algum período ficou n.d.,
@@ -118,16 +119,19 @@ export function analisarDias({ dias, pontos, mares, sol, config }) {
         const pot = mar ? potenciaMaximaDoDia(horasMar, cfgMar.coeficiente, esperadosP.get(nome)) : null;
         const lim = mar ? limoDoDia(horasMar, terra?.doDia ?? [], cfgMar, esperadosP.get(nome)) : null;
         const ali = alinhamentosDoDia(repP === null ? null : repP.get(nome), s, config.alinhamento);
+        const sul = mar && pq.tipo === "praia" ? marForteForaDoSul(horasMar, cfgMar, esperadosP.get(nome)) : null;
         const fatores = { ...diarios,
           alinhado: ali.alinhado, motivoAlinhamento: ali.motivo,
           potenciaMax: pot?.status === "obtido" ? pot.valorExacto : null, potenciaCompleta: pot?.completa ?? false,
-          limo: lim?.limo ?? null, motivoLimo: lim?.motivo ?? null };
+          limo: lim?.limo ?? null, motivoLimo: lim?.motivo ?? null,
+          marForaDoSul: sul?.valor ?? null, motivoSul: sul?.motivo ?? null };
         const notasP = {};
         if (pq.especies.includes("dourada")) {
           notasP.dourada = pq.tipo === "molhe" ? notaDouradaMolhe(fatores, config.pontuacao, config.mar) : notaDouradaRia(fatores, config.pontuacao);
         }
         if (pq.especies.includes("robalo")) notasP.robalo = notaRobalo(fatores, config.pontuacao, config.mar, { tipo: pq.tipo });
-        return { nome, notas: notasP, potencia: pot, limo: lim && { limo: lim.limo, motivo: lim.motivo ?? null }, alinhamento: ali };
+        return { nome, notas: notasP, potencia: pot, limo: lim && { limo: lim.limo, motivo: lim.motivo ?? null }, alinhamento: ali,
+          marDeSul: sul && { foraDoSul: sul.valor, horasSul: sul.horasSul, motivo: sul.motivo ?? null } };
       });
       const notas = {};
       for (const especie of pq.especies) notas[especie] = melhorDosPeriodos(periodos, especie, config.pontuacao.maximo ?? 5);
