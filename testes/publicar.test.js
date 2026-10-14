@@ -42,3 +42,11 @@ test("manifesto: ícones de 192 e 512 px que existem (necessários para instalar
   assert.ok(tamanhos.includes("192x192") && tamanhos.includes("512x512"));
   for (const i of m.icons) assert.ok(fs.existsSync(path.join(raiz, i.src)), i.src);
 });
+
+test("wrangler.jsonc: o Cloudflare corre o passo de publicação e serve só a pasta publicar/", () => {
+  const texto = fs.readFileSync(path.join(raiz, "wrangler.jsonc"), "utf8").replace(/^\s*\/\/.*$/gm, "");
+  const w = JSON.parse(texto);
+  assert.equal(w.build.command, "node ferramentas/publicar.mjs");
+  assert.equal(w.assets.directory, "./publicar");
+  assert.equal(w.main, undefined, "site estático: sem código no servidor");
+});
