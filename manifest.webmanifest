@@ -7,5 +7,19 @@
   "display": "standalone",
   "background_color": "#f5f8fa",
   "theme_color": "#0b3b53",
-  "description": "Condições de surfcasting no Algarve, com regras determinísticas."
+  "description": "Condições de surfcasting no Algarve, com regras determinísticas.",
+  "icons": [
+    {
+      "src": "assets/icones/icone-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icones/icone-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }

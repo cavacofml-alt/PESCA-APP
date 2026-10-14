@@ -42,6 +42,7 @@ test("ecrã: um cartão por pesqueiro, com nota, períodos, fontes e créditos d
   assert.equal((html.match(/<h4>Fontes<\/h4>/g) ?? []).length, Object.keys(config.pesqueiros).length);
   assert.match(html, /Open-Meteo Marine \(37\.0133, -8\.00567\) · previsto · lido às 10:46/);
   assert.match(html, /CC BY-SA 4\.0/);
+  assert.match(html, /Vento agora \(Windguru\): <a href="https:\/\/www\.windguru\.cz\/station\/3324"/);
   assert.match(html, /notas provisórias/);
 });
 
