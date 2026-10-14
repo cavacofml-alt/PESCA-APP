@@ -173,6 +173,10 @@ function avisosDoCartao(p, pq, contexto) {
   return `<ul class="avisos">${falhas.map(a => `<li class="falha">${esc(a)}</li>`).join("")}${p.avisos.map(a => `<li>${esc(a)}</li>`).join("")}</ul>`;
 }
 
+// Ligações externas (câmaras, estações): só para o utilizador ver; a app não lê estes dados.
+const ligacoes = (titulo, lista) => (lista?.length
+  ? `${esc(titulo)}: ${lista.map(c => `<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.nome)}</a>`).join(" · ")}<br>` : "");
+
 function cartao(id, p, d, contexto) {
   const pq = contexto.config.pesqueiros[id];
   const especies = Object.keys(p.notas);
@@ -190,7 +194,7 @@ function cartao(id, p, d, contexto) {
       ${factos(p, pq)}
       ${avisosDoCartao(p, pq, contexto)}
       ${detalhes(p, pq, d, contexto)}
-      <p class="rodape">${pq.camaras?.length ? `Câmaras: ${pq.camaras.map(c => `<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.nome)}</a>`).join(" · ")}<br>` : ""}${foto ? `Foto: <a href="${esc(foto.pagina)}" target="_blank" rel="noopener">${esc(foto.autor)}</a>, ${esc(foto.licenca)} (Wikimedia Commons)` : ""}</p>
+      <p class="rodape">${ligacoes("Vento agora (Windguru)", pq.estacoes)}${ligacoes("Câmaras", pq.camaras)}${foto ? `Foto: <a href="${esc(foto.pagina)}" target="_blank" rel="noopener">${esc(foto.autor)}</a>, ${esc(foto.licenca)} (Wikimedia Commons)` : ""}</p>
     </div>
   </article>`;
 }

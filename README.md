@@ -1,10 +1,25 @@
-# Surfcasting Algarve — Fase 2
+# Surfcasting Algarve
 
-Módulos de consulta de dados e validação inicial, sem build e sem dependências de runtime obrigatórias.
+App pessoal (PWA, para Android) com as condições de surfcasting para dourada e robalo entre Faro e Quarteira. Sem build e sem dependências de runtime. O ecrã inicial (`index.html`) mostra um cartão por pesqueiro com as notas por período; `diagnostico.html` mostra o estado de cada fonte.
 
 ## Executar localmente
 
-Os módulos ES e `fetch()` não funcionam de forma fiável a partir de `file://`. Servir a pasta por HTTP, por exemplo através de GitHub Pages ou de um servidor estático local.
+Os módulos ES e `fetch()` não funcionam a partir de `file://`. Servir a pasta por HTTP, por exemplo `python3 -m http.server` na raiz, e abrir `http://localhost:8000/`.
+
+## Publicar (Cloudflare Pages)
+
+O repositório é privado, por isso o GitHub Pages grátis não serve. O Cloudflare Pages é grátis e lê repositórios privados.
+
+1. Criar conta em <https://dash.cloudflare.com/sign-up>.
+2. **Workers e Pages → Criar → Pages → Ligar ao Git**, autorizar o GitHub e escolher este repositório.
+3. Configuração da compilação: predefinição **Nenhuma**; comando de compilação `node ferramentas/publicar.mjs`; directório de saída `publicar`; ramo de produção `main`.
+4. Guardar e publicar. O endereço fica `https://<nome-do-projecto>.pages.dev`. Cada merge para `main` volta a publicar sozinho; os outros ramos têm um endereço de pré-visualização.
+
+`ferramentas/publicar.mjs` copia só os ficheiros da app. **A pasta `recolha/` (material da Fizk) nunca é publicada**, nem os testes e os documentos de trabalho: o site publicado é público, ao contrário do repositório. Um teste confirma-o.
+
+## Instalar no telemóvel (Android)
+
+Abrir o endereço no Chrome → menu ⋮ → **Instalar app** (ou «Adicionar ao ecrã principal»). A app abre em ecrã inteiro. Sem rede, abre na mesma, mas as previsões ainda não ficam guardadas: as fontes aparecem como «não obtidas».
 
 ## Estado das fontes
 
@@ -35,7 +50,6 @@ Não há dependências a instalar (o `package.json` só indica que os `.js` são
 
 - Os avisos do IPMA não são consultados: a regra de segurança foi retirada por decisão do utilizador (13/10/2026).
 - O `sw.js` serve a shell a partir da cache; `config.json` e marés (`*.json`) vão sempre primeiro à rede e só usam a cópia em cache sem ligação. Ao alterar a shell, subir a versão da cache em `sw.js`.
-- O carregamento da biblioteca SunCalc local deve ser concluído antes de publicar.
 
 ## Tabela de marés
 

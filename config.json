@@ -149,6 +149,11 @@
       "latitude": 37.062,
       "longitude": -8.09016,
       "origem": "Fizk, ponto 3877 «Forte Novo» (o mais perto do Almargem)"
+    },
+    "vilamouraMolheOeste": {
+      "latitude": 37.0696033,
+      "longitude": -8.1243409,
+      "origem": "Utilizador, 14/10/2026: Google Maps «Farol de Vilamoura Oeste» (molhe da marina de Vilamoura). Ainda não usado por nenhum pesqueiro."
     }
   },
   "pesqueirosProvisorio": true,
@@ -165,7 +170,8 @@
       "terra": "faroTerra",
       "agua": "faroMar",
       "foto": {"ficheiro": "assets/fotos/ria.jpg", "autor": "Jules Verne Times Two", "licenca": "CC BY-SA 4.0", "pagina": "https://commons.wikimedia.org/wiki/File:Anchored_small_boats,_Ria_Formosa,_Faro,_Portugal_julesvernex2.jpg"},
-      "camaras": [{"nome": "Ilha da Culatra (farol)", "url": "https://beachcam.meo.pt/livecams/ilha-do-farol-culatra/"}]
+      "camaras": [{"nome": "Ilha da Culatra (farol)", "url": "https://beachcam.meo.pt/livecams/ilha-do-farol-culatra/"}],
+      "estacoes": [{"nome": "Praia de Faro, Centro Náutico", "url": "https://www.windguru.cz/station/3324"}]
     },
     "praia_faro": {
       "nome": "Praia de Faro (mar de fora) e bicos das barras",
@@ -178,7 +184,8 @@
       "terra": "fizkFaroMarPoente",
       "agua": null,
       "foto": {"ficheiro": "assets/fotos/praia_faro.jpg", "autor": "Kritzolina", "licenca": "CC BY-SA 4.0", "pagina": "https://commons.wikimedia.org/wiki/File:Praia_de_Faro_March_2026_01.jpg"},
-      "camaras": [{"nome": "Praia de Faro", "url": "https://beachcam.meo.pt/livecams/faro/"}, {"nome": "Praia de Faro Oeste", "url": "https://beachcam.meo.pt/livecams/faro-oeste/"}]
+      "camaras": [{"nome": "Praia de Faro", "url": "https://beachcam.meo.pt/livecams/faro/"}, {"nome": "Praia de Faro Oeste", "url": "https://beachcam.meo.pt/livecams/faro-oeste/"}],
+      "estacoes": [{"nome": "Praia de Faro, Centro Náutico", "url": "https://www.windguru.cz/station/3324"}]
     },
     "ancao": {
       "nome": "Praia do Ancão (mar de fora) e bico da barra do Ancão",
@@ -191,7 +198,8 @@
       "terra": "fizkAncao",
       "agua": null,
       "foto": {"ficheiro": "assets/fotos/ancao.jpg", "autor": "Vitor Oliveira", "licenca": "CC BY-SA 2.0", "pagina": "https://commons.wikimedia.org/wiki/File:Praia_do_Anc%C3%A3o_-_Portugal_(4496510936).jpg"},
-      "camaras": [{"nome": "Praia de Faro Oeste", "url": "https://beachcam.meo.pt/livecams/faro-oeste/"}]
+      "camaras": [{"nome": "Praia de Faro Oeste", "url": "https://beachcam.meo.pt/livecams/faro-oeste/"}],
+      "estacoes": [{"nome": "Praia de Faro, Centro Náutico", "url": "https://www.windguru.cz/station/3324"}]
     },
     "almargem": {
       "nome": "Praia do Almargem (mar de fora, Quarteira)",
@@ -204,7 +212,8 @@
       "terra": "fizkForteNovo",
       "agua": null,
       "foto": {"ficheiro": "assets/fotos/almargem.jpg", "autor": "Jose A.", "licenca": "CC BY 2.0", "pagina": "https://commons.wikimedia.org/wiki/File:Praia_do_Almargem_(Portugal)_(51896821991).jpg"},
-      "camaras": [{"nome": "Praia de Quarteira Este", "url": "https://beachcam.meo.pt/livecams/praia-quarteira-este/"}]
+      "camaras": [{"nome": "Praia de Quarteira Este", "url": "https://beachcam.meo.pt/livecams/praia-quarteira-este/"}],
+      "estacoes": [{"nome": "Quarteira, Dom José Beach Hotel", "url": "https://www.windguru.cz/station/3370"}]
     },
     "molhe_quarteira": {
       "nome": "Molhe de Quarteira",
@@ -218,7 +227,8 @@
       "terra": "quarteiraTerra",
       "agua": "quarteiraMar",
       "foto": {"ficheiro": "assets/fotos/molhe_quarteira.jpg", "autor": "Kolforn", "licenca": "CC BY-SA 4.0", "pagina": "https://commons.wikimedia.org/wiki/File:17-05-2017_Farol_de_Quarteira_Molhe_Este.JPG"},
-      "camaras": [{"nome": "Praia de Quarteira Oeste", "url": "https://beachcam.meo.pt/livecams/praia-quarteira-oeste/"}, {"nome": "Vilamoura", "url": "https://beachcam.meo.pt/livecams/vilamoura/"}]
+      "camaras": [{"nome": "Praia de Quarteira Oeste", "url": "https://beachcam.meo.pt/livecams/praia-quarteira-oeste/"}, {"nome": "Vilamoura", "url": "https://beachcam.meo.pt/livecams/vilamoura/"}],
+      "estacoes": [{"nome": "Quarteira, Dom José Beach Hotel", "url": "https://www.windguru.cz/station/3370"}, {"nome": "Vilamoura, Portugal Yacht Charters", "url": "https://www.windguru.cz/station/15198"}]
     }
   },
   "periodos": [
