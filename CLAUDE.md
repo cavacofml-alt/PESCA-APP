@@ -94,6 +94,7 @@ Valores marcados *provisório* não estão validados no terreno: aplicar, mas mo
 2. **Limo e mar mexido** — mar mexido = Hs ≥ 1,0 m **ou** potência ≥ 1,5 kW/m (*provisório*).
    - Faro, Ancão, Almargem: vento, ondulação de fundo ou vaga de vento de Sudeste/Levante **com mar mexido** = mar de fora impossível (limo) → robalo 1/5 nesses pesqueiros. Norte/Noroeste = mar limpo. Oeste/Sudoeste: avaliar pela intensidade e estado do mar, sem assumir limo.
    - Molhe: vaga/ondulação de Sudeste → lado poente; de Oeste/Sudoeste → lado nascente. O lado segue a direcção da vaga/ondulação; o vento só decide quando não há vaga relevante. Avisar sempre que o lado abrigado pode acumular limo à deriva. **Robalo no molhe com Sudeste e mar mexido: nota normal pela potência, para o lado poente, com o aviso de limo** (decisão 2b, 14/10/2026) — o limo não baixa a nota no molhe.
+   - **Mar de Sul [157,5°, 202,5°) no molhe: lado «por confirmar»** (14/10/2026). A regra só fala de Oeste/Sudoeste; o utilizador vai confirmar no terreno. Faixa em `config.json` (`mar.molheSulPorConfirmarGraus`): retirar quando houver decisão. Não muda o limo nas praias.
    - O limo só conta enquanto houver Sudeste com mar mexido; não persiste nos dias seguintes (decisão 4a, 14/10/2026). Vento a 0 nós não tem direcção e não conta como componente.
 3. **Vento e ondulação** — analisar sempre separadamente vento local, ondulação de fundo e vaga de vento. **Qualquer componente com período < 6 s é vaga de vento**, mesmo que a fonte a classifique como swell.
 4. **Marés (Ria Formosa)** — amplitude em metros (nunca coeficientes):
@@ -127,6 +128,7 @@ Valores marcados *provisório* não estão validados no terreno: aplicar, mas mo
 - **Alcance:** cada fonte mostrada até onde existir; dias seguintes marcados "fora do alcance de <fonte>".
 - **Marés vivas/mortas da "próxima semana":** mesmos limiares de amplitude, aplicados à tabela local.
 - **Notas por período (decisão B, opção C, 14/10/2026):** potência, limo e alinhamento avaliados por período — madrugada 00–06, manhã 06–12, tarde 12–18, noite 18–24 (hora de Lisboa; provisório). Pressão, água e amplitude são diárias. A nota do dia é a do melhor período, com o nome do período.
+- **Notas incompletas (revisões do ChatGPT, 14/10/2026):** a nota mostra todas as parcelas (aplicada / não aplicada / não avaliada), `completa` e o `intervalo` possível (o que as parcelas por avaliar podiam somar ou tirar). Um limite obrigatório já aplicado decide, mesmo com outro por verificar. Período `n.d.` → a nota do dia é a melhor conhecida, com `periodosSemNota` e intervalo até 5. A nota mais alta ganha mesmo incompleta (política da secção 6); a interface mostra sempre a incompletude.
 - **Melhores dias:** ordenar pela nota máxima do dia; desempate por alinhamento, depois nota da outra espécie, depois o dia mais próximo.
 - **Sol e Lua:** só SunCalc (local). Não usar sunrise/sunset do Open-Meteo.
 - **Registos:** IndexedDB + exportar/importar JSON versionado + lembrete de cópia de segurança (30 dias).

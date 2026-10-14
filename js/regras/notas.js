@@ -28,11 +28,21 @@ function somar(base, fatores, { minimo = 1, maximo = 5 }) {
       parcelas.push({ descricao: f.descricao, peso: f.valor, valor: 0, estado: ESTADO_PARCELA.NAO_APLICADA });
     }
   }
-  return { nota: limitar(soma, minimo, maximo), parcelas, naoAvaliadas, completa: naoAvaliadas.length === 0 };
+  // Intervalo possível: as parcelas por avaliar podiam somar (positivas) ou subtrair (negativas).
+  const porAvaliar = parcelas.filter(x => x.estado === ESTADO_PARCELA.NAO_AVALIADA).map(x => x.peso);
+  const intervalo = {
+    min: limitar(soma + porAvaliar.filter(v => v < 0).reduce((a, b) => a + b, 0), minimo, maximo),
+    max: limitar(soma + porAvaliar.filter(v => v > 0).reduce((a, b) => a + b, 0), minimo, maximo)
+  };
+  return { nota: limitar(soma, minimo, maximo), parcelas, naoAvaliadas, completa: naoAvaliadas.length === 0, intervalo };
 }
 
+// intervalo: valores que a nota podia ter se as parcelas por avaliar fossem conhecidas. Um
+// limite obrigatório aplicado fixa a nota (intervalo de um só valor); n.d. → null.
 function resultado(estado, extra) {
-  return { estado, nota: null, parcelas: [], limite: null, naoAvaliadas: [], completa: false, provisorio: true, ...extra };
+  const r = { estado, nota: null, parcelas: [], limite: null, naoAvaliadas: [], completa: false, provisorio: true, ...extra };
+  r.intervalo = r.nota === null ? null : r.limite ? { min: r.nota, max: r.nota } : (extra.intervalo ?? { min: r.nota, max: r.nota });
+  return r;
 }
 
 // Limites: [{ descricao, aplica: true|false|null, valor }]. Um limite que se aplica decide

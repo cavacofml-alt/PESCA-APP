@@ -21,6 +21,8 @@
       ]
     },
     "hsMinimaDecisaoMolheM": 0.2,
+    "molheSulPorConfirmarGraus": [157.5, 202.5],
+    "molheSulNota": "Mar de Sul no molhe: lado por confirmar no terreno (utilizador, 14/10/2026). Retirar esta faixa quando houver decisão.",
     "potenciaRobaloMinimaKWm": 1.0,
     "potenciaRobaloIntermediaKWm": 1.5,
     "potenciaDouradaMolheMaximaKWm": 1.5
