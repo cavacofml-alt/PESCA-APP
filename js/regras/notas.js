@@ -104,6 +104,31 @@ export function notaDouradaMolhe(f, cfgPontuacao, cfgMar) {
   return resultado(ESTADO_NOTA.OK, r);
 }
 
+// Dourada nas praias (decisão do utilizador, 14/10/2026, opção a): as regras da dourada no
+// molhe — base 3, os mesmos ajustes e o limite da regra 11 (P ≥ 1,5 kW/m → 1) — mais o limo das
+// praias (Sudeste com mar mexido → 1). A água turva por chuva (ajuste −2 e limite) só conta
+// onde há foz de ribeira (config: pesqueiro.aguaDoce, hoje só o Almargem).
+export function notaDouradaPraia(f, cfgPontuacao, cfgMar, { aguaDoce = false } = {}) {
+  const pesos = cfgPontuacao.douradaPraia;
+  const lim = cfgPontuacao.limitesObrigatorios;
+  const fatores = fatoresDourada(f, pesos).filter(x => aguaDoce || x.descricao !== "água turva por chuva");
+  const s = somar({ descricao: "base", valor: pesos.base }, fatores, cfgPontuacao);
+  const p = f.potenciaMax;
+  const maxP = cfgMar.potenciaDouradaPraiaMaximaKWm;
+  const aplicaPotencia = p === null ? null : p >= maxP ? true : f.potenciaCompleta === false ? null : false;
+  const r = aplicarLimites(s, [
+    { descricao: "limo (Levante/Sudeste com mar mexido)", valor: lim.douradaPraiaLimo, aplica: f.limo },
+    { descricao: `potência ≥ ${maxP} kW/m`, valor: lim.douradaPraiaPotencia15OuMais, aplica: aplicaPotencia },
+    ...(aguaDoce ? [{ descricao: "água turva por chuva", valor: lim.douradaPraiaAguaTurva, aplica: f.turva }] : [])
+  ]);
+  if (r.indeterminado) {
+    const d = r.indeterminado.descricao;
+    const pormenor = d.startsWith("limo") ? f.motivoLimo : d.includes("chuva") ? f.motivoChuva : null;
+    return resultado(ESTADO_NOTA.ND, { motivo: `limite obrigatório por verificar: ${d}${pormenor ? ` (${pormenor})` : ""}` });
+  }
+  return resultado(ESTADO_NOTA.OK, r);
+}
+
 // Robalo no mar. tipo: "praia" (Faro, Ancão, Almargem — limo força 1) ou "molhe".
 export function notaRobalo(f, cfgPontuacao, cfgMar, { tipo = "praia" } = {}) {
   const pesos = cfgPontuacao.robaloMar;
