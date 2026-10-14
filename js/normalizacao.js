@@ -108,3 +108,22 @@ export function roundTo(value, digits = 2) {
   const factor = 10 ** digits;
   return Math.round((value + Number.EPSILON) * factor) / factor;
 }
+
+// Instantes (ms) de início e fim do dia civil de Lisboa "AAAA-MM-DD": [inicio, fim).
+// O dia da mudança de hora tem 23 ou 25 horas. null se a data for inválida.
+export function limitesDiaLisboa(dia) {
+  const m = typeof dia === "string" && dia.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m || !parseUtc(`${dia}T00:00:00Z`)) return null;
+  const meiaNoite = d => {
+    const [y, mo, da] = d.split("-").map(Number);
+    // Lisboa está a UTC+0 ou UTC+1: a meia-noite local é 00:00Z ou 23:00Z do dia anterior.
+    for (const offsetH of [0, 1]) {
+      const t = Date.UTC(y, mo - 1, da) - offsetH * 3600000;
+      if (utcToLisbon(new Date(t)) === `${d}T00:00:00`) return t;
+    }
+    return null;
+  };
+  const inicio = meiaNoite(dia);
+  const seguinte = lisbonDate(new Date(inicio + 36 * 3600000));
+  return { inicio, fim: meiaNoite(seguinte) };
+}

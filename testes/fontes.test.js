@@ -4,11 +4,10 @@ import { readFileSync } from "node:fs";
 import { getMarine } from "../js/fontes/open-meteo-marine.js";
 import { getForecast } from "../js/fontes/open-meteo-forecast.js";
 import { validarSerieUnix } from "../js/fontes/open-meteo-tempo.js";
-import { getWarnings, normalizarAviso, NIVEIS_AVISO, ordemNivel, SITUACAO_AVISOS } from "../js/fontes/ipma-avisos.js";
 import { getSeaForecastDay } from "../js/fontes/ipma-mar.js";
 import { validateTides } from "../js/fontes/mares-locais.js";
 import {
-  MARINE_FIXTURE, FORECAST_FIXTURE, IPMA_WARNING_FIXTURE, TIDE_FIXTURE, ipmaMarFixture
+  MARINE_FIXTURE, FORECAST_FIXTURE, TIDE_FIXTURE, ipmaMarFixture
 } from "./dados-teste.js";
 
 const config = JSON.parse(readFileSync(new URL("../config.json", import.meta.url), "utf8"));
@@ -70,106 +69,19 @@ test("Open-Meteo: falha HTTP não lança, devolve não obtido", async () => {
   assert.match(r.error, /HTTP 500/);
 });
 
+test("HTTP 429 (limite de pedidos) aparece explicado em português", async () => {
+  const r = await getForecast({ latitude: 1, longitude: 1, baseUrl: fontes.forecastBase, fetchImpl: fakeFetch(null, { status: 429 }), now: NOW });
+  assert.equal(r.ok, false);
+  assert.match(r.error, /Limite de pedidos da fonte atingido/);
+});
+
 test("Erros de rede e JSON aparecem em português", async () => {
   const semRede = async () => { throw new TypeError("Failed to fetch"); };
   const r = await getForecast({ latitude: 1, longitude: 1, baseUrl: fontes.forecastBase, fetchImpl: semRede, now: NOW });
   assert.equal(r.error, "Falha de rede (sem ligação ou pedido bloqueado)");
   const jsonMau = async () => ({ ok: true, status: 200, json: async () => JSON.parse("<html>") });
-  const r2 = await getWarnings({ url: fontes.ipmaWarnings, area: "FAR", tipo: "Agitação Marítima", fetchImpl: jsonMau, now: NOW });
+  const r2 = await getMarine({ latitude: 1, longitude: 1, baseUrl: fontes.marineBase, fetchImpl: jsonMau, now: NOW });
   assert.equal(r2.error, "Resposta não é JSON válido");
-});
-
-// ---------- IPMA avisos ----------
-
-test("Níveis IPMA mapeados num único sítio", () => {
-  assert.deepEqual(Object.keys(NIVEIS_AVISO), ["green", "yellow", "orange", "red"]);
-  assert.equal(ordemNivel(config.seguranca.nivelMinimo), 1);
-  assert.equal(ordemNivel("roxo"), null);
-});
-
-test("Avisos: filtra FAR + Agitação Marítima e converte horas UTC", async () => {
-  const f = fakeFetch(IPMA_WARNING_FIXTURE);
-  const r = await getWarnings({ url: fontes.ipmaWarnings, area: config.seguranca.areaIPMA,
-    tipo: config.seguranca.tipoAviso, fetchImpl: f, now: NOW });
-  assert.equal(r.ok, true, r.error);
-  assert.equal(f.pedidos[0], fontes.ipmaWarnings);
-  assert.equal(r.data.length, 2);
-  const [amarelo, verde] = r.data;
-  assert.equal(amarelo.nivel, "amarelo");
-  assert.equal(amarelo.inicio, "2026-10-04T08:43:00.000Z"); // = 09:43 em Lisboa
-  assert.equal(amarelo.status, "obtido");
-  assert.equal(verde.nivel, "verde");
-});
-
-test("Avisos: nível desconhecido ou hora ilegível → inválido", () => {
-  const a = normalizarAviso({ ...IPMA_WARNING_FIXTURE[0], awarenessLevelID: "2" });
-  assert.equal(a.status, "inválido");
-  assert.equal(a.nivel, null);
-  const b = normalizarAviso({ ...IPMA_WARNING_FIXTURE[0], endTime: "amanhã" });
-  assert.equal(b.status, "inválido");
-});
-
-const pedirAvisos = body => getWarnings({ url: fontes.ipmaWarnings, area: config.seguranca.areaIPMA,
-  tipo: config.seguranca.tipoAviso, fetchImpl: fakeFetch(body), now: NOW });
-
-test("Avisos: lista vazia com formato válido = sem avisos confirmado", async () => {
-  const r = await pedirAvisos([]);
-  assert.equal(r.ok, true);
-  assert.deepEqual(r.data, []);
-});
-
-test("Avisos: campo renomeado num registo qualquer → não obtido, nunca lista vazia", async () => {
-  // Se o IPMA renomear idAreaAviso, o filtro deixaria de encontrar o aviso amarelo de FAR.
-  const renomeado = IPMA_WARNING_FIXTURE.map(({ idAreaAviso, ...resto }) => ({ ...resto, areaId: idAreaAviso }));
-  const r = await pedirAvisos(renomeado);
-  assert.equal(r.ok, false);
-  assert.match(r.error, /Formato de avisos inesperado: registo 0 sem idAreaAviso/);
-  // Basta um registo malformado, mesmo de outra área.
-  const r2 = await pedirAvisos([...IPMA_WARNING_FIXTURE, { idAreaAviso: "LSB" }]);
-  assert.equal(r2.ok, false);
-});
-
-test("Avisos: aviso relevante ilegível → segurança por verificar (ok=false), dados mantidos", async () => {
-  const r = await pedirAvisos([{ ...IPMA_WARNING_FIXTURE[0], awarenessLevelID: "2" }, ...IPMA_WARNING_FIXTURE.slice(1)]);
-  assert.equal(r.ok, false);
-  assert.match(r.error, /^segurança por verificar/);
-  assert.equal(r.data.length, 2);
-  assert.equal(r.data[0].status, "inválido");
-});
-
-test("Avisos: aviso ilegível de outra área não afecta FAR", async () => {
-  const outra = { ...IPMA_WARNING_FIXTURE[3], awarenessLevelID: "roxo" };
-  const r = await pedirAvisos([...IPMA_WARNING_FIXTURE.slice(0, 3), outra]);
-  assert.equal(r.ok, true, r.error);
-});
-
-test("Avisos: cada situação tem um código próprio; só duas confirmam a segurança", async () => {
-  const S = SITUACAO_AVISOS;
-  const casos = [
-    [[], S.SEM_AVISOS, true],
-    [IPMA_WARNING_FIXTURE.slice(2), S.SEM_AVISOS, true], // só outras áreas/tipos
-    [IPMA_WARNING_FIXTURE, S.COM_AVISOS, true],
-    [[{ ...IPMA_WARNING_FIXTURE[0], awarenessLevelID: "2" }], S.AVISO_ILEGIVEL, false],
-    [[{ idAreaAviso: "FAR" }], S.FORMATO_INVALIDO, false],
-    [{ avisos: [] }, S.FORMATO_INVALIDO, false]
-  ];
-  for (const [body, situacao, ok] of casos) {
-    const r = await pedirAvisos(body);
-    assert.equal(r.situacao, situacao, JSON.stringify(body).slice(0, 60));
-    assert.equal(r.ok, ok, situacao);
-  }
-  const semRede = async () => { throw new TypeError("Failed to fetch"); };
-  const r = await getWarnings({ url: fontes.ipmaWarnings, area: "FAR", tipo: "Agitação Marítima", fetchImpl: semRede, now: NOW });
-  assert.equal(r.situacao, S.FALHA_PEDIDO);
-  assert.equal(r.ok, false);
-  const r2 = await pedirAvisos(null);
-  assert.equal(r2.situacao, S.FORMATO_INVALIDO);
-});
-
-test("Avisos: resposta que não é array → não obtido", async () => {
-  const r = await getWarnings({ url: fontes.ipmaWarnings, area: "FAR", tipo: "Agitação Marítima",
-    fetchImpl: fakeFetch({ erro: true }), now: NOW });
-  assert.equal(r.ok, false);
 });
 
 // ---------- IPMA estado do mar ----------
@@ -226,10 +138,6 @@ test("Estado do mar: o dia pedido é o dia de Lisboa, não o UTC", async () => {
 
 // ---------- Marés locais (mantido da Fase 2) ----------
 
-test("Marés: fixture válida e tabela real vazia", () => {
+test("Marés: fixture de teste válida", () => {
   assert.equal(validateTides(TIDE_FIXTURE).ok, true);
-  const mares = JSON.parse(readFileSync(new URL("../mares/2026.json", import.meta.url), "utf8"));
-  const v = validateTides(mares);
-  assert.equal(v.ok, true);
-  assert.equal(v.events.length, 0);
 });

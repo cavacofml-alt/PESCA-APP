@@ -1,12 +1,12 @@
 // Adaptador para SunCalc. A biblioteca é carregada localmente, sem segunda fonte solar.
-// Colocar a distribuição licenciada de SunCalc em vendor/suncalc.js antes de publicar.
+// vendor/suncalc.js (1.9.0, BSD-2) é carregado em index.html antes deste módulo.
 export function getSunAndMoon(date, latitude, longitude, SunCalc = globalThis.SunCalc) {
   if (!SunCalc || typeof SunCalc.getTimes !== "function" || typeof SunCalc.getMoonIllumination !== "function") {
     return {
       source: "SunCalc (local)",
       ok: false,
       readAt: new Date().toISOString(),
-      error: "Biblioteca SunCalc não instalada em vendor/suncalc.js",
+      error: "Biblioteca SunCalc não carregada (vendor/suncalc.js)",
       data: null
     };
   }
