@@ -1,0 +1,23 @@
+1 — Os meus favoritos na Fizk
+Recolha: 14/10/2026, ~14:05 (hora de Portugal). Conta: FREE.
+
+Fonte das coordenadas: painel «Favoritos / Tus favoritos» do Planificador (a Fizk mostra lá «lat/lon» por extenso), confirmadas
+com os dados dos pontos que a app carrega para o mapa (mesmos valores). Número: aparece no endereço da ficha
+(https://fizk.com/academia/playas/<número>) e na função interna do botão «Ver ficha».
+
+Nome (como na Fizk)  | N.º  | Latitude | Longitude | Localidade (Fizk) | Ligação de partilha
+Ancão                | 3619 | 37.0322  | -8.03852  | Loulé             | https://fizk.com/surfcasting/pesca-en-playa-anc-o/
+Faro - Mar Poente    | 3817 | 37.0133  | -8.00567  | Faro              | https://fizk.com/surfcasting/pesca-en-playa-faro-mar-poente/
+Falésia Alfamar      | 3922 | 37.0834  | -8.15912  | Albufeira         | https://fizk.com/surfcasting/pesca-en-playa-falesia-alfamar/
+Vilamoura            | 3894 | 37.0719  | -8.11896  | Loulé             | https://fizk.com/surfcasting/pesca-en-playa-vilamoura/
+
+«Vilamoura» em detalhe
+- Coordenadas exactas: 37.0719, -8.11896 (painel de favoritos; o botão «Cómo llegar» usa os mesmos valores).
+- Ligação de partilha (copiada da janela «Compartir»): https://fizk.com/surfcasting/pesca-en-playa-vilamoura/
+  Nota: a ligação de partilha NÃO contém número nem coordenadas.
+- Ficha: https://fizk.com/academia/playas/3894 — tipo «Playa», «Algarve • Loulé», Bandera azul, 2 cámaras,
+  Profundidad «Somera (poco profunda) · est.»; Composición, Tipo de arena, Acceso e Condiciones mostram «—».
+- Localização no mapa: o marcador fica na praia logo a nascente do molhe leste da marina de Vilamoura
+  (entre a marina e Quarteira), não em cima de nenhum molhe.
+
+O cartão da página inicial mostrava às ~14:00: Vilamoura 7.5 (Bueno), Faro - Mar Poente 7.3, Falésia Alfamar 7.2, Ancão 7.0 (espécie Lubina).
