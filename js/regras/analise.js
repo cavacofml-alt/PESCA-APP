@@ -21,7 +21,7 @@ import { aguaDoDia } from "./agua.js";
 import { alinhamentosDoDia } from "./alinhamento.js";
 import { anomaliasDoDia } from "./anomalias.js";
 import { aguaTurvaDoDia } from "./chuva.js";
-import { notaDouradaRia, notaDouradaMolhe, notaRobalo, ordenarMelhoresDias, ESTADO_NOTA } from "./notas.js";
+import { notaDouradaRia, notaDouradaMolhe, notaDouradaPraia, notaRobalo, ordenarMelhoresDias, ESTADO_NOTA } from "./notas.js";
 import { porPeriodo, PERIODOS_PADRAO } from "./periodos.js";
 import { marForteForaDoSul } from "./sul.js";
 import { horasDoPesqueiro } from "./horas.js";
@@ -128,7 +128,9 @@ export function analisarDias({ dias, pontos, mares, sol, config }) {
           marForaDoSul: sul?.valor ?? null, motivoSul: sul?.motivo ?? null };
         const notasP = {};
         if (pq.especies.includes("dourada")) {
-          notasP.dourada = pq.tipo === "molhe" ? notaDouradaMolhe(fatores, config.pontuacao, config.mar) : notaDouradaRia(fatores, config.pontuacao);
+          notasP.dourada = pq.tipo === "molhe" ? notaDouradaMolhe(fatores, config.pontuacao, config.mar)
+            : pq.tipo === "praia" ? notaDouradaPraia(fatores, config.pontuacao, config.mar, { aguaDoce: Boolean(pq.aguaDoce) })
+              : notaDouradaRia(fatores, config.pontuacao);
         }
         if (pq.especies.includes("robalo")) notasP.robalo = notaRobalo(fatores, config.pontuacao, config.mar, { tipo: pq.tipo });
         return { nome, notas: notasP, potencia: pot, limo: lim && { limo: lim.limo, motivo: lim.motivo ?? null }, alinhamento: ali,
@@ -145,7 +147,7 @@ export function analisarDias({ dias, pontos, mares, sol, config }) {
       if (anomalias?.assinalar) avisosTexto.push(`Valores anómalos de vento/rajada: ${anomalias.mensagem}.`);
       if (chuva.turva === true) {
         const onde = pq.tipo === "ria" ? "Ria turva / excesso de água doce" : pq.tipo === "molhe" ? "água turva junto ao molhe" : "água doce na foz da ribeira";
-        if (pq.tipo !== "praia" || id === "almargem") avisosTexto.push(`Chuva forte nos dias anteriores (${chuva.chuva48hMm} mm em 48 h): ${onde}.`);
+        if (pq.tipo !== "praia" || pq.aguaDoce) avisosTexto.push(`Chuva forte nos dias anteriores (${chuva.chuva48hMm} mm em 48 h): ${onde}.`);
       }
       if (chuva.turva === null) avisosTexto.push(`Chuva: ${chuva.motivo}`);
       if (potencia?.avisos?.length) avisosTexto.push(...potencia.avisos);

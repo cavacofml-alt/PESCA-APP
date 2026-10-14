@@ -115,7 +115,7 @@ function factos(p, pq) {
   if (p.lados) {
     out.push(["Lado do molhe", p.lados.intervalos.map(i => `${i.lado ?? "indeterminado"} ${i.deLocal}–${i.ateLocal}`).join(" · ")]);
   }
-  if (pq.tipo !== "praia" && p.agua) {
+  if (p.agua) {
     out.push(["Água", p.agua.media === null ? "não obtida" : `${num(p.agua.media, 1)} °C${p.agua.variacao === undefined || p.agua.variacao === null ? "" : ` (${p.agua.variacao > 0 ? "+" : ""}${num(p.agua.variacao, 1)} vs. 7 dias antes)`}`]);
   }
   return `<dl class="factos">${out.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>`;
