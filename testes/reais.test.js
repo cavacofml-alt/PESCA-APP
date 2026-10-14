@@ -6,6 +6,11 @@ import { validateTides } from "../js/fontes/mares-locais.js";
 import { getForecast } from "../js/fontes/open-meteo-forecast.js";
 import { amplitudeDoDia, repontosDoDia, CLASSE_MARE } from "../js/regras/mares.js";
 import { horasOpenMeteo } from "../js/regras/serie.js";
+import { getMarine } from "../js/fontes/open-meteo-marine.js";
+import { getSeaForecastDay } from "../js/fontes/ipma-mar.js";
+import { analisarDias } from "../js/regras/analise.js";
+import { createRequire } from "node:module";
+import { limitesDiaLisboa, lisbonDate } from "../js/normalizacao.js";
 
 const ler = rel => JSON.parse(readFileSync(new URL(rel, import.meta.url), "utf8"));
 const config = ler("../config.json");
@@ -80,4 +85,49 @@ test("Open-Meteo real, Faro 13/10 21:00 (Lisboa): 2,3 kn de 318° (= 4,3 km/h NO
   assert.equal(h.wind_speed_10m, 2.3);
   assert.equal(h.wind_direction_10m, 318);
   assert.equal(Math.round(h.wind_speed_10m * 1.852 * 10) / 10, 4.3);
+});
+
+test("Open-Meteo Marine real (14/10): aceite; wave_peak_period sempre nulo nestes pontos", async () => {
+  for (const f of ["faro", "quarteira"]) {
+    const r = await getMarine({ latitude: 0, longitude: 0, baseUrl: config.fontes.marineBase,
+      fetchImpl: fakeFetch(`./reais/openmeteo_marine_${f}_20261014_0946.json`), now: new Date("2026-10-14T08:46:00Z") });
+    assert.equal(r.ok, true, r.error);
+    assert.equal(r.data.hourly.time.length, 336);
+    assert.ok(r.data.hourly.wave_peak_period.every(v => v === null));
+    assert.ok(r.data.hourly.wave_period.every(v => typeof v === "number"));
+  }
+});
+
+test("IPMA estado do mar real (14/10): forecastDate certo e registo de Faro", async () => {
+  const r = await getSeaForecastDay(0, { baseUrl: config.fontes.ipmaSeaForecastBase,
+    fetchImpl: fakeFetch("./reais/ipma_mar_day0_20261014_0946.json"), now: new Date("2026-10-14T08:46:00Z") });
+  assert.equal(r.ok, true, r.error);
+  assert.equal(r.data[0].globalIdLocal, 1080526);
+});
+
+test("motor completo com dados reais de 14/10: 7 dias, todos os pesqueiros com nota ou n.d. justificado", () => {
+  const SunCalc = createRequire(import.meta.url)("../vendor/suncalc.js");
+  const ponto = (tipo, f) => ({ ok: true, data: ler(`./reais/openmeteo_${tipo}_${f}_20261014_0946.json`), source: "teste", readAt: "2026-10-14T08:46:00Z" });
+  const dias = Array.from({ length: 7 }, (_, i) => lisbonDate(new Date("2026-10-14T12:00:00Z"), i));
+  const sol = (dia, p) => {
+    const t = SunCalc.getTimes(new Date(limitesDiaLisboa(dia).inicio + 12 * 3600000), config.locais[p].latitude, config.locais[p].longitude);
+    return { nascer: t.sunrise.getTime(), por: t.sunset.getTime() };
+  };
+  const { dias: res, melhoresDias } = analisarDias({ dias, mares: events, sol, config, pontos: {
+    faroMar: ponto("marine", "faro"), quarteiraMar: ponto("marine", "quarteira"),
+    faroTerra: ponto("forecast", "faro"), quarteiraTerra: ponto("forecast", "quarteira") } });
+  assert.equal(res.length, 7);
+  assert.equal(melhoresDias.length, 7);
+  for (const d of res) {
+    assert.ok(d.amplitude.classe, d.dia);
+    for (const [id, p] of Object.entries(d.pesqueiros)) {
+      for (const [esp, n] of Object.entries(p.notas)) {
+        if (n.estado === "ok") assert.ok(n.nota >= 1 && n.nota <= 5, `${d.dia} ${id} ${esp}`);
+        else assert.ok(n.motivo, `${d.dia} ${id} ${esp}: n.d. sem motivo`);
+      }
+    }
+  }
+  // 14/10: ondulação de SE com mar mexido (o IPMA também previa SE) → limo em Faro → robalo 1.
+  assert.equal(res[0].pesqueiros.praia_faro.limo.limo, true);
+  assert.equal(res[0].pesqueiros.praia_faro.notas.robalo.nota, 1);
 });
