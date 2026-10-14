@@ -13,7 +13,7 @@ import { alinhamentosDoDia } from "../js/regras/alinhamento.js";
 import { anomaliasDoDia, CONFIRMAR } from "../js/regras/anomalias.js";
 import { aguaTurvaDoDia } from "../js/regras/chuva.js";
 import { amplitudeDoDia, repontosDoDia, CLASSE_MARE } from "../js/regras/mares.js";
-import { notaRobalo, notaDouradaRia, notaDouradaMolhe, ordenarMelhoresDias, ESTADO_NOTA } from "../js/regras/notas.js";
+import { notaRobalo, notaDouradaRia, notaDouradaMolhe, notaDouradaPraia, ordenarMelhoresDias, ESTADO_NOTA } from "../js/regras/notas.js";
 import { analisarDias } from "../js/regras/analise.js";
 import { horasOpenMeteo } from "../js/regras/serie.js";
 import { periodoDe, porPeriodo } from "../js/regras/periodos.js";
@@ -478,8 +478,9 @@ test("análise: dia normal produz notas com fonte dos pontos e parcelas", () => 
   assert.equal(d.pesqueiros.praia_faro.notas.robalo.nota, 4);
   assert.equal(d.pesqueiros.ria.notas.dourada.estado, ESTADO_NOTA.OK);
   // Decisão C: pontos da app de referência nas praias.
-  assert.deepEqual(d.pesqueiros.almargem.pontos, { mar: "forteNovo", terra: "forteNovo", agua: null });
-  assert.deepEqual(d.pesqueiros.praia_faro.pontos, { mar: "faroMarPoente", terra: "faroMarPoente", agua: null });
+  // A água das praias vem do ponto do mar (regra 7 da dourada nas praias, 14/10/2026).
+  assert.deepEqual(d.pesqueiros.almargem.pontos, { mar: "forteNovo", terra: "forteNovo", agua: "forteNovo" });
+  assert.deepEqual(d.pesqueiros.praia_faro.pontos, { mar: "faroMarPoente", terra: "faroMarPoente", agua: "faroMarPoente" });
   assert.deepEqual(melhoresDias, ["2026-10-20"]);
 });
 
@@ -815,4 +816,53 @@ test("3.ª revisão: o intervalo nunca junta factores exclusivos — pressão po
   const r = ria({ descidaPressao: null, altaEstavel: null });
   assert.equal(r.nota, 4);
   assert.deepEqual(r.intervalo, { min: 3, max: 5 });
+});
+
+// ---------- Dourada nas praias (decisão do utilizador, 14/10/2026, opção a) ----------
+
+const praia = (f, opt) => notaDouradaPraia({ ...base, ...f }, config.pontuacao, config.mar, opt);
+
+test("dourada nas praias: base 3 com os ajustes da dourada no molhe", () => {
+  const r = praia({ potenciaMax: 1.0, limo: false });
+  assert.equal(r.estado, ESTADO_NOTA.OK);
+  assert.equal(r.nota, 3);
+  assert.equal(praia({ potenciaMax: 1.0, limo: false, alinhado: true, descidaPressao: true }).nota, 5);
+  assert.equal(praia({ potenciaMax: 1.0, limo: false, altaEstavel: true }).nota, 2);
+  assert.equal(praia({ potenciaMax: 1.0, limo: false, aguaAfasta: true }).nota, 2);
+});
+
+test("dourada nas praias: limites — P ≥ 1,5 → 1 (fronteira 1,49/1,50) e limo → 1, mesmo com a potência desconhecida", () => {
+  assert.equal(praia({ potenciaMax: 1.49, limo: false }).nota, 3);
+  const r = praia({ potenciaMax: 1.5, limo: false });
+  assert.equal(r.nota, 1);
+  assert.match(r.limite.descricao, /potência ≥ 1.5/);
+  const l = praia({ potenciaMax: null, limo: true });
+  assert.equal(l.nota, 1);
+  assert.match(l.limite.descricao, /limo/);
+  // Limo por verificar e nenhum limite aplicado → n.d.; potência incompleta < 1,5 → n.d.
+  assert.equal(praia({ potenciaMax: 1.0, limo: null, motivoLimo: "direcção em falta" }).estado, ESTADO_NOTA.ND);
+  assert.match(praia({ potenciaMax: 1.0, limo: null, motivoLimo: "direcção em falta" }).motivo, /limo.*direcção em falta/);
+  assert.equal(praia({ potenciaMax: 1.2, potenciaCompleta: false, limo: false }).estado, ESTADO_NOTA.ND);
+});
+
+test("dourada nas praias: água turva só conta com foz de ribeira (Almargem)", () => {
+  const semFoz = praia({ potenciaMax: 1.0, limo: false, turva: true });
+  assert.equal(semFoz.nota, 3, "Praia de Faro: a chuva não turva o mar de fora");
+  assert.ok(!semFoz.parcelas.some(x => x.descricao === "água turva por chuva"));
+  const foz = praia({ potenciaMax: 1.0, limo: false, turva: true }, { aguaDoce: true });
+  assert.equal(foz.nota, 1);
+  assert.match(foz.limite.descricao, /água turva/);
+  assert.equal(praia({ potenciaMax: 1.0, limo: false, turva: null }, { aguaDoce: true }).estado, ESTADO_NOTA.ND);
+  assert.equal(praia({ potenciaMax: 1.0, limo: false, turva: null }).estado, ESTADO_NOTA.OK, "sem foz, a chuva em falta não bloqueia");
+});
+
+test("análise: todas as praias com robalo e dourada; a Ria só com dourada", () => {
+  const { dias } = analisarDias(entrada());
+  const p = dias[0].pesqueiros;
+  for (const id of ["praia_faro", "ancao", "almargem", "vilamoura", "falesia"]) {
+    assert.deepEqual(Object.keys(p[id].notas).sort(), ["dourada", "robalo"], id);
+    // P = 3,57 kW/m ≥ 1,5 → dourada 1 em todas.
+    assert.equal(p[id].notas.dourada.nota, 1, id);
+  }
+  assert.deepEqual(Object.keys(p.ria.notas), ["dourada"]);
 });

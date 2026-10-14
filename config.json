@@ -25,7 +25,8 @@
     "sulNota": "Mar de Sul (onda dominante): lado do molhe e robalo nas praias com P ≥ 1,5 kW/m por confirmar no terreno (utilizador, 14/10/2026). Retirar esta faixa quando houver decisão.",
     "potenciaRobaloMinimaKWm": 1.0,
     "potenciaRobaloIntermediaKWm": 1.5,
-    "potenciaDouradaMolheMaximaKWm": 1.5
+    "potenciaDouradaMolheMaximaKWm": 1.5,
+    "potenciaDouradaPraiaMaximaKWm": 1.5
   },
   "mares": {
     "casasDecimaisAmplitude": 2,
@@ -81,6 +82,15 @@
       "descidaTemperaturaAgua": -1,
       "aguaTurvaChuva": -2
     },
+    "douradaPraia": {
+      "base": 3,
+      "alinhamentoRepontoSol": 1,
+      "descidaPressao": 1,
+      "pressaoAltaEstavel": -1,
+      "descidaTemperaturaAgua": -1,
+      "aguaTurvaChuva": -2,
+      "decisao": "Utilizador, 14/10/2026 (opção a): regras da dourada no molhe + limo das praias; água turva só onde há foz de ribeira (aguaDoce)."
+    },
     "robaloMar": {
       "potenciaAbaixo1": 1,
       "potenciaDe1Abaixo15": 3,
@@ -92,7 +102,10 @@
       "robaloPotenciaAbaixo1": 1,
       "robaloComLimoFaroAncaoAlmargem": 1,
       "douradaMolhePotencia15OuMais": 1,
-      "douradaMolheAguaTurva": 1
+      "douradaMolheAguaTurva": 1,
+      "douradaPraiaLimo": 1,
+      "douradaPraiaPotencia15OuMais": 1,
+      "douradaPraiaAguaTurva": 1
     }
   },
   "potenciaOndas": {
@@ -192,12 +205,13 @@
       "nome": "Praia de Faro (mar de fora) e bicos das barras",
       "nomeCurto": "Praia de Faro",
       "especies": [
-        "robalo"
+        "robalo",
+        "dourada"
       ],
       "tipo": "praia",
       "mar": "faroMarPoente",
       "terra": "faroMarPoente",
-      "agua": null,
+      "agua": "faroMarPoente",
       "foto": {"ficheiro": "assets/fotos/praia_faro.jpg", "autor": "Kritzolina", "licenca": "CC BY-SA 4.0", "pagina": "https://commons.wikimedia.org/wiki/File:Praia_de_Faro_March_2026_01.jpg"},
       "camaras": [{"nome": "Praia de Faro (MEO)", "url": "https://beachcam.meo.pt/livecams/faro/"}, {"nome": "Praia de Faro Oeste (MEO)", "url": "https://beachcam.meo.pt/livecams/faro-oeste/"}, {"nome": "Montenegro, Faro (Windy)", "url": "https://www.windy.com/webcams/1743021358"}],
       "estacoes": [{"nome": "Praia de Faro, Centro Náutico", "url": "https://www.windguru.cz/station/3324"}]
@@ -206,12 +220,13 @@
       "nome": "Praia do Ancão (mar de fora) e bico da barra do Ancão",
       "nomeCurto": "Ancão",
       "especies": [
-        "robalo"
+        "robalo",
+        "dourada"
       ],
       "tipo": "praia",
       "mar": "ancaoPraia",
       "terra": "ancaoPraia",
-      "agua": null,
+      "agua": "ancaoPraia",
       "foto": {"ficheiro": "assets/fotos/ancao.jpg", "autor": "Vitor Oliveira", "licenca": "CC BY-SA 2.0", "pagina": "https://commons.wikimedia.org/wiki/File:Praia_do_Anc%C3%A3o_-_Portugal_(4496510936).jpg"},
       "camaras": [{"nome": "Praia de Faro Oeste (MEO)", "url": "https://beachcam.meo.pt/livecams/faro-oeste/"}, {"nome": "Montenegro, Faro (Windy)", "url": "https://www.windy.com/webcams/1743021358"}],
       "estacoes": [{"nome": "Praia de Faro, Centro Náutico", "url": "https://www.windguru.cz/station/3324"}]
@@ -220,12 +235,14 @@
       "nome": "Praia do Almargem (mar de fora, Quarteira)",
       "nomeCurto": "Almargem",
       "especies": [
-        "robalo"
+        "robalo",
+        "dourada"
       ],
       "tipo": "praia",
       "mar": "forteNovo",
       "terra": "forteNovo",
-      "agua": null,
+      "agua": "forteNovo",
+      "aguaDoce": "foz da ribeira do Almargem",
       "foto": {"ficheiro": "assets/fotos/almargem.jpg", "autor": "Jose A.", "licenca": "CC BY 2.0", "pagina": "https://commons.wikimedia.org/wiki/File:Praia_do_Almargem_(Portugal)_(51896821991).jpg"},
       "camaras": [{"nome": "Praia de Quarteira Este (MEO)", "url": "https://beachcam.meo.pt/livecams/praia-quarteira-este/"}, {"nome": "Quarteira, Praia do Almargem (Windy)", "url": "https://www.windy.com/webcams/1647793943"}],
       "estacoes": [{"nome": "Quarteira, Dom José Beach Hotel", "url": "https://www.windguru.cz/station/3370"}]
@@ -249,12 +266,13 @@
       "nome": "Praia de Vilamoura (mar de fora, a nascente da marina)",
       "nomeCurto": "Praia de Vilamoura",
       "especies": [
-        "robalo"
+        "robalo",
+        "dourada"
       ],
       "tipo": "praia",
       "mar": "vilamouraPraia",
       "terra": "vilamouraPraia",
-      "agua": null,
+      "agua": "vilamouraPraia",
       "camaras": [
         {
           "nome": "Vilamoura (MEO)",
@@ -304,12 +322,13 @@
       "nome": "Praia da Falésia, Alfamar (mar de fora)",
       "nomeCurto": "Falésia Alfamar",
       "especies": [
-        "robalo"
+        "robalo",
+        "dourada"
       ],
       "tipo": "praia",
       "mar": "falesiaAlfamar",
       "terra": "falesiaAlfamar",
-      "agua": null,
+      "agua": "falesiaAlfamar",
       "camaras": [
         {
           "nome": "Praia da Rocha Baixinha (Windy)",
