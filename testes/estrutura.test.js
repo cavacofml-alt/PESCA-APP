@@ -29,11 +29,14 @@ test("nenhum URL de API escrito em js/ (fonte única: config.json)", () => {
   for (const f of ficheirosJs("js")) assert.doesNotMatch(ler(f), /https?:\/\//, f);
 });
 
-test("app.js consulta os pontos de todos os pesqueiros (via pontosNecessarios)", () => {
-  const app = ler("js/app.js");
-  assert.match(app, /pontosNecessarios\(config\)/);
-  assert.match(app, /pontos\.mar\.map/);
-  assert.match(app, /pontos\.terra\.map/);
+test("a app e o diagnóstico consultam os pontos de todos os pesqueiros (via pontosNecessarios)", () => {
+  for (const f of ["js/dados.js", "js/diagnostico.js"]) {
+    const src = ler(f);
+    assert.match(src, /pontosNecessarios\(config\)/, f);
+    assert.match(src, /\.mar\.map/, f);
+    assert.match(src, /\.terra\.map/, f);
+  }
+  assert.match(ler("js/app.js"), /carregarDados\(/);
 });
 
 // ---------- Service worker, executado num contexto falso ----------
@@ -104,7 +107,10 @@ test("sw: a cópia de *.json fica gravada antes de a resposta ser devolvida", as
 test("sw: a instalação guarda a shell completa e todos os ficheiros existem", async () => {
   const sw = carregarSw({ rede: "ok" });
   const instalados = await sw.instalar();
-  const esperado = ["./", "./index.html", "./manifest.webmanifest", "./css/base.css",
+  const naPasta = (pasta, ext) => readdirSync(join(raiz, pasta)).filter(f => f.endsWith(ext)).map(f => `./${pasta}/${f}`);
+  const esperado = ["./", "./manifest.webmanifest",
+    ...readdirSync(raiz).filter(f => f.endsWith(".html")).map(f => `./${f}`),
+    ...naPasta("css", ".css"), ...naPasta("assets/fotos", ".jpg"),
     ...[...ficheirosJs("js"), ...ficheirosJs("vendor")].map(f => "./" + f.split("\\").join("/"))];
   assert.deepEqual([...instalados].sort(), [...esperado].sort());
   for (const f of instalados.filter(f => f !== "./")) {
