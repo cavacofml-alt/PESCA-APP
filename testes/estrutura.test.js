@@ -155,3 +155,12 @@ test("sw: resposta guardada com redireccionamento é servida limpa (o Chrome rec
 test("páginas: as ligações internas não passam por redireccionamentos do Cloudflare", () => {
   for (const f of ["index.html", "diagnostico.html"]) assert.ok(!/href="\.\/index\.html"/.test(ler(f)), f);
 });
+
+test("sw: a versão da cache acompanha a shell (impressão SHA-256 dos ficheiros guardados)", async () => {
+  // Sem isto, o telemóvel fica com o código antigo (cache primeiro) e a config nova (rede
+  // primeiro): aconteceu com a dourada nas praias (PR #6, sw ainda v9).
+  const { impressaoShell, impressaoGravada } = await import("../ferramentas/versao-sw.mjs");
+  const sw = ler("sw.js");
+  assert.equal(impressaoGravada(sw), impressaoShell(fileURLToPath(new URL("..", import.meta.url)), sw),
+    "a shell mudou: correr «node ferramentas/versao-sw.mjs» (sobe a versão da cache)");
+});
