@@ -34,6 +34,15 @@ function alinhamentosDoDia(d) {
   return [...vistos.values()].sort((a, b) => a.reponto - b.reponto);
 }
 
+// «preia-mar 05:13 e 17:31 · baixa-mar 11:03 e 23:13» (por extenso, sem PM/BM).
+const NOME_MARE = { PM: "preia-mar", BM: "baixa-mar" };
+function maresPorTipo(repontos) {
+  return ["PM", "BM"].map(t => {
+    const horas = repontos.filter(r => r.tipo === t).map(r => hora(r.instante));
+    return horas.length ? `${NOME_MARE[t]} ${horas.join(" e ")}` : null;
+  }).filter(Boolean).join(" · ");
+}
+
 const textoAlinhamento = a =>
   `${a.tipo === "PM" ? "Preia-mar" : "Baixa-mar"} às ${hora(a.reponto)}, a ${a.minutos} min do ${a.evento}`;
 
@@ -52,7 +61,7 @@ function resumo(analise, indice, config) {
       ? `${esc(m.nome)} · ${esc(NOME_ESPECIE[m.esp])} <b class="mini ${classeNota(m.n)}">${m.n.nota}</b> ${esc(m.n.periodo)}${m.n.completa ? "" : " · incompleta"}`
       : "sem notas para este dia"}</span></p>
     <p><span class="rot">Maré</span><span>${d.amplitude.amplitude === null ? `não obtida${d.amplitude.motivo ? ` (${esc(d.amplitude.motivo)})` : ""}`
-      : `${num(d.amplitude.amplitude, 1)} m · ${esc(d.amplitude.classe)}`}${d.repontos ? `<br>${d.repontos.map(r => `${r.tipo} ${hora(r.instante)}`).join(" · ")}` : ""}</span></p>
+      : `${num(d.amplitude.amplitude, 1)} m · ${esc(d.amplitude.classe)}`}${d.repontos ? `<br>${esc(maresPorTipo(d.repontos))}` : ""}</span></p>
     ${ali.length ? `<div class="alinhamento"><b>Alinhamento</b> ${ali.map(a => esc(textoAlinhamento(a))).join("; ")}</div>` : ""}
   </section>`;
 }
@@ -148,7 +157,7 @@ function detalhes(p, pq, d, contexto) {
   }
   if (p.chuva) dados.push(["Chuva 48 h", p.chuva.turva === null ? `por verificar${p.chuva.motivo ? ` (${p.chuva.motivo})` : ""}` : `${num(p.chuva.chuva48hMm, 1)} mm${p.chuva.turva ? " — água turva" : ""}`]);
   if (p.agua) dados.push(["Água", p.agua.media === null ? (p.agua.motivo ?? "não obtida") : `${num(p.agua.media, 1)} °C${p.agua.comparacao === null ? ` — ${p.agua.motivo ?? "comparação não possível"}` : ""}`]);
-  if (d.repontos) dados.push(["Marés", d.repontos.map(r => `${r.tipo} ${hora(r.instante)} (${num(r.alturaM, 1)} m)`).join(" · ")]);
+  if (d.repontos) dados.push(["Marés", d.repontos.map(r => `${NOME_MARE[r.tipo]} ${hora(r.instante)} (${num(r.alturaM, 1)} m)`).join(" · ")]);
   dados.push(["Sol", s ? `nasce ${hora(s.nascer)} · põe-se ${hora(s.por)}` : "não calculado"]);
   if (p.potencia?.avisos?.length) dados.push(["Potência", p.potencia.avisos.join("; ")]);
   return `<details class="detalhes"><summary>Dados, parcelas e fontes</summary>
@@ -194,7 +203,7 @@ function cartao(id, p, d, contexto) {
       ${factos(p, pq)}
       ${avisosDoCartao(p, pq, contexto)}
       ${detalhes(p, pq, d, contexto)}
-      <p class="rodape">${ligacoes("Vento agora (Windguru)", pq.estacoes)}${ligacoes("Câmaras", pq.camaras)}${foto ? `Foto: <a href="${esc(foto.pagina)}" target="_blank" rel="noopener">${esc(foto.autor)}</a>, ${esc(foto.licenca)} (Wikimedia Commons)` : ""}</p>
+      <p class="rodape">${ligacoes("Vento agora (Windguru)", pq.estacoes)}${ligacoes("Câmaras", pq.camaras)}</p>
     </div>
   </article>`;
 }
@@ -209,5 +218,6 @@ export function renderInicio(contexto) {
     ${faixaDias(analise, indice)}
     ${resumo(analise, indice, contexto.config)}
     <section class="cartoes">${Object.entries(d.pesqueiros).map(([id, p]) => cartao(id, p, d, contexto)).join("")}</section>
+    <p class="legenda">Créditos das fotografias na página <a href="./diagnostico.html">Fontes</a>.</p>
     <p class="legenda">Notas de 1 a 5 por período (madrugada 00–06, manhã 06–12, tarde 12–18, noite 18–24, hora de Portugal continental). <b class="mini nd">n.d.</b> sem dados suficientes · <b class="mini pc">?</b> por confirmar no terreno. Todas as notas são provisórias.</p>`;
 }

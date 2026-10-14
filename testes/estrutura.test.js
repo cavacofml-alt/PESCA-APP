@@ -66,7 +66,10 @@ function carregarSw({ rede }) {
       if (rede === "falha") throw new TypeError("sem rede");
       return { ok: true, origem: "rede", url: req.url, clone() { return { ...this, origem: "cache" }; } };
     },
-    Response: { error: () => ({ ok: false, origem: "erro" }) },
+    Response: class {
+      constructor(corpo, init) { Object.assign(this, init, { corpo, ok: true, redirected: false, origem: "cópia limpa" }); }
+      static error() { return { ok: false, origem: "erro" }; }
+    },
     URL
   };
   vm.runInNewContext(ler("sw.js"), ctx);
@@ -132,4 +135,23 @@ test("sw: pedidos a outros domínios (APIs) não passam pela cache", async () =>
 test("sw: cache versionada (v2 ou superior)", () => {
   const versao = Number(ler("sw.js").match(/surfcasting-shell-v(\d+)/)?.[1]);
   assert.ok(versao >= 2);
+});
+
+test("sw: resposta guardada com redireccionamento é servida limpa (o Chrome recusa-a numa navegação)", async () => {
+  // Cloudflare: /diagnostico.html → 307 → /diagnostico; o cache.addAll guarda-a com redirected=true.
+  const sw = carregarSw({ rede: "ok" });
+  sw.cache.set("https://exemplo.pt/diagnostico.html", { ok: true, redirected: true, status: 200, statusText: "OK",
+    headers: { "content-type": "text/html" }, blob: async () => "<html>", origem: "cache" });
+  const r = await sw.pedir("https://exemplo.pt/diagnostico.html");
+  assert.equal(r.redirected, false);
+  assert.equal(r.corpo, "<html>");
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.headers, { "content-type": "text/html" });
+  // Uma resposta guardada sem redireccionamento é devolvida tal como está.
+  sw.cache.set("https://exemplo.pt/js/app.js", { ok: true, origem: "cache" });
+  assert.equal((await sw.pedir("https://exemplo.pt/js/app.js")).origem, "cache");
+});
+
+test("páginas: as ligações internas não passam por redireccionamentos do Cloudflare", () => {
+  for (const f of ["index.html", "diagnostico.html"]) assert.ok(!/href="\.\/index\.html"/.test(ler(f)), f);
 });

@@ -1,0 +1,27 @@
+Resumo — recolha n.º 2 na Fizk, 14/10/2026, 14:05–14:15 (hora de Portugal)
+
+O que não consegui obter ou ficou incompleto, e porquê:
+1. Molhes de Quarteira e de Vilamoura: não existem como pontos na Fizk (ver 2_molhes.txt).
+2. Fizk Score de 15/10 a partir das 15:00: está bloqueado na conta FREE (cadeado PRO). As restantes colunas estão completas.
+3. Nuvens: a Fizk só mostra um ícone (sol, sol com nuvens, nublado…), sem percentagem. Registei o nome do ícone.
+4. Direcção do vento e da ondulação: a tabela mostra só uma seta. Registei a rotação da seta e acrescentei uma coluna
+   derivada com a direcção «de onde vem» (rotação − 180°), confirmada com o «E: este» da ficha às 14:00. Essa coluna é minha e não da Fizk.
+5. Maré: a tabela tem uma curva, não valores hora a hora. Registei as preia-mares e baixa-mares de cada dia, mais os coeficientes.
+6. Fichas dos pontos: em 96 dos 101 pontos, Composición, Tipo de arena, Acceso e Condiciones aparecem como «—».
+   Só os pontos espanhóis (San Bruno) e o espigão de VRSA têm esses campos preenchidos.
+   A profundidade vem quase sempre marcada «est.» (estimada pela Fizk). Não há campo de estacionamento: indiquei se
+   «Aparcamiento» aparece na lista de serviços. Os serviços vêm em duas colunas: destacados (azul) e outros (cinzento).
+   A Fizk não explica a diferença entre as duas cores.
+7. Mareas y presiones e Normativa de cada ficha: «SOLO PRO» (não consultado).
+8. Texto do Fizk Score: resumido e não copiado na íntegra (direitos de autor). As faixas e as listas estão transcritas.
+
+Avisos sobre os dados:
+- Alguns pontos têm nomes diferentes no mapa e na ficha:
+  4170 «Beliche» → «Ponta Ruiva»; 4171 «Mareta» → «Martinhal»; 3808 «Monte Gordo Nascente» → «Espigón Vila Real Santo Antonio».
+  O CSV tem as duas colunas.
+- O CSV tem os 101 pontos que a app devolve entre Sagres e o Guadiana. Alguns estão fora do troço pedido e estão assinalados na coluna «notas»:
+  pontos da Costa Vicentina, e os pontos «San Bruno» (Huelva, Espanha).
+- 3823 «Alagoa - Altura» aparece com longitude -7.40988, que fica perto da foz do Guadiana e longe de Altura.
+  É o valor da Fizk; convém confirmar no mapa antes de o usar.
+- Todos os pontos são do tipo «Playa». A Fizk não distingue rocha, molhe ou ria no campo de tipo. A única excepção visível
+  é o 3808, com «Tipo de arena: Espigón».

@@ -1,5 +1,5 @@
 // Mudar a versão sempre que a shell mudar: a activação apaga as caches antigas.
-const CACHE = "surfcasting-shell-v7";
+const CACHE = "surfcasting-shell-v8";
 const SHELL = [
   "./", "./index.html", "./diagnostico.html", "./manifest.webmanifest", "./css/base.css", "./css/app.css",
   "./js/app.js", "./js/diagnostico.js", "./js/dados.js", "./js/normalizacao.js", "./js/pontos.js",
@@ -38,9 +38,19 @@ function redePrimeiro(request) {
   return fetch(request).then(response => guardar(request, response))
     .catch(() => caches.match(request).then(cached => cached || Response.error()));
 }
+// O Cloudflare redirecciona /x.html para /x e /index.html para /, e o cache.addAll guarda a
+// resposta final marcada como redireccionada. O Chrome recusa servir uma resposta
+// redireccionada a uma navegação («Não é possível aceder ao site»): serve-se uma cópia limpa,
+// com o mesmo corpo, estado e cabeçalhos.
+function semRedireccao(response) {
+  if (!response || !response.redirected) return response;
+  return response.blob().then(corpo => new Response(corpo,
+    { status: response.status, statusText: response.statusText, headers: response.headers }));
+}
 // Shell: cache primeiro.
 function cachePrimeiro(request) {
-  return caches.match(request).then(cached => cached || fetch(request).then(response => guardar(request, response)));
+  return caches.match(request).then(cached => (cached ? semRedireccao(cached)
+    : fetch(request).then(response => guardar(request, response))));
 }
 self.addEventListener("fetch", event => {
   const url = new URL(event.request.url);

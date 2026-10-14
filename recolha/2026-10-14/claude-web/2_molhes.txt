@@ -1,0 +1,22 @@
+2 — Molhes de Quarteira e de Vilamoura
+Recolha: 14/10/2026, ~14:10 (hora de Portugal).
+
+Resultado: a Fizk NÃO tem nenhum ponto no molhe do porto de pesca de Quarteira nem nos molhes da marina de Vilamoura.
+
+Como verifiquei:
+- Pedi à app os pontos da zona entre 37.00–37.12 N e 8.00–8.20 W (é o mesmo pedido que o mapa faz). Aparecem só 9 pontos,
+  todos com ficha do tipo «Playa»: Olhos de Água, Belharucas, Falésia Alfamar, Rocha Baixinha - Poente, Vilamoura,
+  Forte Novo, Vale do Lobo, Ancão, Faro - Mar Poente.
+- No mapa, à volta da marina e do porto de Quarteira, só há os marcadores de «Rocha Baixinha - Poente» (a poente da marina)
+  e «Vilamoura» (na praia a nascente da marina). Nenhum está sobre um molhe.
+
+Pontos mais próximos (nome | n.º | lat | lon):
+- Rocha Baixinha - Poente | 3927 | 37.0768 | -8.1373
+- Vilamoura               | 3894 | 37.0719 | -8.11896
+- Forte Novo             | 3877 | 37.0620 | -8.09016
+
+Único molhe/espigão que encontrei no Algarve:
+- No mapa chama-se «Monte Gordo Nascente», mas a ficha chama-lhe «Espigón Vila Real Santo Antonio» | n.º 3808 | 37.1632 | -7.3998
+  Composición «Hormigón y roca»; Tipo «Espigón»; Profundidad «Profunda»; Acceso «A pie o en vehículo»;
+  Condiciones «Oleaje moderado»; ficha rápida: Longitud 1400 m, Puerto deportivo Ayamonte.
+  Ficha: https://fizk.com/academia/playas/3808

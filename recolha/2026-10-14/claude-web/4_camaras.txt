@@ -1,0 +1,23 @@
+4 — Câmaras em directo mostradas pela Fizk
+Recolha: 14/10/2026, ~14:10 (hora de Portugal). Fonte: separador «CÁMARAS» da ficha de cada ponto.
+
+Todas as câmaras são do windy.com (a Fizk escreve «Cámaras de windy.com»). Nenhuma é da MEO Beachcam.
+O endereço é o que a Fizk liga em cada câmara («detalle»). Na conta grátis, o «Timelapse del día» está bloqueado (plano PRO).
+
+Faro - Mar Poente (3817)
+- «Montenegro» | windy.com | https://windy.com/webcams/1743021358
+- «Montenegro» | windy.com | https://windy.com/webcams/1743021286 — a Fizk indica «En Faro - Mar Nascente, a 5 km de aquí»
+
+Ancão (3619) — a Fizk diz que esta praia não tem câmara própria e mostra a de uma praia próxima
+- «Montenegro» | windy.com | https://windy.com/webcams/1743021358 — «En Faro - Mar Poente, a 3,6 km de aquí»
+
+Forte Novo (3877)
+- «Quarteira Beach - Praia do Almargem - Atlantic Ocean» | windy.com | https://windy.com/webcams/1647793943
+- «Praia da Rocha Baixinha» | windy.com | https://windy.com/webcams/1444762905 — «En Vilamoura, a 2,8 km de aquí»
+
+Vilamoura (3894)
+- «Praia da Rocha Baixinha» | windy.com | https://windy.com/webcams/1444762905
+- «Quarteira Beach - Praia do Almargem - Atlantic Ocean» | windy.com | https://windy.com/webcams/1647793943 — «En Forte Novo, a 2,8 km de aquí»
+
+Nota: a indicação «En …, a … km» aparece por baixo da última câmara de cada lista. No caso de Faro - Mar Poente,
+a Fizk mostra o mesmo título («Montenegro») para as duas câmaras.

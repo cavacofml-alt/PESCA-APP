@@ -14,6 +14,12 @@ const showStatus = result => `<span class="status ${result.ok ? "ok" : "fail"}">
 function card(title, result, details = "") {
   return `<article class="card"><h2>${esc(title)}</h2>${showStatus(result)}<p>${esc(result.error ?? "Pedido concluído.")}</p>${details}</article>`;
 }
+// Créditos das fotografias dos cartões (exigidos pelas licenças CC BY e CC BY-SA).
+function creditosFotos(config) {
+  const linhas = Object.values(config.pesqueiros ?? {}).filter(pq => pq.foto).map(pq =>
+    `<li>${esc(pq.nomeCurto ?? pq.nome)}: <a href="${esc(pq.foto.pagina)}" target="_blank" rel="noopener">${esc(pq.foto.autor)}</a>, ${esc(pq.foto.licenca)} (Wikimedia Commons; recortada e reduzida)</li>`);
+  return `<article class="card" id="creditos"><h2>Créditos das fotografias</h2><ul>${linhas.join("")}</ul></article>`;
+}
 async function run() {
   $("#refresh").disabled = true;
   $("#updated").textContent = "A consultar fontes…";
@@ -42,6 +48,7 @@ async function run() {
     }, null, 2))}</pre></details>` : "")).join("");
   const solar = getSunAndMoon(new Date(), config.locais.faroTerra.latitude, config.locais.faroTerra.longitude);
   resultRoot.insertAdjacentHTML("beforeend", card("Sol e Lua — SunCalc", solar));
+  resultRoot.insertAdjacentHTML("beforeend", creditosFotos(config));
   $("#updated").textContent = `Última tentativa: ${new Date().toLocaleString("pt-PT", { timeZone: config.fusoHorario })}`;
   $("#refresh").disabled = false;
 }
