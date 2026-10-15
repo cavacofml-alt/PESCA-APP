@@ -1,0 +1,32 @@
+RESUMO — Recolha n.º 3 na Fizk (notas por espécie)
+Data: quinta-feira, 15/10/2026, entre as 09:09 e as 09:35 (hora de Portugal). Conta FREE. Nada foi descarregado nem pago.
+
+FICHEIROS
+- 1_Vilamoura.csv, 1_Faro_Mar_Poente.csv, 1_Ancao.csv, 1_Falesia_Alfamar.csv, 1_Forte_Novo.csv
+  Têm 48 linhas (00:00 de hoje a 23:00 de amanhã) e são separados por «;». Os decimais ficam com vírgula, como a Fizk os mostra. Cada CSV tem ainda as colunas de maré, Sol e Lua de cada dia.
+- 2_favoritos_por_especie.txt
+- 3_o_que_o_score_considera.txt
+
+COMO CONFIRMEI OS DADOS
+- Para cada ponto copiei as linhas do meteograma (score_lubina, score_dorada, score_sargo) uma espécie de cada vez. Depois comparei os ficheiros com a página através de uma soma de controlo; nos 5 pontos coincidem por completo.
+- As linhas de tempo e mar (ar, ícone, água, vento, rajada, setas, ondulação, pressão, chuva) são iguais nas 3 espécies. Confirmei isso em todas as horas dos 5 pontos.
+- Às 09:00 de hoje, as notas do meteograma coincidem com as dos marcadores do mapa e com a 2.ª leitura dos cartões da página inicial (ver ficheiro 2).
+
+O QUE NÃO CONSEGUI E PORQUÊ
+1. Notas de amanhã (16/10) das 10:00 às 23:00, nas 3 espécies e nos 5 pontos: «não visível». Têm cadeado PRO (coroa) e a conta só mostra notas até amanhã às 09:00. As outras linhas do meteograma aparecem todas e estão copiadas.
+2. Direcção do vento e da ondulação: a Fizk só mostra uma seta, sem graus nem letras. Copiei a rotação da seta, tal como está definida na página (colunas seta_..._rotacao_graus). As colunas CALC_ são CÁLCULO MEU e partem de dois pressupostos:
+   - a seta a 0° aponta para Norte (confirmei no ecrã: a rotação de 263° aparece como «←»);
+   - a seta indica para onde vai o vento ou a onda, por isso a origem é a rotação + 180°. Fui por aqui porque as setas da ondulação apontam para terra (NO), o que só faz sentido numa costa virada a sul.
+   Exemplo: hoje à tarde em Vilamoura a seta do vento está a cerca de 280°, o que dá vento de cerca de E (Levante), segundo este cálculo.
+3. Ícone das nuvens: não descarreguei imagens. Copiei o nome do ícone tal como está na página (ex.: sol.webp, sol-nubes.webp, nubes-sol.webp, nublado.webp, luna.webp, luna-nubes.webp, nubes-luna.webp).
+4. Maré: a curva não traz valores hora a hora. Copiei as preia-mares e as baixa-mares (hora e altura, como a Fizk as mostra, com valores negativos nas baixa-mares) e o coeficiente («53 / 47» hoje, «41 / 36» amanhã). Há pequenas diferenças entre pontos: em Faro e no Ancão a preia-mar da tarde é às 17:16 e a baixa-mar às 23:05; nos outros pontos são às 17:17 e às 23:07.
+5. IDs dos pontos (3894, 3817, …): não aparecem no ecrã. Identifiquei os pontos pelo nome e pela estrela de favorito. O Forte Novo foi o único resultado da pesquisa com esse nome.
+6. Painel de favoritos: não está visível na app web (ver ficheiro 2). Os cartões da página inicial não dizem a que hora se refere a nota.
+7. Assistente: gastei 1 mensagem grátis (o cartão «¿Qué es el Fizk Score?»).
+8. Academia: os capítulos «Mareas» e «Conoce a la Dorada» têm cadeado SOLO PRO. Não encontrei capítulos próprios sobre robalo ou dourada fora das fichas de espécie. O «Manual de Pesca de la Lubina a Spinning» só deixa ler 14 de 114 páginas, e não o li por ser sobre spinning.
+9. Secção 4 (repetição noutro dia): fica por fazer, porque só se pode fazer noutro dia. Hoje o tempo é de vento de Leste à tarde (rajadas até cerca de 44 km/h) e ondulação de 0,6–1,3 m. Para comparar, o ideal seria repetir num dia calmo. Esta recolha está na pasta 2026-10-15.
+
+ALGUMAS NOTAS QUE SALTAM À VISTA (só observação, sem conclusões)
+- Em todos os pontos, a nota sobe pela manhã e chega ao máximo à tarde: no robalo às 13h-14h, na dourada às 15h-16h, com vento forte de E. Depois cai bruscamente às 20h-21h, a seguir ao pôr do Sol (18:55).
+- A ordem é Dorada ≥ Sargo ≥ Lubina em todas as horas com nota em Vilamoura, na Falésia e no Forte Novo. Em Faro isso acontece em 31 das 34 horas e no Ancão em 33 das 34. A diferença entre Dorada e Lubina é maior na Falésia (ondulação de 0,7–0,8 m): de 1,3 a 1,7 pontos. No Ancão e em Faro (ondulação de 1,2–1,3 m) vai de 0,0 a 1,2 pontos; de madrugada, as três espécies chegam a ter a mesma nota.
+- O Forte Novo e Vilamoura têm a mesma água, vento, ondulação, pressão e chuva em todas as horas; só a temperatura do ar difere 1° em duas horas. As notas são ligeiramente diferentes.

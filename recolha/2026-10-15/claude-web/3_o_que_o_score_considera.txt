@@ -1,0 +1,47 @@
+O QUE A FIZK DIZ QUE O FIZK SCORE CONSIDERA
+Recolha: quinta-feira, 15/10/2026, c. 09:30 (hora de Portugal)
+Gastei 1 mensagem grátis do assistente (o cartão «¿Qué es el Fizk Score?»). O contador ficou em «4 / 5 hoy» (antes mostrava «49 / 50 este mes»).
+
+1) CARTÃO DO ASSISTENTE «Qué es el Fizk Score»
+Definição: «La biología de la especie cruzada con la previsión de ese sitio y ese día, puesto en una escala del 0 al 10.»
+Escala: Baja 0–2,5 | Regular 2,6–4,9 | Buena 5,0–7,5 | Excelente 7,6–10
+
+QUÉ MIRA: viento · oleaje · marea · presión · temperatura del agua · turbidez · luna · temporada · hora del día
+QUÉ NO PUEDE VER: una corriente local · depredadores que han desplazado a la especie · tu montaje o tu cebo · tu maña para engañarla
+
+O texto que acompanha o cartão (resumo): o score é uma estimativa; um dia com nota alta pode correr mal por coisas que o score não vê, e um dia com nota baixa pode dar peixe. Foi pensado sobretudo para quem está a começar a planear as saídas e deve ser visto como mais um parâmetro, como o vento ou a ondulação.
+Sobre as diferenças entre espécies, o cartão só diz que entra a «biologia da espécie». Não explica o que muda de espécie para espécie.
+
+2) JANELA «Información sobre predicciones» (botão «i» do meteograma)
+Fontes: Open-Meteo e Instituto Hidrográfico de la Marina (IHM), com dados actualizados de 12 em 12 horas.
+Dados usados: temperatura da água; velocidade e direcção do vento (a 10 m); altura e direcção das ondas; precipitação e probabilidade de chuva; pressão; nebulosidade; nascer e pôr do Sol; fases da Lua.
+(Esta janela fala das previsões em geral; não diz como é calculada a nota.)
+
+3) ACADEMIA — FICHAS DAS ESPÉCIES (resumo do que dizem)
+Nota: nas três fichas, o capítulo «Mareas» (15 págs.) tem cadeado SOLO PRO. A ficha da Dorada tem ainda «Conoce a la Dorada» (12 págs.), também SOLO PRO. Não li estes capítulos.
+
+LUBINA (robalo)
+- Actividade: «Crepuscular y nocturna». Conselho: melhor de noite e com algum mar; muito sensível ao ruído.
+- Maré: aproveita as correntes de maré; «Caza mejor de noche y aprovecha los cambios de marea». Os chips «Mejores momentos/Cuándo afinar» mostram maré a subir, maré a descer e marés vivas (coef. alto).
+- Mar/ondulação: rizada, marejada, mar de fondo, água revolta/turva.
+- Hora do dia: amanhecer, anoitecer, noite. No gráfico «Actividad por hora» de Outubro, as barras mais altas são das 08h-09h e das 19h-20h. As barras são baixas das 00h às 07h, das 10h às 12h, das 16h às 18h e das 21h às 23h. Não há barra das 13h às 15h.
+- Abundância por mês (gráfico de 0 a 3): barras altas em Jan e de Jun a Dez; mais baixas de Fev a Mai. A ficha não mostra o valor em número.
+- Zonas: orla/rebentação, desembocaduras, rias e estuários, rochedos. Profundidade 0–100 m, sobretudo na rebentação.
+
+DORADA (dourada)
+- Actividade: «Crepuscular». Conselho: «Pica mejor en los cambios de marea»; pescar fino e discreto, muito desconfiada.
+- Maré: maré a subir, marés vivas (coef. alto). A maré a descer não aparece na lista.
+- Mar/ondulação: «Mar en calma», rizada. Ao contrário do robalo e do sargo, não aparecem marejada nem mar de fundo.
+- Hora do dia: amanhecer, anoitecer, noite; «Picos al amanecer y al atardecer, mejor en los cambios de marea». O gráfico horário de Outubro tem a mesma forma que o do robalo (picos às 08h-09h e às 19h-20h).
+- Abundância por mês: barras mais altas em Mai e de Set a Nov; intermédias em Mar, Abr, Jun-Ago e Dez; mais baixas em Jan e Fev.
+- Zonas: areais, fundos mistos, desembocaduras, pradarias de posidónia, entre 1 e 30 m. Na Primavera entra em lagoas e estuários.
+
+SARGO
+- Actividade: «Crepuscular»; omnívoro diurno-crepuscular. Conselho: apresentar o isco muito junto à pedra.
+- Maré: maré a subir, maré a descer, marés vivas (coef. alto).
+- Mar/ondulação: rizada, marejada, mar de fondo; alimenta-se na rebentação batida, «aprovechando grietas y espuma».
+- Hora do dia: amanhecer, anoitecer, noite; «Activo al amanecer y al atardecer». O gráfico horário de Outubro tem a mesma forma que os outros dois.
+- Abundância por mês: barras altas em Jan, Fev e de Set a Dez; mais baixas de Mar a Ago.
+- Zonas: rochedos, esporões, orla/rebentação, fundos mistos; 0–50 m.
+
+O QUE AS FICHAS NÃO DIZEM: nenhuma das três fichas abertas fala de vento, temperatura da água nem Lua (fora o ícone de Lua no gráfico de horas). A pressão e a turbidez só aparecem na lista «Qué mira» do assistente, e a turbidez também nos chips do robalo («Agua revuelta / turbia»).
