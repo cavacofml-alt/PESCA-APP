@@ -1,0 +1,35 @@
+NOTAS DOS FAVORITOS E DO MAPA POR ESPÉCIE — Fizk
+Recolha: quinta-feira, 15/10/2026 (hora de Portugal)
+
+A) CARTÕES «Mis playas favoritas» (página Inicio)
+A Fizk não indica nos cartões a hora a que a nota se refere. Os favoritos são só 4; o Forte Novo não é favorito.
+
+Leitura 1 — 09:09
+             Lubina   Dorada   Sargo
+Vilamoura     6.5      7.1      7.0
+Falésia Alf.  6.3      8.0      7.5
+Faro-M.Poente 5.6      6.6      6.5
+Ancão         5.5      5.6      5.6
+Restante informação dos cartões (igual para as 3 espécies): Marea 10:59 (seta para baixo); Viento 12 km/h (Ancão 13 km/h); Oleaje Vilamoura 1.1 m, Falésia 0.8 m, Faro 1.3 m, Ancão 1.3 m; Agua 20°C.
+
+Leitura 2 — c. 09:23 (repetida para confirmar)
+             Lubina   Dorada   Sargo
+Vilamoura     6.5      7.1      7.0
+Falésia Alf.  6.3      8.0      7.5
+Faro-M.Poente 6.6      6.6      6.5
+Ancão         5.6      5.6      5.6
+Restante: igual à leitura 1, excepto Viento em Faro, que passou a 13 km/h.
+
+Observação: na leitura 2 todas as notas coincidem com a hora 09:00 do meteograma. Na leitura 1, as notas de Lubina de Faro (5.6) e de Ancão (5.5) coincidem com a hora 08:00 do meteograma, não com as 09:00. Também o vento de Faro (12 km/h) coincidia com as 08:00. Não sei porquê; a página pode ter ficado com dados de antes das 09:00.
+
+B) MARCADORES DO MAPA (Planificador), hora seleccionada pela Fizk «Jueves, 15 Oct - 09:00», lidos c. 09:22
+             Lubina   Dorada   Sargo
+Falésia Alf.  6.3      8.0      7.5
+Vilamoura     6.5      7.1      7.0
+Forte Novo    6.3      7.2      6.9
+Ancão         5.6      5.6      5.6
+Faro-M.Poente 6.6      6.6      6.5
+Todos coincidem com a hora 09:00 do meteograma de cada ponto.
+
+C) PAINEL DE FAVORITOS
+Não encontrei na app web nenhum painel de favoritos à vista (só os cartões da página inicial e as estrelas nos marcadores). No código da página existe uma lista «Tus favoritos» escondida, só com nome, concelho e coordenadas, sem nota. Por isso, as notas do painel de favoritos ficam como «não visível».
