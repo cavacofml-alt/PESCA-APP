@@ -120,3 +120,43 @@ test("Fontes: créditos de todas as fotografias, com autor e licença", () => {
   assert.ok(comFoto.length >= 5);
   for (const pq of comFoto) assert.ok(pq.foto.autor && pq.foto.licenca && pq.foto.pagina, pq.nomeCurto);
 });
+
+// ---------- Boia de Faro (observado) ----------
+import { lerCoberturaBoia } from "../js/fontes/ih-boias.js";
+const BOIA = lerCoberturaBoia(lerJson("testes/reais/ih_boia_faro_20261115.json"));
+const boiaOk = readAt => ({ ok: true, data: BOIA, source: "Instituto Hidrográfico — boia ondógrafo", readAt, error: null });
+
+test("ecrã: «Mar agora» com a última medição da boia, fonte, tipo, licença e aviso de que não entra nas notas", () => {
+  const c = { ...contexto(), lidoEm: "2026-11-15T10:40:00.000Z", boiaFaro: boiaOk("2026-11-15T10:40:00.000Z") };
+  const html = renderInicio(c);
+  const bloco = html.split('<section class="mar-agora"')[1].split("</section>")[0];
+  assert.match(bloco, /Mar agora <small>· Boia de Faro · observado<\/small>/);
+  assert.match(bloco, /<dd>0,84 m \(máx\. 1,11 m\) · de O \(259°\)<\/dd>/);
+  assert.match(bloco, /<dd>médio 6,1 s · de pico 10,5 s<\/dd>/);
+  assert.match(bloco, /<dd>19,4 °C<\/dd>/);
+  assert.match(bloco, /3 h antes 0,96 m · últimas 24 h: 0,84–1,22 m/);
+  assert.match(bloco, /Medido às 10:26 \(há 13 min\) ao largo, a 90 m de fundo/);
+  assert.match(bloco, /Não entra nas notas/);
+  assert.match(bloco, /Instituto Hidrográfico, boia CSA82\/D \(36\.9048, -7\.8984\) · observado · lido às 10:40/);
+  assert.match(bloco, /href="https:\/\/creativecommons\.org\/licenses\/by-nc\/4\.0\/"[^>]*>CC BY-NC 4\.0<\/a>/);
+  assert.ok(!/desactualizada/.test(bloco));
+  assert.ok(!/Previsão/.test(bloco), "sem previsão para a hora da medição, a linha não aparece");
+});
+
+test("ecrã: «Mar agora» mostra a previsão do Open-Meteo para a mesma hora (série sintética do teste)", () => {
+  const c = { ...contexto(), lidoEm: "2026-11-15T10:40:00.000Z", boiaFaro: boiaOk("2026-11-15T10:40:00.000Z") };
+  const t = Date.parse("2026-11-15T10:00:00Z") / 1000;
+  c.pontos = { ...c.pontos, mar: { ...c.pontos.mar, faroMarPoente: { ok: true, data: { hourly: {
+    time: [t - 3600, t, t + 3600], wave_height: [0.8, 0.9, 1], wave_period: [8.1, 8.2, 8.3] } } } } };
+  assert.match(renderInicio(c), /<dd>Open-Meteo às 10:00 \(Praia de Faro\): 0,90 m, período 8,2 s<\/dd>/);
+});
+
+test("ecrã: boia desactualizada, sem medições válidas ou não obtida — sempre dito, nunca um número", () => {
+  let html = renderInicio({ ...contexto(), lidoEm: "2026-11-15T14:00:00.000Z", boiaFaro: boiaOk("2026-11-15T14:00:00.000Z") });
+  assert.match(html, /Última medição há 3 h 33 min: desactualizada/);
+  html = renderInicio({ ...contexto(), boiaFaro: { ok: true, data: { observacoes: [] }, readAt: LIDO } });
+  assert.match(html, /Sem medições válidas nas últimas 24 h/);
+  html = renderInicio({ ...contexto(), boiaFaro: { ok: false, data: null, readAt: LIDO, error: "HTTP 503" } });
+  assert.match(html, /<section class="mar-agora"[^>]*><h3>Mar agora[^<]*<small>[^<]*<\/small><\/h3><p class="falha">Não obtido — HTTP 503<\/p>/);
+  assert.ok(!/mar-agora/.test(renderInicio(contexto())), "sem leitura da boia, sem secção");
+});
