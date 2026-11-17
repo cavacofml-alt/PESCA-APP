@@ -37,6 +37,11 @@ a { color: var(--azul2); }
 .resumo { background: white; border-radius: 1rem; padding: .75rem .9rem; box-shadow: 0 1px 4px rgb(11 59 83 / .1); font-size: .92rem; }
 .resumo p { display: grid; grid-template-columns: 6.4rem 1fr; gap: .5rem; align-items: baseline; margin: .35rem 0; }
 .rot { color: var(--suave); font-size: .74rem; text-transform: uppercase; letter-spacing: .03em; }
+.mar-agora { background: white; border-radius: 1rem; padding: .75rem .9rem; margin-top: .75rem; box-shadow: 0 1px 4px rgb(11 59 83 / .1); font-size: .92rem; }
+.mar-agora h3 { margin: 0; font-size: 1rem; color: var(--azul); }
+.mar-agora h3 small { color: var(--suave); font-weight: normal; font-size: .8rem; }
+.mar-agora .falha { color: #8a2a1f; margin: .4rem 0 0; }
+.fonte-boia { color: var(--suave); font-size: .78rem; margin: .4rem 0 0; }
 .alinhamento { margin-top: .5rem; padding: .5rem .65rem; border-radius: .7rem; background: #fff4d6; color: #5c4300; font-size: .88rem; }
 .alinhamento b { margin-right: .3rem; }
 

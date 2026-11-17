@@ -129,7 +129,24 @@
   "fontes": {
     "marineBase": "https://marine-api.open-meteo.com/v1/marine",
     "forecastBase": "https://api.open-meteo.com/v1/forecast",
-    "ipmaSeaForecastBase": "https://api.ipma.pt/open-data/forecast/oceanography/daily/"
+    "ipmaSeaForecastBase": "https://api.ipma.pt/open-data/forecast/oceanography/daily/",
+    "boiasIhBase": "https://ogcapi.hidrografico.pt/collections/buoys_datawell/locations/"
+  },
+  "boias": {
+    "faro": {
+      "nome": "Boia de Faro",
+      "idEstacao": 20,
+      "codigo": "CSA82/D",
+      "latitude": 36.9048,
+      "longitude": -7.8984,
+      "profundidadeM": 90,
+      "horas": 24,
+      "maxIdadeHoras": 3,
+      "previsaoPonto": "fizkFaroMarPoente",
+      "licenca": "CC BY-NC 4.0",
+      "licencaUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+      "origem": "Instituto Hidrográfico, rede de boias Datawell Waverider (OGC API, colecção buoys_datawell, id_est 20), lido a 17/11/2026"
+    }
   },
   "locais": {
     "faroMar": {
