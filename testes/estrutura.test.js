@@ -164,3 +164,13 @@ test("sw: a versão da cache acompanha a shell (impressão SHA-256 dos ficheiros
   assert.equal(impressaoGravada(sw), impressaoShell(fileURLToPath(new URL("..", import.meta.url)), sw),
     "a shell mudou: correr «node ferramentas/versao-sw.mjs» (sobe a versão da cache)");
 });
+
+test("Falésia: ondulação e água ao largo (célula de mar), vento no ponto da app de referência", () => {
+  const f = config.pesqueiros.falesia;
+  assert.equal(f.mar, "falesiaMar");
+  assert.equal(f.agua, "falesiaMar");
+  assert.equal(f.terra, "falesiaAlfamar");
+  // Grelha do Open-Meteo Marine de 1/12°: as linhas 37,042 e 37,125 têm o meio em 37,0833. O ponto da
+  // app de referência (37,0834) caía na de 37,125, com o centro em terra; o ponto de mar tem de ficar a sul do meio.
+  assert.ok(config.locais.falesiaMar.latitude < 37.0833);
+});
