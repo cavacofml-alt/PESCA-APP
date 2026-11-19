@@ -1,8 +1,8 @@
 // Mudar a versão sempre que a shell mudar: a activação apaga as caches antigas.
 // A impressão abaixo (SHA-256 dos ficheiros da SHELL) é conferida por um teste; para actualizar
 // a impressão e a versão de uma vez: node ferramentas/versao-sw.mjs
-const CACHE = "surfcasting-shell-v13";
-// impressão da shell: f623807d0611
+const CACHE = "surfcasting-shell-v14";
+// impressão da shell: 7bd412619a02
 const SHELL = [
   "./", "./index.html", "./diagnostico.html", "./mapa.html", "./manifest.webmanifest", "./css/base.css", "./css/app.css",
   "./js/app.js", "./js/diagnostico.js", "./js/dados.js", "./js/normalizacao.js", "./js/pontos.js",
@@ -12,7 +12,7 @@ const SHELL = [
   "./assets/fotos/almargem.jpg", "./assets/fotos/molhe_quarteira.jpg",
   "./js/fontes/http.js", "./js/fontes/open-meteo-tempo.js",
   "./js/fontes/open-meteo-marine.js", "./js/fontes/open-meteo-forecast.js",
-  "./js/fontes/ipma-mar.js", "./js/fontes/ih-boias.js",
+  "./js/fontes/ipma-mar.js", "./js/fontes/ih-boias.js", "./js/fontes/fundo-tipico.js",
   "./js/fontes/mares-locais.js", "./js/fontes/suncalc.js",
   "./js/regras/serie.js", "./js/regras/sectores.js", "./js/regras/potencia.js",
   "./js/regras/componentes.js", "./js/regras/mares.js",
