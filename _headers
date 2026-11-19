@@ -1,10 +1,12 @@
 # Cabeçalhos do Cloudflare Pages.
-# O service worker e os dados (config, marés) não podem ficar presos numa cache antiga.
+# O service worker e os dados (config, marés, fundos do mar) não podem ficar presos numa cache antiga.
 /sw.js
   Cache-Control: no-cache
 /config.json
   Cache-Control: no-cache
 /mares/*
+  Cache-Control: no-cache
+/fundos/*
   Cache-Control: no-cache
 /*
   X-Content-Type-Options: nosniff

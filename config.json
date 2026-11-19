@@ -378,5 +378,52 @@
       "inicioHora": 18
     }
   ],
-  "periodosProvisorio": true
+  "periodosProvisorio": true,
+  "mapa": {
+    "fundos": [
+      {
+        "id": "quarteira_garrao",
+        "nome": "Quarteira–Garrão",
+        "ficheiro": "fundos/quarteira_garrao.json",
+        "limites": [[37.0261, -8.1165], [37.0691, -8.0481]],
+        "aviso": "Zona com esporões e o molhe do porto de Quarteira: perto deles, os fundões e cabeços podem ser efeito das estruturas (pedra) e não só da areia."
+      },
+      {
+        "id": "praia_faro",
+        "nome": "Praia de Faro",
+        "ficheiro": "fundos/praia_faro.json",
+        "limites": [[36.9888, -8.0086], [37.0106, -7.9789]]
+      },
+      {
+        "id": "barreta_farol",
+        "nome": "Barreta–Ilha do Farol",
+        "ficheiro": "fundos/barreta_farol.json",
+        "limites": [[36.9498, -7.8903], [36.9781, -7.849]],
+        "aviso": "Barra de Faro-Olhão: os canais e os bancos da barra mudam muito, e este levantamento é de 2020. Perto dos molhes, as formas podem ser efeito das estruturas."
+      },
+      {
+        "id": "culatra_armona",
+        "nome": "Culatra–Armona",
+        "ficheiro": "fundos/culatra_armona.json",
+        "limites": [[36.9789, -7.8212], [37.0273, -7.753]],
+        "aviso": "Barra da Armona: bancos de areia que secam na baixa-mar e canais que mudam muito; este levantamento é de 2020."
+      }
+    ],
+    "fundosBase": {
+      "osm": {
+        "nome": "Mapa (OpenStreetMap)",
+        "url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        "maxZoom": 19,
+        "atribuicao": "© <a href=\"https://www.openstreetmap.org/copyright\">colaboradores do OpenStreetMap</a>"
+      },
+      "ortofoto": {
+        "nome": "Satélite (DGT, 2023)",
+        "wms": "https://ortos.dgterritorio.gov.pt/wms/ortosat2023",
+        "camada": "ortoSat2023-CorVerdadeira",
+        "maxZoom": 19,
+        "atribuicao": "Ortoimagens OrtoSat 2023 © <a href=\"https://www.dgterritorio.gov.pt/\">Direção-Geral do Território</a>"
+      }
+    },
+    "leaflet": "<a href=\"https://leafletjs.com\">Leaflet</a>"
+  }
 }
