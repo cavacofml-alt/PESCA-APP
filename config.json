@@ -414,6 +414,12 @@
         "aviso": "Barra da Armona: bancos de areia que secam na baixa-mar e canais que mudam muito; este levantamento é de 2020."
       },
       {
+        "id": "satelite",
+        "nome": "Satélite (04/11/2026)",
+        "ficheiro": "fundos/satelite.json",
+        "limites": [[36.9753, -8.214], [37.0902, -7.9568]]
+      },
+      {
         "id": "ria_lidar2011",
         "nome": "Ria Formosa e Ancão (LiDAR 2011)",
         "ficheiro": "fundos/ria_lidar2011.json",
