@@ -37,7 +37,8 @@ test("fundos: os quatro levantamentos COSMO, a estimativa por satélite e o LiDA
     // SHA-256 dos recortes das bandas usados (B02, B03, B04, B08, SCL)
     satelite: ["S2C_29SNB_20261104_0_L2A", "2026-11-04", undefined, "13920dd14a2d23241fd01e1a198bb4460afb10be18d57f5dce384200cb0e1f81"],
     // SHA-256 do 590_HR_Lidar_Algarve.emo.zip descarregado do EMODnet; só se sabe o ano
-    ria_lidar2011: ["590_HR_Lidar_Algarve", "2011", undefined, "7b713f3b1525e5652939834c74dc88eab5fb8e706d633641a636113423e6c755"]
+    ria_lidar2011: ["590_HR_Lidar_Algarve", "2011", undefined, "7b713f3b1525e5652939834c74dc88eab5fb8e706d633641a636113423e6c755"],
+    falesia_lidar2011: ["590_HR_Lidar_Algarve", "2011", undefined, "7b713f3b1525e5652939834c74dc88eab5fb8e706d633641a636113423e6c755"]
   };
   assert.deepEqual(config.mapa.fundos.map(f => f.id).sort(), Object.keys(esperado).sort());
   for (const f of config.mapa.fundos) {
@@ -45,7 +46,7 @@ test("fundos: os quatro levantamentos COSMO, a estimativa por satélite e o LiDA
     assert.deepEqual([d.produto, d.levantamento, d.levantamentoFim, d.sha256], esperado[f.id], f.id);
     assert.equal(d.url, d.tipo === "estimado"
       ? `https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a/items/${d.produto}`
-      : f.id === "ria_lidar2011"
+      : d.produto === "590_HR_Lidar_Algarve"
       ? "https://emodnet.ec.europa.eu/geonetwork/srv/api/records/SDN_CPRD_590_HR_Lidar_Algarve"
       : `https://cosmo.apambiente.pt/prd/${d.produto}`);
   }
@@ -84,7 +85,7 @@ test("fundos: Praia de Faro — fundões e cabeços dentro da zona levantada", (
 });
 
 test("fundos: isóbatas do nível médio (2 m ZH) para baixo: 0,5 m até −10, 1 m até −20, 5 m daí para baixo", () => {
-  for (const f of config.mapa.fundos.filter(x => x.id !== "ria_lidar2011")) {  // o LiDAR tem níveis próprios
+  for (const f of config.mapa.fundos.filter(x => !x.id.endsWith("_lidar2011"))) {  // o LiDAR tem níveis próprios
     const cotas = JSON.parse(ler(f.ficheiro)).isobatas.map(i => i.cota);
     if (f.id === "satelite") { assert.equal(cotas.length, 0, "a estimativa por satélite não tem isóbatas"); continue; }
     assert.equal(cotas[0], 2, f.id);
@@ -209,10 +210,11 @@ test("mapa: fundos de mapa no config, com atribuição; o OpenStreetMap recebe o
 });
 
 test("LiDAR 2011: só linhas de fundo, níveis de 1 m a partir de +1, nenhuma dentro de um levantamento COSMO", () => {
-  const D = JSON.parse(ler("fundos/ria_lidar2011.json"));
-  assert.deepEqual(validarFundos(D), { ok: true, erros: [] });
-  assert.equal(D.formas.length, 0);
-  assert.deepEqual(D.isobatas.map(i => i.cota), [1, 0, -1, -2, -3, -4, -5, -6, -8]);
+  for (const id of ["ria_lidar2011", "falesia_lidar2011"]) {
+  const D = JSON.parse(ler(`fundos/${id}.json`));
+  assert.deepEqual(validarFundos(D), { ok: true, erros: [] }, id);
+  assert.equal(D.formas.length, 0, id);
+  assert.deepEqual(D.isobatas.map(i => i.cota), [1, 0, -1, -2, -3, -4, -5, -6, -8], id);
   // ponto dentro de polígono (raio): nenhum vértice das linhas fica dentro de uma zona COSMO
   const dentro = ([x, y], pol) => {
     let c = false;
@@ -235,7 +237,22 @@ test("LiDAR 2011: só linhas de fundo, níveis de 1 m a partir de +1, nenhuma de
   for (const i of D.isobatas) for (const l of i.linhas) for (const p of l) {
     if (cosmo.some(c => dentro(p, c) && aoContorno(p, c) > 1)) fundo++;
   }
-  assert.equal(fundo, 0, "nenhum vértice a mais de 1 m para dentro de uma zona COSMO");
+  assert.equal(fundo, 0, `${id}: nenhum vértice a mais de 1 m para dentro de uma zona COSMO`);
+  }
+});
+
+test("LiDAR 2011: linhas de 0, −1, −2 e −3 m a menos de 300 m dos pesqueiros do Ancão, de Vilamoura e da Falésia", () => {
+  const kx = 111320 * Math.cos(37 * Math.PI / 180), ky = 110540;
+  const casos = { ancao: "ria_lidar2011", vilamoura: "falesia_lidar2011", falesia: "falesia_lidar2011" };
+  for (const [pq, id] of Object.entries(casos)) {
+    const p = config.locais[config.pesqueiros[pq].terra];
+    const D = JSON.parse(ler(`fundos/${id}.json`));
+    for (const cota of [0, -1, -2, -3]) {
+      const linhas = D.isobatas.find(i => i.cota === cota)?.linhas ?? [];
+      const m = Math.min(...linhas.flat().map(([lon, lat]) => Math.hypot((lon - p.longitude) * kx, (lat - p.latitude) * ky)));
+      assert.ok(m < 300, `${pq} (${id}), ${cota} m: linha mais próxima a ${Math.round(m)} m`);
+    }
+  }
 });
 
 test("LiDAR 2011: data só com o ano, idade, fonte e aviso nos balões", () => {
