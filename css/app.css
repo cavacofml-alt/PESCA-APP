@@ -144,3 +144,28 @@ a { color: var(--azul2); }
 .limo-sim { background: #f8dcd8; font-weight: 700; } .limo-ind { color: var(--suave); }
 .tabela-horas td.lado { font-size: .7rem; }
 .nota-mare { margin: .6rem .2rem; color: var(--suave); font-size: .75rem; line-height: 1.45; }
+
+/* Ecrã «Mapa» (Leaflet) */
+/* Coluna da altura do ecrã: cabeçalho, mapa (o resto) e espaço para a barra de baixo. */
+.pagina-mapa { display: flex; flex-direction: column; height: 100dvh; padding-bottom: calc(3.3rem + env(safe-area-inset-bottom)); }
+.pagina-mapa main { flex: none; padding-bottom: .4rem; }
+.pagina-mapa .barra { z-index: 1100; } /* por cima das camadas do Leaflet (z-index até 1000) */
+.topo-mapa { padding-bottom: .2rem; }
+.atalhos { display: flex; flex-wrap: wrap; gap: .4rem; }
+.atalho { padding: .35rem .8rem; border: 0; border-radius: 999px; background: white; color: var(--azul);
+  font: inherit; font-weight: 650; font-size: .85rem; box-shadow: 0 1px 3px rgb(11 59 83 / .15); }
+#mapa { flex: 1; min-height: 18rem; }
+#mapa .leaflet-popup-content { margin: .7rem .8rem; font-size: .85rem; line-height: 1.4; }
+#mapa .leaflet-popup-content h3 { margin: 0 0 .35rem; font-size: .95rem; color: var(--azul); }
+#mapa .leaflet-popup-content p { margin: .3rem 0; }
+.fonte-mapa { color: var(--suave); font-size: .75rem; }
+.rotulo-forma { padding: 0 .3rem; border: 0; font-weight: 700; font-size: .75rem; box-shadow: none; background: rgb(255 255 255 / .85); }
+.rotulo-forma.f { color: #1d4ed8; }
+.rotulo-forma.c { color: #a16207; }
+.rotulo-forma::before { display: none; }
+.legenda-mapa { max-width: 15rem; padding: .45rem .55rem; border-radius: .5rem; background: rgb(255 255 255 / .92);
+  font-size: .72rem; line-height: 1.35; color: var(--texto); box-shadow: 0 1px 4px rgb(0 0 0 / .2); }
+.legenda-mapa .escala { display: flex; margin: .25rem 0; }
+.legenda-mapa .escala span { flex: 1; padding-top: .55rem; border-top: .35rem solid var(--c); text-align: center; font-size: .65rem; }
+.legenda-mapa .f { color: #1d4ed8; }
+.legenda-mapa .c { color: #a16207; }
