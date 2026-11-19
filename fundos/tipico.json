@@ -1,0 +1,115 @@
+{
+ "versao": 1,
+ "geradoEm": "2026-11-19",
+ "ferramenta": "ferramentas/fundo_tipico.py",
+ "criterios": {
+  "cotaCostaM": 2.0,
+  "raioM": 500,
+  "faixaM": 5,
+  "resolucaoM": 3.0,
+  "coberturaCostaMin": 0.6,
+  "celulasMin": 30,
+  "distanciasM": [
+   100,
+   150,
+   200
+  ]
+ },
+ "provisorio": true,
+ "fontes": {
+  "quarteira_garrao": {
+   "nome": "Agência Portuguesa do Ambiente, Programa COSMO",
+   "produto": "LTHQUGA1_20250612_20250616_DEM",
+   "levantamento": "2025-06-12",
+   "levantamentoFim": "2025-06-16",
+   "url": "https://cosmo.apambiente.pt/prd/LTHQUGA1_20250612_20250616_DEM",
+   "referenciaVertical": "zero hidrográfico (2,00 m abaixo do nível médio, Cascais 1938)",
+   "utilizacao": "Sem restrições (ficha de metadados do COSMO); citar a APA, Programa COSMO",
+   "sha256": "9e613e346a1573ae8bd34decbd5ea53c7337acc609189d865f9a38c64b251d72",
+   "rotulo": "COSMO 06/2025"
+  },
+  "lidar2011": {
+   "nome": "Instituto Hidrográfico — LiDAR 2011 (projecto DGT/APA), publicado no EMODnet Bathymetry",
+   "rotulo": "LiDAR 2011",
+   "produto": "590_HR_Lidar_Algarve",
+   "levantamento": "2011",
+   "url": "https://emodnet.ec.europa.eu/geonetwork/srv/api/records/SDN_CPRD_590_HR_Lidar_Algarve",
+   "referenciaVertical": "baixa-mar astronómica mais baixa (LAT); no confronto com o COSMO 2025, 0,1 a 0,25 m acima do zero hidrográfico nas zonas fundas",
+   "utilizacao": "pública; não usar para navegação",
+   "tratamento": "grelha de ~12 x 14 m (1/128 de minuto); ~1 % de falhas preenchidas com a média das vizinhas (ferramentas/lidar_emodnet.py)",
+   "sha256": "7b713f3b1525e5652939834c74dc88eab5fb8e706d633641a636113423e6c755"
+  }
+ },
+ "praias": {
+  "praia_faro": {
+   "fonte": "lidar2011",
+   "cotas": {
+    "100": -1.2,
+    "150": -1.5,
+    "200": -2.2
+   },
+   "celulas": {
+    "100": 1138,
+    "150": 1101,
+    "200": 1119
+   },
+   "coberturaCosta": 0.83
+  },
+  "ancao": {
+   "fonte": "lidar2011",
+   "cotas": {
+    "100": -1.1,
+    "150": -1.7,
+    "200": -2.7
+   },
+   "celulas": {
+    "100": 1170,
+    "150": 1134,
+    "200": 1155
+   },
+   "coberturaCosta": 0.83
+  },
+  "almargem": {
+   "fonte": "quarteira_garrao",
+   "cotas": {
+    "100": -2.0,
+    "150": -3.4,
+    "200": -4.1
+   },
+   "celulas": {
+    "100": 1301,
+    "150": 1275,
+    "200": 1288
+   },
+   "coberturaCosta": 0.89
+  },
+  "vilamoura": {
+   "fonte": "lidar2011",
+   "cotas": {
+    "100": -1.7,
+    "150": -2.6,
+    "200": -3.1
+   },
+   "celulas": {
+    "100": 1273,
+    "150": 948,
+    "200": 891
+   },
+   "coberturaCosta": 1.0
+  },
+  "falesia": {
+   "fonte": "lidar2011",
+   "cotas": {
+    "100": -0.4,
+    "150": -1.6,
+    "200": -2.8
+   },
+   "celulas": {
+    "100": 1123,
+    "150": 1155,
+    "200": 1155
+   },
+   "coberturaCosta": 0.94
+  }
+ }
+}
