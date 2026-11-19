@@ -109,6 +109,22 @@ Se o levantamento durou vários dias, acrescentar `--levantamento-fim AAAA-MM-DD
 
 4. Acrescentar o levantamento a `config.mapa.fundos`, com `id`, `nome`, `ficheiro` e `limites` (sul/oeste e norte/este da zona levantada). Um teste confirma que os limites contêm a zona.
 
+### Ria Formosa e Ancão (LiDAR 2011)
+
+O COSMO não cobre o interior da Ria Formosa nem o troço Garrão–Ancão. Para essas zonas há a camada «Ria Formosa e Ancão (LiDAR 2011)», com o levantamento LiDAR de 2011 do Instituto Hidrográfico, publicado no EMODnet Bathymetry (utilização pública, «não usar para navegação»). Cobre os canais de Faro, de Olhão e da Armona, e o mar no Ancão e na Culatra.
+- **O que mostra:** só linhas de fundo de 1 em 1 m a partir de +1 m (de 2 em 2 m abaixo de −6), sem fundões nem cabeços.
+- **Corte:** as linhas são cortadas onde há levantamento COSMO; aí vale o COSMO.
+- **Referência:** as cotas estão à LAT, 0,1–0,25 m acima do zero hidrográfico.
+- **Idade:** é de 2011, por isso os canais e os bancos já mudaram.
+
+Para refazer:
+
+```
+python3 -I ferramentas/lidar_emodnet.py 590_HR_Lidar_Algarve.emo lidar2011_ria.tif -8.07 36.94 -7.74 37.07
+python3 -I ferramentas/isobatas_lidar.py lidar2011_ria.tif fundos/ria_lidar2011.json 590_HR_Lidar_Algarve.emo.zip \
+  --excluir fundos/praia_faro.json fundos/quarteira_garrao.json fundos/barreta_farol.json fundos/culatra_armona.json
+```
+
 Os critérios dos fundões e cabeços estão no cabeçalho da ferramenta e ficam gravados no ficheiro (`tratamento.criterios`). São provisórios. Os bancos mudam com os temporais: vale sempre a data do levantamento, que aparece em todos os balões.
 
 ## Motor de regras (Fase 3)
