@@ -91,11 +91,11 @@ Para facilitar a revisão, manter os PR pequenos: uma fase ou um tema por PR.
 | 5 | Molhe de Quarteira | robalo e dourada | Lado **poente** (Vilamoura) ou **nascente** (praia de Quarteira). Farolim do molhe este, 37.066552, -8.11001 (confirmado a 14/10/2026) |
 | 6 | Praia de Vilamoura (mar de fora, a nascente da marina) | robalo | Ponto Fizk «Vilamoura» 3894, 37.0719, -8.11896. Regras das praias (decisão c, 14/10/2026) |
 | 7 | Molhe de Vilamoura (molhe oeste da marina) | robalo e dourada | 37.0696033, -8.1243409 (link do utilizador, «Farol de Vilamoura Oeste»). Regras do molhe |
-| 8 | Falésia Alfamar (mar de fora) | robalo | Ponto Fizk 3922, 37.0834, -8.15912. Regras das praias (decisão de 14/10/2026) |
+| 8 | Falésia Alfamar (mar de fora) | robalo | Ponto Fizk 3922, 37.0834, -8.15912 (vento). Ondulação e água em `falesiaMar` 37.075, -8.15912, ~0,9 km ao largo (decisão do utilizador, 17/11/2026): no ponto da Fizk o Open-Meteo Marine dava uma célula com o centro em terra. Regras das praias (decisão de 14/10/2026) |
 
 **Todas as praias têm nota de robalo e de dourada** (utilizador, 14/10/2026). A Ria só tem dourada.
 
-Coordenadas (config, decisão C de 14/10/2026): **praias com os pontos da Fizk** (acima), o mesmo ponto para ondulação e vento; os molhes usam as coordenadas da tabela, também para ondulação, vento e água. A Ria não tem ponto na Fizk: fica Faro terra 37.01,-7.93 (água de Faro mar 36.97,-7.98) até o utilizador dar coordenadas. Os bicos usam o ponto da sua praia (sem a regra de segurança, deixaram de ser pesqueiros separados).
+Coordenadas (config, decisão C de 14/10/2026): **praias com os pontos da Fizk** (acima), o mesmo ponto para ondulação e vento, salvo a Falésia (ondulação e água ao largo, 17/11/2026); os molhes usam as coordenadas da tabela, também para ondulação, vento e água. A Ria não tem ponto na Fizk: fica Faro terra 37.01,-7.93 (água de Faro mar 36.97,-7.98) até o utilizador dar coordenadas. Os bicos usam o ponto da sua praia (sem a regra de segurança, deixaram de ser pesqueiros separados).
 
 ---
 
@@ -185,7 +185,7 @@ Menores:
 
 | Fonte | Endpoint | Notas verificadas |
 |---|---|---|
-| Open-Meteo Marine | `https://marine-api.open-meteo.com/v1/marine` | Variáveis: `wave_height`, `wave_direction`, `wave_period`, `wind_wave_*`, `swell_wave_*`, `sea_surface_temperature`. `wave_peak_period` veio **null** nestes pontos. Confirmar na documentação que `wave_period` é o período médio. Componentes "swell" com T < 6 s são frequentes aqui → tratar como vaga (regra 3). `past_days` dá histórico para a regra 7. |
+| Open-Meteo Marine | `https://marine-api.open-meteo.com/v1/marine` | Variáveis: `wave_height`, `wave_direction`, `wave_period`, `wind_wave_*`, `swell_wave_*`, `sea_surface_temperature`. `wave_peak_period` veio **null** nestes pontos. Confirmar na documentação que `wave_period` é o período médio. Componentes "swell" com T < 6 s são frequentes aqui → tratar como vaga (regra 3). `past_days` dá histórico para a regra 7. Grelha de 1/12° (~9 km); células dos pontos (17/11/2026): Faro mar 36,958/−7,958; Praia de Faro e Ancão 36,958/−8,042; Forte Novo, molhes e Vilamoura 37,042/−8,125; Falésia ao largo 37,042/−8,125 (o ponto da Fizk na costa caía em 37,125/−8,125, centro em terra). |
 | Open-Meteo Forecast | `https://api.open-meteo.com/v1/forecast` | `wind_speed_10m`, `wind_direction_10m`, `wind_gusts_10m`, `pressure_msl`, `precipitation`; `wind_speed_unit=kn`. |
 | IPMA avisos (**não usado**: regra 1 retirada) | `https://api.ipma.pt/open-data/forecast/warnings/warnings_www.json` | Array; filtrar `idAreaAviso=="FAR"` e `awarenessTypeName=="Agitação Marítima"`; níveis `green/yellow/orange/red`; horas UTC sem `Z`; alcance ~3 dias. |
 | IPMA estado do mar | `https://api.ipma.pt/open-data/forecast/oceanography/daily/hp-daily-sea-forecast-day{0,1,2}.json` | Faro = `globalIdLocal 1080526` (lat 37.1933, lon -8.0). **Não há ponto em Quarteira.** Campos: `waveHighMin/Max`, `wavePeriodMin/Max`, `predWaveDir`, `sstMin/Max`, `totalSeaMin/Max`. Só referência diária. |

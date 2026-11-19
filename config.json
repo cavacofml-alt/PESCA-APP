@@ -195,6 +195,11 @@
       "longitude": -8.15912,
       "origem": "Fizk, ponto 3922 «Falésia Alfamar» (favorito)"
     },
+    "falesiaMar": {
+      "latitude": 37.075,
+      "longitude": -8.15912,
+      "origem": "Mar em frente à Falésia, ~0,9 km a sul do ponto da Fizk (decisão do utilizador, 17/11/2026). No ponto da Fizk o Open-Meteo Marine devolvia a célula 37,125 / −8,125, com o centro em terra e ondas mais baixas; este ponto cai na célula de mar 37,042 / −8,125, a mesma de Vilamoura (verificado a 17/11/2026)."
+    },
     "vilamouraMolheOeste": {
       "latitude": 37.0696033,
       "longitude": -8.1243409,
@@ -343,9 +348,9 @@
         "dourada"
       ],
       "tipo": "praia",
-      "mar": "fizkFalesiaAlfamar",
+      "mar": "falesiaMar",
       "terra": "fizkFalesiaAlfamar",
-      "agua": "fizkFalesiaAlfamar",
+      "agua": "falesiaMar",
       "camaras": [
         {
           "nome": "Praia da Rocha Baixinha (Windy)",
