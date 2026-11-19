@@ -2,8 +2,8 @@
 // OpenStreetMap ou a ortoimagem de satélite da DGT. O Leaflet vem de vendor/leaflet (window.L).
 // Os URL dos fundos de mapa estão no config.json (fonte única).
 import { loadLocalTides } from "./fontes/mares-locais.js";
-import { validarFundos, corIsobata, descricaoForma, descricaoIsobata, periodoLevantamento, idadeLevantamento, mesAno }
-  from "./fundos.js";
+import { validarFundos, corIsobata, descricaoForma, descricaoIsobata, periodoLevantamento, idadeLevantamento, mesAno,
+  estimado } from "./fundos.js";
 import { esc } from "./ui/formato.js";
 
 const L = globalThis.L;
@@ -56,22 +56,30 @@ function camadasFundos(fundos, mares) {
     }
   }
   const formas = L.layerGroup();
+  // Estimativa por satélite: contorno tracejado, ponto oco e «sat.» no rótulo, para não se confundir
+  // com os levantamentos medidos.
+  const sat = estimado(fundos);
   for (const f of fundos.formas) {
     const balao = () => descricaoForma(f, fundos, mares, new Date());
     L.polygon(f.contorno.map(([lon, lat]) => [lat, lon]),
-      { color: COR[f.tipo], weight: 1.5, fillColor: COR[f.tipo], fillOpacity: 0.25 })
+      { color: COR[f.tipo], weight: 1.5, fillColor: COR[f.tipo], fillOpacity: sat ? 0.1 : 0.25, dashArray: sat ? "4 3" : null })
       .bindPopup(balao).addTo(formas);
-    L.circleMarker([f.ponto[1], f.ponto[0]], { radius: 5, color: "#fff", weight: 1.5, fillColor: COR[f.tipo], fillOpacity: 1 })
-      .bindTooltip(esc(f.id), { permanent: true, direction: "right", className: `rotulo-forma ${f.tipo === "fundão" ? "f" : "c"}` })
+    L.circleMarker([f.ponto[1], f.ponto[0]], { radius: 5, color: sat ? COR[f.tipo] : "#fff", weight: sat ? 2 : 1.5,
+      fillColor: sat ? "#fff" : COR[f.tipo], fillOpacity: 1 })
+      .bindTooltip(esc(sat ? `${f.id} sat.` : f.id), { permanent: true, direction: "right", className: `rotulo-forma ${f.tipo === "fundão" ? "f" : "c"}${sat ? " sat" : ""}` })
       .bindPopup(balao).addTo(formas);
   }
   // Linha (não polígono): no Canvas um polígono sem preenchimento continua a apanhar os toques
   // dentro dele e taparia os fundões e cabeços.
   const cobertura = L.polyline(fundos.cobertura.map(([lon, lat]) => [lat, lon]),
     { color: "#37474f", weight: 1.5, dashArray: "6 5" })
-    .bindPopup(() => `<h3>Zona levantada — ${esc(fundos.nome)}</h3><p>${/COSMO/.test(fundos.fonte.nome ?? "") ? "Levantamento do Programa COSMO de" : `${esc(fundos.fonte.nome)}, levantamento de`} ` +
-      `${periodoLevantamento(fundos.fonte)} (${idadeLevantamento(fundos.fonte) ?? "data desconhecida"}). ` +
-      "Fora desta linha não há dados do fundo.</p>");
+    .bindPopup(() => (sat
+      ? `<h3>Zona com estimativa — ${esc(fundos.nome)}</h3><p>Imagem Copernicus Sentinel-2 de ` +
+        `${periodoLevantamento(fundos.fonte)} (${idadeLevantamento(fundos.fonte) ?? "data desconhecida"}). ` +
+        "Fora desta linha a água era funda demais (ou havia espuma) para estimar o fundo.</p>"
+      : `<h3>Zona levantada — ${esc(fundos.nome)}</h3><p>${/COSMO/.test(fundos.fonte.nome ?? "") ? "Levantamento do Programa COSMO de" : `${esc(fundos.fonte.nome)}, levantamento de`} ` +
+        `${periodoLevantamento(fundos.fonte)} (${idadeLevantamento(fundos.fonte) ?? "data desconhecida"}). ` +
+        "Fora desta linha não há dados do fundo.</p>"));
   return { cobertura, isobatas, formas }; // por esta ordem: os fundões e cabeços ficam por cima
 }
 
@@ -151,10 +159,11 @@ async function iniciar() {
     d.aviso = f.aviso;
     const camadas = camadasFundos(d, eventos);
     for (const c of Object.values(camadas)) c.addTo(mapa);
-    controlo.addOverlay(camadas.isobatas, `Linhas de fundo — ${esc(f.nome)}`);
+    if (d.isobatas.length) controlo.addOverlay(camadas.isobatas, `Linhas de fundo — ${esc(f.nome)}`);
     controlo.addOverlay(camadas.formas, `Fundões e cabeços — ${esc(f.nome)}`);
-    controlo.addOverlay(camadas.cobertura, `Zona levantada — ${esc(f.nome)}`);
-    situacao.set(f.id, d.fonte.rotulo ? "" : `COSMO ${mesAno(d.fonte)}`);   // o nome do LiDAR já traz o ano
+    controlo.addOverlay(camadas.cobertura, `${estimado(d) ? "Zona com estimativa" : "Zona levantada"} — ${esc(f.nome)}`);
+    // o nome do LiDAR já traz o ano
+    situacao.set(f.id, estimado(d) ? "estimado" : d.fonte.rotulo ? "" : `COSMO ${mesAno(d.fonte)}`);
     mostrarSituacao(eventos);
   }
   const verificar = () => {
