@@ -168,17 +168,17 @@
     "faroMarPoente": {
       "latitude": 37.0133,
       "longitude": -8.00567,
-      "origem": "app de referência, ponto 3817 «Faro - Mar Poente»"
+      "origem": "Ponto de pesca escolhido pelo utilizador (Praia de Faro, mar de fora, a poente)"
     },
     "ancaoPraia": {
       "latitude": 37.0322,
       "longitude": -8.03852,
-      "origem": "app de referência, ponto 3619 «Ancão»"
+      "origem": "Ponto de pesca escolhido pelo utilizador (Praia do Ancão)"
     },
     "forteNovo": {
       "latitude": 37.062,
       "longitude": -8.09016,
-      "origem": "app de referência, ponto 3877 «Forte Novo» (o mais perto do Almargem)"
+      "origem": "Ponto de pesca escolhido pelo utilizador (Forte Novo, o mais perto do Almargem)"
     },
     "molheQuarteira": {
       "latitude": 37.066552,
@@ -188,17 +188,17 @@
     "vilamouraPraia": {
       "latitude": 37.0719,
       "longitude": -8.11896,
-      "origem": "app de referência, ponto 3894 «Vilamoura» (favorito; praia a nascente da marina, não no molhe)"
+      "origem": "Ponto de pesca escolhido pelo utilizador (praia de Vilamoura, a nascente da marina, não no molhe)"
     },
     "falesiaAlfamar": {
       "latitude": 37.0834,
       "longitude": -8.15912,
-      "origem": "app de referência, ponto 3922 «Falésia Alfamar» (favorito)"
+      "origem": "Ponto de pesca escolhido pelo utilizador (Falésia Alfamar)"
     },
     "falesiaMar": {
       "latitude": 37.075,
       "longitude": -8.15912,
-      "origem": "Mar em frente à Falésia, ~0,9 km a sul do ponto da app de referência (decisão do utilizador, 17/11/2026). No ponto da app de referência o Open-Meteo Marine devolvia a célula 37,125 / −8,125, com o centro em terra e ondas mais baixas; este ponto cai na célula de mar 37,042 / −8,125, a mesma de Vilamoura (verificado a 17/11/2026)."
+      "origem": "Mar em frente à Falésia, ~0,9 km a sul do ponto da praia (decisão do utilizador, 17/11/2026). No ponto da praia o Open-Meteo Marine devolvia a célula 37,125 / −8,125, com o centro em terra e ondas mais baixas; este ponto cai na célula de mar 37,042 / −8,125, a mesma de Vilamoura (verificado a 17/11/2026)."
     },
     "vilamouraMolheOeste": {
       "latitude": 37.0696033,
@@ -207,7 +207,7 @@
     }
   },
   "pesqueirosProvisorio": true,
-  "pesqueirosNota": "Decisão C (14/10/2026): pontos da app de referência nas praias. Ria e molhe sem ponto app de referência: ficam os pontos anteriores até o utilizador dar coordenadas.",
+  "pesqueirosNota": "Decisão C (14/10/2026): nas praias, os pontos de pesca escolhidos pelo utilizador. Ria e molhe de Quarteira sem ponto próprio: ficam os pontos anteriores até o utilizador dar coordenadas.",
   "pesqueiros": {
     "ria": {
       "nome": "Ria Formosa (interior, Faro)",

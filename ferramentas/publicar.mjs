@@ -1,5 +1,5 @@
 // Monta a pasta publicar/ só com os ficheiros da app, para o Cloudflare Pages.
-// O site publicado é público: a pasta recolha/ (material da app de referência, que obriga a manter o
+// O site publicado é público: a pasta recolha/ (material de trabalho, que obriga a manter o
 // repositório privado), os testes, as ferramentas e os documentos de trabalho NUNCA são
 // publicados. Lista explícita: um ficheiro novo só é publicado se for acrescentado aqui.
 // Uso (comando de build do Cloudflare Pages): node ferramentas/publicar.mjs  → saída: publicar

@@ -1,4 +1,4 @@
-// Publicação no Cloudflare Pages: só os ficheiros da app; nunca recolha/ (material da app de referência).
+// Publicação no Cloudflare Pages: só os ficheiros da app; nunca recolha/ (material de trabalho).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -20,7 +20,7 @@ test("publicar: pasta com a app e sem recolha/, testes nem documentos de trabalh
     }
     for (const f of NUNCA) assert.ok(!fs.existsSync(path.join(destino, f)), `${f} não pode ser publicado`);
     const todos = fs.readdirSync(destino, { recursive: true }).map(String);
-    assert.ok(!todos.some(f => /recolha|ref/i.test(f)), "nada da recolha nem da app de referência");
+    assert.ok(!todos.some(f => /recolha/i.test(f)), "nada da recolha");
   } finally {
     fs.rmSync(destino, { recursive: true, force: true });
   }

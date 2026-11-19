@@ -1,4 +1,4 @@
-/* Ecrã inicial — estilo próximo dos favoritos da app de referência, sem copiar marca nem imagens. */
+/* Ecrã inicial — um cartão por pesqueiro. */
 * { box-sizing: border-box; }
 :root {
   color-scheme: light;
@@ -101,7 +101,7 @@ a { color: var(--azul2); }
 .barra a { color: var(--suave); text-decoration: none; font-weight: 600; font-size: .9rem; }
 .barra a.activo { color: var(--azul); }
 
-/* Escolha da espécie (como na app de referência) */
+/* Escolha da espécie */
 .especies { display: flex; gap: .4rem; padding: 0 .1rem .55rem; }
 .especie-btn { flex: 1; padding: .5rem .6rem; border: 0; border-radius: 999px; background: white; color: var(--azul);
   font: inherit; font-weight: 650; box-shadow: 0 1px 4px rgb(11 59 83 / .1); }

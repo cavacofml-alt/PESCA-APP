@@ -1,4 +1,4 @@
-// Painel «hora a hora» de um pesqueiro (Fase 4), à maneira da tabela da app de referência: Sol, Lua e marés
+// Painel «hora a hora» de um pesqueiro (Fase 4): Sol, Lua e marés
 // no topo; uma coluna por hora do dia civil de Lisboa (23, 24 ou 25), com deslocamento lateral.
 // Só apresenta o que o motor calculou (analise → pesqueiros[id].horas e .periodos). Função pura.
 import { esc, hora, num, rotuloDia, classeNota, textoNota, NOME_ESPECIE, rumo, nomeFaseLua, NOME_MARE } from "./formato.js";

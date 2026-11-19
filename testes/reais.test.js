@@ -80,7 +80,7 @@ test("Open-Meteo Forecast real: unixtime, nós, 336 horas e 24 horas em 13/10", 
   }
 });
 
-test("Open-Meteo real, Faro 13/10 21:00 (Lisboa): 2,3 kn de 318° (= 4,3 km/h NO, como na app de referência)", () => {
+test("Open-Meteo real, Faro 13/10 21:00 (Lisboa): 2,3 kn de 318° (= 4,3 km/h NO)", () => {
   const h = horasOpenMeteo(ler("./reais/openmeteo_forecast_faro_20261013_2130.json"))
     .find(x => x.instante === Date.parse("2026-10-13T20:00:00Z"));
   assert.equal(h.wind_speed_10m, 2.3);

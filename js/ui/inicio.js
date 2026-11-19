@@ -1,5 +1,5 @@
-// Ecrã inicial (Fase 4): resumo, escolha do dia e um cartão por pesqueiro, à maneira dos
-// favoritos da app de referência. Só apresenta o que o motor calculou (js/regras/): não calcula notas.
+// Ecrã inicial (Fase 4): resumo, escolha do dia e um cartão por pesqueiro.
+// Só apresenta o que o motor calculou (js/regras/): não calcula notas.
 // Requisitos das revisões da Fase 3: nunca mostrar uma nota incompleta como definitiva —
 // intervalo, períodos sem nota, parcelas por avaliar, n.d. e «por confirmar» sempre visíveis.
 // Função pura: devolve HTML (texto escapado).
@@ -299,7 +299,7 @@ function cartao(id, p, d, contexto) {
 }
 
 // contexto: { analise, config, pontos, mares, sol, lidoEm, indice }
-// Escolha da espécie, como na app de referência: as notas, a faixa de dias e o resumo seguem-na.
+// Escolha da espécie: as notas, a faixa de dias e o resumo seguem-na.
 function escolhaEspecie(especie) {
   return `<nav class="especies" aria-label="Espécie">${ESPECIES.map(e =>
     `<button type="button" class="especie-btn${e === especie ? " sel" : ""}" data-especie="${e}" aria-pressed="${e === especie}">${esc(NOME_ESPECIE[e])}</button>`).join("")}</nav>`;

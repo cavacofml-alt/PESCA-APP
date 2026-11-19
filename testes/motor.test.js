@@ -477,7 +477,7 @@ test("análise: dia normal produz notas com fonte dos pontos e parcelas", () => 
   assert.equal(d.pesqueiros.praia_faro.potencia.valor, 3.57);
   assert.equal(d.pesqueiros.praia_faro.notas.robalo.nota, 4);
   assert.equal(d.pesqueiros.ria.notas.dourada.estado, ESTADO_NOTA.OK);
-  // Decisão C: pontos da app de referência nas praias.
+  // Decisão C: pontos de pesca do utilizador nas praias.
   // A água das praias vem do ponto do mar (regra 7 da dourada nas praias, 14/10/2026).
   assert.deepEqual(d.pesqueiros.almargem.pontos, { mar: "forteNovo", terra: "forteNovo", agua: "forteNovo" });
   assert.deepEqual(d.pesqueiros.praia_faro.pontos, { mar: "faroMarPoente", terra: "faroMarPoente", agua: "faroMarPoente" });
