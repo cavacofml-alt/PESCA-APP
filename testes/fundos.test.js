@@ -28,18 +28,22 @@ test("fundos: cada levantamento do config existe, é válido e tem o nome do fic
   }
 });
 
-test("fundos: os quatro levantamentos, com produto, datas e SHA-256 do DEM descarregado", () => {
+test("fundos: os quatro levantamentos e a estimativa por satélite, com produto, datas e SHA-256", () => {
   const esperado = {
     quarteira_garrao: ["LTHQUGA1_20250612_20250616_DEM", "2025-06-12", "2025-06-16", "9e613e346a1573ae8bd34decbd5ea53c7337acc609189d865f9a38c64b251d72"],
     praia_faro: ["LTHFA1_20250617_DEM", "2025-06-17", undefined, "f1d57bee5c3add32341ee27a0e6dd63d532e4549f1fc4ae6fccd4e6d5a39e34c"],
     barreta_farol: ["LTHBAIF1_20201023_20201029_DEM", "2020-10-23", "2020-10-29", "1669be074174ccbfd86dd769b951467281ed738189cc6453250f63b378242185"],
-    culatra_armona: ["LTHCUAR2_20201015_20201125_DEM", "2020-10-15", "2020-11-25", "a74ee71faaae70ab14f44eab844880a8d1f5b3a56d8fa94ee14a8da03315e26b"]
+    culatra_armona: ["LTHCUAR2_20201015_20201125_DEM", "2020-10-15", "2020-11-25", "a74ee71faaae70ab14f44eab844880a8d1f5b3a56d8fa94ee14a8da03315e26b"],
+    // SHA-256 dos recortes das bandas usados (B02, B03, B04, B08, SCL)
+    satelite: ["S2C_29SNB_20261104_0_L2A", "2026-11-04", undefined, "13920dd14a2d23241fd01e1a198bb4460afb10be18d57f5dce384200cb0e1f81"]
   };
   assert.deepEqual(config.mapa.fundos.map(f => f.id).sort(), Object.keys(esperado).sort());
   for (const f of config.mapa.fundos) {
     const d = JSON.parse(ler(f.ficheiro)).fonte;
     assert.deepEqual([d.produto, d.levantamento, d.levantamentoFim, d.sha256], esperado[f.id], f.id);
-    assert.equal(d.url, `https://cosmo.apambiente.pt/prd/${d.produto}`);
+    assert.equal(d.url, d.tipo === "estimado"
+      ? `https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a/items/${d.produto}`
+      : `https://cosmo.apambiente.pt/prd/${d.produto}`);
   }
 });
 
@@ -78,6 +82,7 @@ test("fundos: Praia de Faro — fundões e cabeços dentro da zona levantada", (
 test("fundos: isóbatas do nível médio (2 m ZH) para baixo: 0,5 m até −10, 1 m até −20, 5 m daí para baixo", () => {
   for (const f of config.mapa.fundos) {
     const cotas = JSON.parse(ler(f.ficheiro)).isobatas.map(i => i.cota);
+    if (f.id === "satelite") { assert.equal(cotas.length, 0, "a estimativa por satélite não tem isóbatas"); continue; }
     assert.equal(cotas[0], 2, f.id);
     for (let i = 1; i < cotas.length; i++) {
       const passo = cotas[i - 1] - cotas[i];
@@ -197,4 +202,30 @@ test("mapa: fundos de mapa no config, com atribuição; o OpenStreetMap recebe o
   // _headers manda Referrer-Policy: same-origin; sem a opção do Leaflet o OSM recusa os mosaicos.
   assert.match(ler("js/mapa.js"), /referrerPolicy: REFERER/);
   assert.match(ler("js/mapa.js"), /const REFERER = "strict-origin-when-cross-origin"/);
+});
+
+test("satélite: estimativa marcada como tal, confirmada a 15/09/2026, calibração registada", () => {
+  const S = JSON.parse(ler("fundos/satelite.json"));
+  assert.deepEqual(validarFundos(S), { ok: true, erros: [] });
+  assert.equal(S.fonte.tipo, "estimado");
+  assert.deepEqual([S.fonte.confirmadoCom, S.fonte.confirmadoEm], ["S2C_29SNB_20260915_0_L2A", "2026-09-15"]);
+  assert.equal(S.formas.length, 72);
+  assert.deepEqual([S.tratamento.calibracao.eqmM, S.tratamento.calibracao.r2], [0.59, 0.88]);
+  assert.deepEqual(S.tratamento.validacao.sinalCerto, [0.91, 0.98]);
+  assert.match(S.fonte.utilizacao, /Copernicus Sentinel/);
+  for (const f of S.formas) assert.ok(f.cota >= -6.5 && f.cota <= 0.5, `${f.id}: ${f.cota}`);
+});
+
+test("satélite: balões dizem «estimado», a data da imagem, a confirmação, o erro e a menção Copernicus", () => {
+  const S = JSON.parse(ler("fundos/satelite.json"));
+  const agora = new Date("2026-11-19T12:00:00Z");
+  const html = descricaoForma(S.formas[0], S, MARES, agora);
+  assert.match(html, /<h3>[FC]\d+ · (fundão|cabeço) \(estimado por satélite\)<\/h3>/);
+  assert.match(html, /Ponto (mais|menos) fundo \(estimado\): <b>−?\d+,\d m<\/b>/, "uma casa decimal numa estimativa");
+  assert.match(html, /Estimado por satélite, não medido: imagem Copernicus Sentinel-2 de 04\/11\/2026 \(há menos de um mês\), forma também vista na imagem de 15\/09\/2026/);
+  assert.match(html, /erro típico 0,6 m/);
+  assert.match(html, /Contém dados Copernicus Sentinel modificados/);
+  assert.doesNotMatch(html, /Medido: levantamento/);
+  const outro = structuredClone(S); outro.fonte.tipo = "outro";
+  assert.ok(validarFundos(outro).erros.some(e => /fonte.tipo/.test(e)));
 });
