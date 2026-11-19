@@ -11,6 +11,9 @@ const pontoValido = p => Array.isArray(p) && p.length === 2 && finito(p[0]) && f
   && p[0] > -10.5 && p[0] < -6 && p[1] > 36 && p[1] < 42.5;
 const linhaValida = (l, min) => Array.isArray(l) && l.length >= min && l.every(pontoValido);
 
+// Estimativa por satélite (ferramentas/batimetria_satelite.py) e não levantamento medido.
+export const estimado = fundos => fundos?.fonte?.tipo === "estimado";
+
 // Confere a estrutura de fundos/<id>.json. Devolve { ok, erros }.
 export function validarFundos(d) {
   const erros = [];
@@ -26,6 +29,7 @@ export function validarFundos(d) {
     erros.push("fonte.levantamentoFim inválido");
   }
   if (!/^[0-9a-f]{64}$/.test(f.sha256 ?? "")) erros.push("fonte.sha256 inválido");
+  if (f.tipo !== undefined && f.tipo !== "estimado") erros.push("fonte.tipo desconhecido");
   if (!d.tratamento?.criterios) erros.push("tratamento.criterios em falta");
   if (!linhaValida(d.cobertura, 4)) erros.push("cobertura inválida");
   if (!Array.isArray(d.formas)) erros.push("formas em falta");
@@ -121,8 +125,8 @@ function textoMare(nome, ev, cota, agora) {
 export function descricaoForma(forma, fundos, mares, agora = new Date()) {
   const fundao = forma.tipo === "fundão";
   const linhas = [
-    `<h3>${esc(forma.id)} · ${fundao ? "fundão" : "cabeço"}</h3>`,
-    `<p>Ponto ${fundao ? "mais fundo" : "menos fundo"}: <b>${num(forma.cota, 2)} m</b> ao zero hidrográfico, ` +
+    `<h3>${esc(forma.id)} · ${fundao ? "fundão" : "cabeço"}${estimado(fundos) ? " (estimado por satélite)" : ""}</h3>`,
+    `<p>Ponto ${fundao ? "mais fundo" : "menos fundo"}${estimado(fundos) ? " (estimado)" : ""}: <b>${num(forma.cota, estimado(fundos) ? 1 : 2)} m</b> ao zero hidrográfico, ` +
       `a ${forma.distancia} m da costa.</p>`
   ];
   if (Array.isArray(mares)) {
@@ -150,6 +154,14 @@ export function descricaoIsobata(cota, fundos, agora = new Date()) {
 export function rodapeFundos(fundos, agora = new Date()) {
   const f = fundos.fonte;
   const idade = idadeLevantamento(f, agora);
+  if (estimado(fundos)) {
+    const c = fundos.tratamento?.calibracao;
+    return `Estimado por satélite, não medido: imagem Copernicus Sentinel-2 de ${periodoLevantamento(f)}` +
+      `${idade ? ` (${idade})` : ""}${f.confirmadoEm ? `, forma também vista na imagem de ${dataCurta(f.confirmadoEm)}` : ""}; ` +
+      `calibrado com os levantamentos COSMO de 06/2025${c ? ` (erro típico ${num(c.eqmM, 1)} m)` : ""}. ` +
+      "Só até ~4,5 m de fundo; critérios provisórios. Contém dados Copernicus Sentinel modificados." +
+      (fundos.aviso ? ` <b>${esc(fundos.aviso)}</b>` : "");
+  }
   return `Medido: levantamento do Programa COSMO (APA) de ${periodoLevantamento(f)}` +
     `${idade ? ` (${idade})` : ""}, produto ${esc(f.produto)}; tratado nesta app (critérios provisórios). ` +
     "Costa = linha de 2 m ZH (nível médio). Os bancos mudam com os temporais." +
