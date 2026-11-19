@@ -64,6 +64,37 @@ python3 ferramentas/mares_ih.py pasta mares/AAAA.json $(sha256sum Tabela.pdf | c
 
 O script recusa escrever se alguma validação falhar (dias seguidos, dia da semana impresso, alternância, intervalos, 365/366 dias). Ajustar `PAGINAS` e o ano no script.
 
+## Mapa e fundo do mar
+
+O ecrã «Mapa» (`mapa.html`, `js/mapa.js`) mostra os pesqueiros e, onde houver levantamento, o fundo do mar:
+- **linhas de fundo** (isóbatas) de 0,5 em 0,5 m;
+- **fundões e cabeços**, com balão. O balão mostra a cota e a distância à costa, e a água por cima na próxima preia-mar e baixa-mar, calculada com a tabela de marés;
+- **zona levantada**, com contorno tracejado.
+
+Os fundos de mapa e as fontes do fundo do mar:
+- **Biblioteca:** [Leaflet](https://leafletjs.com) 1.9.4, em `vendor/leaflet/`.
+- **Mapa:** OpenStreetMap. A política de uso deles exige atribuição e o cabeçalho Referer, que o Leaflet envia com `referrerPolicy`.
+- **Satélite:** OrtoSat 2023 da Direção-Geral do Território (WMS; nas capacidades do serviço: «no conditions apply»).
+- **Fundo do mar:** levantamentos topo-hidrográficos do Programa COSMO da APA. Os modelos digitais de elevação (DEM) têm 0,30 m de resolução e cotas ao zero hidrográfico. Na ficha: utilização «Sem restrições», com citação.
+
+O DEM original não entra no repositório (o COSMO exige registo para o descarregar). Só se guarda o resultado tratado em `fundos/<id>.json`.
+
+Para acrescentar ou refazer um levantamento:
+
+1. Descarregar o DEM do COSMO.
+2. Instalar as dependências da ferramenta, que são só para ela (a app não usa Python), por exemplo num `venv`: `pip install numpy scipy rasterio pyproj shapely scikit-image`.
+3. Correr:
+
+```
+python3 -I ferramentas/fundos_cosmo.py LTHFA1_20250617_DEM.tif fundos/praia_faro.json \
+  --id praia_faro --nome "Praia de Faro" --produto LTHFA1_20250617_DEM \
+  --levantamento 2025-06-17 --url https://cosmo.apambiente.pt/prd/LTHFA1_20250617_DEM
+```
+
+4. Acrescentar o levantamento a `config.mapa.fundos`.
+
+Os critérios dos fundões e cabeços estão no cabeçalho da ferramenta e ficam gravados no ficheiro (`tratamento.criterios`). São provisórios. Os bancos mudam com os temporais: vale sempre a data do levantamento, que aparece em todos os balões.
+
 ## Motor de regras (Fase 3)
 
 `js/regras/` — funções puras, sem rede nem armazenamento. `analisarDias()` (em `analise.js`) recebe os dados já obtidos (Open-Meteo por ponto, tabela de marés, nascer/pôr do Sol do SunCalc) e devolve, por dia e por pesqueiro: notas de robalo e dourada **por período** (madrugada, manhã, tarde, noite) com as parcelas, potência máxima e hora, limo, lado do molhe, pressão, água, chuva, alinhamentos e avisos. Dado em falta → `n.d.` com o motivo; nunca um valor por defeito.
