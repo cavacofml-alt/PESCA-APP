@@ -69,7 +69,7 @@ function camadasFundos(fundos, mares) {
   // dentro dele e taparia os fundões e cabeços.
   const cobertura = L.polyline(fundos.cobertura.map(([lon, lat]) => [lat, lon]),
     { color: "#37474f", weight: 1.5, dashArray: "6 5" })
-    .bindPopup(() => `<h3>Zona levantada — ${esc(fundos.nome)}</h3><p>Levantamento do Programa COSMO de ` +
+    .bindPopup(() => `<h3>Zona levantada — ${esc(fundos.nome)}</h3><p>${/COSMO/.test(fundos.fonte.nome ?? "") ? "Levantamento do Programa COSMO de" : `${esc(fundos.fonte.nome)}, levantamento de`} ` +
       `${periodoLevantamento(fundos.fonte)} (${idadeLevantamento(fundos.fonte) ?? "data desconhecida"}). ` +
       "Fora desta linha não há dados do fundo.</p>");
   return { cobertura, isobatas, formas }; // por esta ordem: os fundões e cabeços ficam por cima
@@ -132,9 +132,9 @@ async function iniciar() {
   // Linha curta: só as zonas já pedidas (as outras estão nos botões por baixo).
   const mostrarSituacao = eventos => {
     const linhas = config.mapa.fundos.filter(f => situacao.get(f.id) !== "por carregar")
-      .map(f => `${esc(f.nome)} ${esc(situacao.get(f.id))}`);
+      .map(f => `${esc(f.nome)} ${esc(situacao.get(f.id))}`.trim());
     if (eventos === null) linhas.push("tabela de marés não obtida (sem água por cima nos balões)");
-    estado.innerHTML = `Fundo do mar (COSMO): ${linhas.join(" · ") || "escolha uma zona"}. Critérios provisórios.`;
+    estado.innerHTML = `Fundo do mar: ${linhas.join(" · ") || "escolha uma zona"}. Critérios provisórios.`;
   };
   mostrarSituacao();
   async function carregar(f) {
@@ -154,7 +154,7 @@ async function iniciar() {
     controlo.addOverlay(camadas.isobatas, `Linhas de fundo — ${esc(f.nome)}`);
     controlo.addOverlay(camadas.formas, `Fundões e cabeços — ${esc(f.nome)}`);
     controlo.addOverlay(camadas.cobertura, `Zona levantada — ${esc(f.nome)}`);
-    situacao.set(f.id, mesAno(d.fonte));
+    situacao.set(f.id, d.fonte.rotulo ? "" : `COSMO ${mesAno(d.fonte)}`);   // o nome do LiDAR já traz o ano
     mostrarSituacao(eventos);
   }
   const verificar = () => {
