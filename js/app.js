@@ -60,7 +60,7 @@ async function actualizar() {
     const analise = analisarDias({ dias: dados.dias, pontos: dados.pontos,
       mares: dados.mares.ok ? dados.mares.data : null, sol: dados.sol, config });
     estado = { analise, config, pontos: dados.pontos, mares: dados.mares, sol: dados.sol, lua: dados.lua,
-      boiaFaro: dados.boiaFaro, lidoEm: dados.lidoEm, indice: estado?.indice ?? 0, especie: estado?.especie ?? especieGuardada() };
+      boiaFaro: dados.boiaFaro, fundoTipico: dados.fundoTipico, lidoEm: dados.lidoEm, indice: estado?.indice ?? 0, especie: estado?.especie ?? especieGuardada() };
     desenhar();
   } catch (erro) {
     raiz.innerHTML = `<header class="topo"><div><h1>Surfcasting Algarve</h1><p class="lido">Erro: ${esc(erro.message ?? erro)}</p></div></header>`;
