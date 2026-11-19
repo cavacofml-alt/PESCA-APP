@@ -412,6 +412,13 @@
         "ficheiro": "fundos/culatra_armona.json",
         "limites": [[36.9789, -7.8212], [37.0273, -7.753]],
         "aviso": "Barra da Armona: bancos de areia que secam na baixa-mar e canais que mudam muito; este levantamento é de 2020."
+      },
+      {
+        "id": "ria_lidar2011",
+        "nome": "Ria Formosa e Ancão (LiDAR 2011)",
+        "ficheiro": "fundos/ria_lidar2011.json",
+        "limites": [[36.9562, -8.0699], [37.0652, -7.7399]],
+        "aviso": "LiDAR de 2011 (há 15 anos): os canais da Ria e da barra e os bancos mudam muito; serve de orientação, não de medição actual. Cotas à baixa-mar astronómica (LAT), 0,1 a 0,25 m acima do zero hidrográfico. Só aparece onde não há levantamento COSMO."
       }
     ],
     "fundosBase": {
