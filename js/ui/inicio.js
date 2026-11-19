@@ -6,6 +6,7 @@
 import { esc, hora, horaIso, num, rotuloDia, classeNota, textoNota, NOME_ESPECIE, PERIODO_CURTO, NOME_MARE, rumo } from "./formato.js";
 import { ordenarMelhoresDias } from "../regras/notas.js";
 import { resumoBoia } from "../fontes/ih-boias.js";
+import { DISTANCIAS_FUNDO } from "../fontes/fundo-tipico.js";
 
 export const ESPECIES = ["robalo", "dourada"];
 
@@ -146,7 +147,39 @@ function linhaEspecie(esp, n, periodos) {
 
 const simNao = v => (v === true ? "sim" : v === false ? "não" : "por verificar");
 
-function factos(p, pq) {
+const dataPt = iso => (/^\d{4}-\d{2}-\d{2}$/.test(iso ?? "") ? iso.split("-").reverse().join("/") : iso ?? "—");
+
+// Fundo típico de uma praia (fundos/tipico.json): cotas a 100/150/200 m da linha de meia-maré e a
+// água por cima na baixa-mar mais baixa e na preia-mar mais alta do dia (altura da tabela − cota).
+// null quando não se aplica (molhes, Ria) ou o ficheiro não foi pedido; { erro } quando falhou.
+export function fundoDoCartao(id, d, contexto) {
+  const pq = contexto.config.pesqueiros[id];
+  const r = contexto.fundoTipico;
+  if (pq?.tipo !== "praia" || !r) return null;
+  if (!r.ok) return { erro: `não obtido${r.error ? ` (${r.error})` : ""}` };
+  const p = r.data.praias?.[id];
+  if (!p) return null;
+  if (!p.fonte) return { erro: `sem levantamento (${p.motivo})` };
+  const f = r.data.fontes[p.fonte];
+  const cotas = DISTANCIAS_FUNDO.map(k => p.cotas[k]);
+  const lista = vals => vals.map(v => num(v, 1)).join(" / ");
+  const curto = `${lista(cotas)} m (${f.rotulo})`;
+  const partes = [`cota mediana a ${DISTANCIAS_FUNDO.join(" / ")} m da linha de meia-maré: ${curto}`];
+  const rep = d?.repontos ?? [];
+  const extremo = (tipo, pior) => rep.filter(x => x.tipo === tipo).reduce((a, x) => (!a || pior(x.alturaM, a.alturaM) ? x : a), null);
+  const agua = x => cotas.map(c => {
+    const v = Math.round((x.alturaM - c) * 10) / 10;
+    return v <= 0 ? "a descoberto" : num(v, 1);
+  }).join(" / ");
+  const bm = extremo("BM", (a, b) => a < b), pm = extremo("PM", (a, b) => a > b);
+  if (bm) partes.push(`água na baixa-mar mais baixa do dia (${hora(bm.instante)}, ${num(bm.alturaM, 1)} m): ${agua(bm)} m`);
+  if (pm) partes.push(`na preia-mar mais alta (${hora(pm.instante)}, ${num(pm.alturaM, 1)} m): ${agua(pm)} m`);
+  const periodo = f.levantamentoFim ? `${dataPt(f.levantamento)} a ${dataPt(f.levantamentoFim)}` : dataPt(f.levantamento);
+  const fonte = `Fundo: ${f.nome}, ${f.produto} (${periodo}) · medido e tratado (mediana a ±500 m do pesqueiro; provisório) · cotas: ${f.referenciaVertical}`;
+  return { curto, longo: partes.join("; "), fonte };
+}
+
+function factos(p, pq, fundo) {
   const out = [];
   if (p.potencia) {
     out.push(["Potência máx.", p.potencia.valor === null ? "não obtida"
@@ -159,6 +192,7 @@ function factos(p, pq) {
   if (p.agua) {
     out.push(["Água", p.agua.media === null ? "não obtida" : `${num(p.agua.media, 1)} °C${p.agua.variacao === undefined || p.agua.variacao === null ? "" : ` (${p.agua.variacao > 0 ? "+" : ""}${num(p.agua.variacao, 1)} vs. 7 dias antes)`}`]);
   }
+  if (fundo) out.push(["Fundo a 100/150/200 m", fundo.curto ?? fundo.erro]);
   return `<dl class="factos">${out.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>`;
 }
 
@@ -171,7 +205,7 @@ function parcelas(esp, n) {
 }
 
 // Fontes dos valores do cartão: fonte, tipo e hora de leitura (critério 10).
-export function fontesDoCartao(pq, contexto) {
+export function fontesDoCartao(pq, contexto, fundo = null) {
   const linhas = [];
   const ponto = (tipo, k, nomeFonte) => {
     if (!k) return;
@@ -185,12 +219,13 @@ export function fontesDoCartao(pq, contexto) {
   ponto("terra", pq.terra, "Open-Meteo Forecast");
   if (pq.agua && pq.agua !== pq.mar) ponto("mar", pq.agua, "Open-Meteo Marine (água)");
   linhas.push(contexto.mares?.ok ? "Marés: Instituto Hidrográfico, Faro-Olhão 2026 (tabela oficial, horas TU)" : `Marés: não obtidas${contexto.mares?.error ? ` (${contexto.mares.error})` : ""}`);
+  if (fundo) linhas.push(fundo.fonte ?? `Fundo: ${fundo.erro}`);
   linhas.push("Sol: SunCalc · calculado no aparelho");
   linhas.push("Notas: calculadas pelas regras da app · provisórias");
   return `<h4>Fontes</h4><ul class="fontes">${linhas.map(l => `<li>${esc(l)}</li>`).join("")}</ul>`;
 }
 
-function detalhes(p, pq, d, contexto) {
+function detalhes(p, pq, d, contexto, fundo) {
   const s = contexto.sol ? contexto.sol(d.dia, pq.terra) : null;
   const dados = [];
   if (p.limo && pq.tipo !== "ria") dados.push(["Limo", `${simNao(p.limo.limo)}${p.limo.motivo ? ` — ${p.limo.motivo}` : ""}${p.limo.horasComLimo?.length ? ` (${p.limo.horasComLimo.map(hora).join(", ")})` : ""}`]);
@@ -203,10 +238,11 @@ function detalhes(p, pq, d, contexto) {
   if (d.repontos) dados.push(["Marés", d.repontos.map(r => `${NOME_MARE[r.tipo]} ${hora(r.instante)} (${num(r.alturaM, 1)} m)`).join(" · ")]);
   dados.push(["Sol", s ? `nasce ${hora(s.nascer)} · põe-se ${hora(s.por)}` : "não calculado"]);
   if (p.potencia?.avisos?.length) dados.push(["Potência", p.potencia.avisos.join("; ")]);
+  if (fundo?.longo) dados.push(["Fundo típico", fundo.longo]);
   return `<details class="detalhes"><summary>Dados, parcelas e fontes</summary>
     <dl class="factos">${dados.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
     ${Object.entries(p.notas).map(([esp, n]) => parcelas(esp, n)).join("")}
-    ${fontesDoCartao(pq, contexto)}
+    ${fontesDoCartao(pq, contexto, fundo)}
   </details>`;
 }
 
@@ -244,6 +280,7 @@ function cartao(id, p, d, contexto) {
   const melhor = nEsp?.estado === "ok" ? nEsp : null;
   const foto = pq.foto;
   const ali = alinhamentosDoDia({ pesqueiros: { [id]: p } });
+  const fundo = fundoDoCartao(id, d, contexto);
   return `<article class="cartao" id="pq-${esc(id)}">
     <div class="foto"${foto ? ` style="background-image:url('${esc(foto.ficheiro)}')"` : ""}>
       <div class="foto-texto"><h2>${esc(pq.nomeCurto ?? pq.nome)}</h2><p>${esc(especies.map(e => NOME_ESPECIE[e]).join(" e "))}</p></div>
@@ -253,9 +290,9 @@ function cartao(id, p, d, contexto) {
       ${ali.length ? `<div class="alinhamento"><b>Alinhamento</b> ${ali.map(a => esc(textoAlinhamento(a))).join("; ")}</div>` : ""}
       ${nEsp ? linhaEspecie(esp, nEsp, p.periodos) : semEspecie(esp, pq)}
       <button type="button" class="btn-horas" data-pq="${esc(id)}">Hora a hora ›</button>
-      ${factos(p, pq)}
+      ${factos(p, pq, fundo)}
       ${avisosDoCartao(p, pq, contexto)}
-      ${detalhes(p, pq, d, contexto)}
+      ${detalhes(p, pq, d, contexto, fundo)}
       <p class="rodape">${ligacoes("Vento agora (Windguru)", pq.estacoes)}${ligacoes("Câmaras", pq.camaras)}</p>
     </div>
   </article>`;
