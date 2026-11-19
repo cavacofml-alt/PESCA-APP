@@ -131,6 +131,37 @@ python3 -I ferramentas/fundo_tipico.py fundos/tipico.json \
   --lidar lidar2011.tif 590_HR_Lidar_Algarve.emo.zip
 ```
 
+### Fundões e cabeços por satélite (estimativa)
+
+A camada «Satélite» do mapa mostra fundões e cabeços **estimados** a partir de imagens Copernicus Sentinel-2. Cobre toda a costa de Faro à Falésia, incluindo o Ancão, Vilamoura e a Falésia, onde não há levantamento COSMO. Não é medição. No mapa aparece com contornos tracejados e com «sat.» no rótulo.
+
+**Método** (`ferramentas/batimetria_satelite.py`):
+- reflectância nas bandas azul, verde e vermelho a 10 m;
+- modelo de Lyzenga, calibrado nas cotas dos COSMO de 06/2025 (0 a −6 m ZH);
+- detecção dos fundões e cabeços com os critérios do COSMO;
+- só ficam as formas que aparecem em duas imagens: 04/11/2026, confirmada com 15/09/2026.
+
+**Validação** (imagem de 14/06/2025, a mesma data dos levantamentos; calibrar num COSMO e testar no outro):
+- erro quadrático médio de 0,70–0,79 m entre 0 e −6 m;
+- as anomalias (fundões e cabeços) com correlação de 0,82–0,93;
+- onde o COSMO tem uma anomalia de 0,4 m ou mais, o satélite acerta o sinal em 91–98 % dos píxeis.
+
+**Limites:**
+- só até ~4,5 m de fundo;
+- só em dias calmos e de água limpa;
+- erro típico de 0,6 m na cota.
+
+Para refazer com imagens mais recentes (as cenas procuram-se no catálogo Earth Search; `GDAL_HTTP_PROXY` se houver proxy):
+
+```
+python3 -I ferramentas/batimetria_satelite.py fundos/satelite.json \
+  --cena S2C_29SNB_20261104_0_L2A --confirmar S2C_29SNB_20260915_0_L2A \
+  --cosmo fundos/quarteira_garrao.json LTHQUGA1_20250612_20250616_DEM.tif \
+  --cosmo fundos/praia_faro.json LTHFA1_20250617_DEM.tif
+```
+
+Depois, actualizar o nome e os `limites` da entrada `satelite` em `config.mapa.fundos`.
+
 Os critérios dos fundões e cabeços estão no cabeçalho da ferramenta e ficam gravados no ficheiro (`tratamento.criterios`). São provisórios. Os bancos mudam com os temporais: vale sempre a data do levantamento, que aparece em todos os balões.
 
 ## Motor de regras (Fase 3)
