@@ -160,3 +160,16 @@ test("ecrã: boia desactualizada, sem medições válidas ou não obtida — sem
   assert.match(html, /<section class="mar-agora"[^>]*><h3>Mar agora[^<]*<small>[^<]*<\/small><\/h3><p class="falha">Não obtido — HTTP 503<\/p>/);
   assert.ok(!/mar-agora/.test(renderInicio(contexto())), "sem leitura da boia, sem secção");
 });
+
+test("ecrã: cartões das praias com o fundo típico (molhes sem ele); fonte nas fontes do cartão", () => {
+  const c = { ...contexto(), fundoTipico: { ok: true, data: lerJson("fundos/tipico.json"), error: null } };
+  const html = renderInicio(c);
+  const cartaoDe = id => html.slice(html.indexOf(`id="pq-${id}"`), html.indexOf("</article>", html.indexOf(`id="pq-${id}"`)));
+  assert.match(cartaoDe("ancao"), /<dt>Fundo a 100\/150\/200 m<\/dt><dd>−1,1 \/ −1,7 \/ −2,7 m \(LiDAR 2011\)<\/dd>/);
+  assert.match(cartaoDe("ancao"), /<dt>Fundo típico<\/dt><dd>cota mediana a 100 \/ 150 \/ 200 m/);
+  assert.match(cartaoDe("ancao"), /<li>Fundo: Instituto Hidrográfico — LiDAR 2011/);
+  assert.match(cartaoDe("almargem"), /−2,0 \/ −3,4 \/ −4,1 m \(COSMO 06\/2025\)/);
+  assert.doesNotMatch(cartaoDe("molhe_quarteira"), /Fundo a 100/);
+  const falhou = renderInicio({ ...contexto(), fundoTipico: { ok: false, data: null, error: "HTTP 500" } });
+  assert.match(falhou, /<dt>Fundo a 100\/150\/200 m<\/dt><dd>não obtido \(HTTP 500\)<\/dd>/);
+});
