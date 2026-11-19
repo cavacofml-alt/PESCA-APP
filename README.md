@@ -51,6 +51,7 @@ Não há dependências a instalar (o `package.json` só indica que os `.js` são
 
 - Os avisos do IPMA não são consultados: a regra de segurança foi retirada por decisão do utilizador (13/10/2026).
 - O `sw.js` serve a shell a partir da cache; `config.json` e marés (`*.json`) vão sempre primeiro à rede e só usam a cópia em cache sem ligação. Ao alterar um ficheiro da shell, correr `node ferramentas/versao-sw.mjs` (actualiza a impressão e sobe a versão da cache em `sw.js`); um teste falha se for esquecido.
+- Quando há uma versão nova publicada, a página aberta recarrega sozinha uma vez, assim que o service worker novo toma conta dela (`js/registo-sw.js`). Sem isso ficava o código antigo com a `config.json` nova, que vem sempre da rede. Na primeira instalação não recarrega.
 
 ## Tabela de marés
 
