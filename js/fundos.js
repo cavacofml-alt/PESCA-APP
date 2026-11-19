@@ -5,6 +5,7 @@ import { esc, hora, num, diaCurto } from "./ui/formato.js";
 import { lisbonDate } from "./normalizacao.js";
 
 const DATA = /^\d{4}-\d{2}-\d{2}$/;
+const ANO = /^\d{4}$/;   // levantamento de que só se sabe o ano (LiDAR 2011)
 const finito = v => typeof v === "number" && Number.isFinite(v);
 // Portugal continental e mar próximo: um ponto fora disto é erro do ficheiro.
 const pontoValido = p => Array.isArray(p) && p.length === 2 && finito(p[0]) && finito(p[1])
@@ -24,7 +25,7 @@ export function validarFundos(d) {
   for (const k of ["nome", "produto", "url", "referenciaVertical", "utilizacao"]) {
     if (typeof f[k] !== "string" || !f[k]) erros.push(`fonte.${k} em falta`);
   }
-  if (!DATA.test(f.levantamento ?? "")) erros.push("fonte.levantamento não é uma data AAAA-MM-DD");
+  if (!DATA.test(f.levantamento ?? "") && !ANO.test(f.levantamento ?? "")) erros.push("fonte.levantamento não é uma data AAAA-MM-DD nem um ano");
   if (f.levantamentoFim !== undefined && (!DATA.test(f.levantamentoFim) || f.levantamentoFim <= f.levantamento)) {
     erros.push("fonte.levantamentoFim inválido");
   }
@@ -60,8 +61,8 @@ export function validarFundos(d) {
   return { ok: erros.length === 0, erros };
 }
 
-// "17/06/2025" a partir de "2025-06-17".
-export const dataCurta = iso => (DATA.test(iso ?? "") ? iso.split("-").reverse().join("/") : "—");
+// "17/06/2025" a partir de "2025-06-17"; só o ano quando é o que se sabe.
+export const dataCurta = iso => (DATA.test(iso ?? "") ? iso.split("-").reverse().join("/") : ANO.test(iso ?? "") ? iso : "—");
 
 // Data do levantamento: um dia, ou o primeiro e o último quando durou vários.
 export function periodoLevantamento(fonte) {
@@ -72,16 +73,20 @@ export function periodoLevantamento(fonte) {
 // Mês e ano do levantamento (do último dia): «06/2025».
 export function mesAno(fonte) {
   const fim = fonte?.levantamentoFim ?? fonte?.levantamento;
-  return DATA.test(fim ?? "") ? `${fim.slice(5, 7)}/${fim.slice(0, 4)}` : "—";
+  return DATA.test(fim ?? "") ? `${fim.slice(5, 7)}/${fim.slice(0, 4)}` : ANO.test(fim ?? "") ? fim : "—";
 }
 
 // Idade do levantamento (a contar do último dia): «há 5 meses», «há 6 anos».
 export function idadeLevantamento(fonte, agora = new Date()) {
   const fim = fonte?.levantamentoFim ?? fonte?.levantamento;
-  if (!DATA.test(fim ?? "")) return null;
-  const [a, m, d] = fim.split("-").map(Number);
   const hoje = lisbonDate(agora);
   if (!hoje) return null;
+  if (ANO.test(fim ?? "")) {
+    const anos = Number(hoje.slice(0, 4)) - Number(fim);   // sem o mês, contam-se anos civis
+    return anos < 1 ? null : anos === 1 ? "há cerca de 1 ano" : `há cerca de ${anos} anos`;
+  }
+  if (!DATA.test(fim ?? "")) return null;
+  const [a, m, d] = fim.split("-").map(Number);
   const [ah, mh, dh] = hoje.split("-").map(Number);
   const meses = (ah - a) * 12 + (mh - m) - (dh < d ? 1 : 0);
   if (meses < 0) return null;
@@ -162,7 +167,8 @@ export function rodapeFundos(fundos, agora = new Date()) {
       "Só até ~4,5 m de fundo; critérios provisórios. Contém dados Copernicus Sentinel modificados." +
       (fundos.aviso ? ` <b>${esc(fundos.aviso)}</b>` : "");
   }
-  return `Medido: levantamento do Programa COSMO (APA) de ${periodoLevantamento(f)}` +
+  const quem = /COSMO/.test(f.nome ?? "") ? "levantamento do Programa COSMO (APA) de" : `${esc(f.nome)}, levantamento de`;
+  return `Medido: ${quem} ${periodoLevantamento(f)}` +
     `${idade ? ` (${idade})` : ""}, produto ${esc(f.produto)}; tratado nesta app (critérios provisórios). ` +
     "Costa = linha de 2 m ZH (nível médio). Os bancos mudam com os temporais." +
     (fundos.aviso ? ` <b>${esc(fundos.aviso)}</b>` : "");

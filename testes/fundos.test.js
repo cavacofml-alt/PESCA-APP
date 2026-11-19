@@ -16,7 +16,7 @@ test("fundos: cada levantamento do config existe, é válido e tem o nome do fic
   assert.ok(config.mapa.fundos.length >= 1);
   for (const f of config.mapa.fundos) {
     assert.ok(existsSync(new URL(`../${f.ficheiro}`, import.meta.url)), f.ficheiro);
-    assert.match(f.ficheiro, /^fundos\/[a-z_]+\.json$/, "*.json: o service worker vai à rede primeiro");
+    assert.match(f.ficheiro, /^fundos\/[a-z0-9_]+\.json$/, "*.json: o service worker vai à rede primeiro");
     const d = JSON.parse(ler(f.ficheiro));
     assert.deepEqual(validarFundos(d), { ok: true, erros: [] }, f.ficheiro);
     assert.equal(d.id, f.id);
@@ -28,14 +28,16 @@ test("fundos: cada levantamento do config existe, é válido e tem o nome do fic
   }
 });
 
-test("fundos: os quatro levantamentos e a estimativa por satélite, com produto, datas e SHA-256", () => {
+test("fundos: os quatro levantamentos COSMO, a estimativa por satélite e o LiDAR 2011, com produto, datas e SHA-256", () => {
   const esperado = {
     quarteira_garrao: ["LTHQUGA1_20250612_20250616_DEM", "2025-06-12", "2025-06-16", "9e613e346a1573ae8bd34decbd5ea53c7337acc609189d865f9a38c64b251d72"],
     praia_faro: ["LTHFA1_20250617_DEM", "2025-06-17", undefined, "f1d57bee5c3add32341ee27a0e6dd63d532e4549f1fc4ae6fccd4e6d5a39e34c"],
     barreta_farol: ["LTHBAIF1_20201023_20201029_DEM", "2020-10-23", "2020-10-29", "1669be074174ccbfd86dd769b951467281ed738189cc6453250f63b378242185"],
     culatra_armona: ["LTHCUAR2_20201015_20201125_DEM", "2020-10-15", "2020-11-25", "a74ee71faaae70ab14f44eab844880a8d1f5b3a56d8fa94ee14a8da03315e26b"],
     // SHA-256 dos recortes das bandas usados (B02, B03, B04, B08, SCL)
-    satelite: ["S2C_29SNB_20261104_0_L2A", "2026-11-04", undefined, "13920dd14a2d23241fd01e1a198bb4460afb10be18d57f5dce384200cb0e1f81"]
+    satelite: ["S2C_29SNB_20261104_0_L2A", "2026-11-04", undefined, "13920dd14a2d23241fd01e1a198bb4460afb10be18d57f5dce384200cb0e1f81"],
+    // SHA-256 do 590_HR_Lidar_Algarve.emo.zip descarregado do EMODnet; só se sabe o ano
+    ria_lidar2011: ["590_HR_Lidar_Algarve", "2011", undefined, "7b713f3b1525e5652939834c74dc88eab5fb8e706d633641a636113423e6c755"]
   };
   assert.deepEqual(config.mapa.fundos.map(f => f.id).sort(), Object.keys(esperado).sort());
   for (const f of config.mapa.fundos) {
@@ -43,6 +45,8 @@ test("fundos: os quatro levantamentos e a estimativa por satélite, com produto,
     assert.deepEqual([d.produto, d.levantamento, d.levantamentoFim, d.sha256], esperado[f.id], f.id);
     assert.equal(d.url, d.tipo === "estimado"
       ? `https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a/items/${d.produto}`
+      : f.id === "ria_lidar2011"
+      ? "https://emodnet.ec.europa.eu/geonetwork/srv/api/records/SDN_CPRD_590_HR_Lidar_Algarve"
       : `https://cosmo.apambiente.pt/prd/${d.produto}`);
   }
 });
@@ -80,7 +84,7 @@ test("fundos: Praia de Faro — fundões e cabeços dentro da zona levantada", (
 });
 
 test("fundos: isóbatas do nível médio (2 m ZH) para baixo: 0,5 m até −10, 1 m até −20, 5 m daí para baixo", () => {
-  for (const f of config.mapa.fundos) {
+  for (const f of config.mapa.fundos.filter(x => x.id !== "ria_lidar2011")) {  // o LiDAR tem níveis próprios
     const cotas = JSON.parse(ler(f.ficheiro)).isobatas.map(i => i.cota);
     if (f.id === "satelite") { assert.equal(cotas.length, 0, "a estimativa por satélite não tem isóbatas"); continue; }
     assert.equal(cotas[0], 2, f.id);
@@ -202,6 +206,50 @@ test("mapa: fundos de mapa no config, com atribuição; o OpenStreetMap recebe o
   // _headers manda Referrer-Policy: same-origin; sem a opção do Leaflet o OSM recusa os mosaicos.
   assert.match(ler("js/mapa.js"), /referrerPolicy: REFERER/);
   assert.match(ler("js/mapa.js"), /const REFERER = "strict-origin-when-cross-origin"/);
+});
+
+test("LiDAR 2011: só linhas de fundo, níveis de 1 m a partir de +1, nenhuma dentro de um levantamento COSMO", () => {
+  const D = JSON.parse(ler("fundos/ria_lidar2011.json"));
+  assert.deepEqual(validarFundos(D), { ok: true, erros: [] });
+  assert.equal(D.formas.length, 0);
+  assert.deepEqual(D.isobatas.map(i => i.cota), [1, 0, -1, -2, -3, -4, -5, -6, -8]);
+  // ponto dentro de polígono (raio): nenhum vértice das linhas fica dentro de uma zona COSMO
+  const dentro = ([x, y], pol) => {
+    let c = false;
+    for (let i = 0, j = pol.length - 1; i < pol.length; j = i++) {
+      const [xi, yi] = pol[i], [xj, yj] = pol[j];
+      if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c;
+    }
+    return c;
+  };
+  const cosmo = ["praia_faro", "quarteira_garrao", "barreta_farol", "culatra_armona"].map(k => JSON.parse(ler(`fundos/${k}.json`)).cobertura);
+  // distância (m, aproximada) de um ponto ao contorno de um polígono
+  const kx = 111320 * Math.cos(37 * Math.PI / 180), ky = 110540;
+  const aoContorno = ([x, y], pol) => Math.min(...pol.slice(1).map(([x2, y2], i) => {
+    const [x1, y1] = pol[i]; const ax = (x - x1) * kx, ay = (y - y1) * ky, bx = (x2 - x1) * kx, by = (y2 - y1) * ky;
+    const u = Math.max(0, Math.min(1, (ax * bx + ay * by) / ((bx * bx + by * by) || 1)));
+    return Math.hypot(ax - u * bx, ay - u * by);
+  }));
+  // os pontos de corte ficam em cima do contorno (arredondados a 6 casas: centímetros para dentro)
+  let fundo = 0;
+  for (const i of D.isobatas) for (const l of i.linhas) for (const p of l) {
+    if (cosmo.some(c => dentro(p, c) && aoContorno(p, c) > 1)) fundo++;
+  }
+  assert.equal(fundo, 0, "nenhum vértice a mais de 1 m para dentro de uma zona COSMO");
+});
+
+test("LiDAR 2011: data só com o ano, idade, fonte e aviso nos balões", () => {
+  const D = { ...JSON.parse(ler("fundos/ria_lidar2011.json")), aviso: config.mapa.fundos.find(f => f.id === "ria_lidar2011").aviso };
+  const agora = new Date("2026-11-19T12:00:00Z");
+  assert.equal(dataCurta("2011"), "2011");
+  assert.equal(periodoLevantamento(D.fonte), "2011");
+  assert.equal(idadeLevantamento(D.fonte, agora), "há cerca de 15 anos");
+  const html = descricaoIsobata(-2, D, agora);
+  assert.match(html, /Medido: Instituto Hidrográfico — LiDAR 2011 \(projecto DGT\/APA\), publicado no EMODnet Bathymetry, levantamento de 2011 \(há cerca de 15 anos\)/);
+  assert.match(html, /<b>LiDAR de 2011 \(há 15 anos\)/);
+  assert.doesNotMatch(html, /Programa COSMO/);
+  const outro = structuredClone(D); outro.fonte.levantamento = "11";
+  assert.ok(validarFundos(outro).erros.some(e => /levantamento/.test(e)));
 });
 
 test("satélite: estimativa marcada como tal, confirmada a 15/09/2026, calibração registada", () => {
