@@ -77,7 +77,20 @@ Os fundos de mapa e as fontes do fundo do mar:
 - **Satélite:** OrtoSat 2023 da Direção-Geral do Território (WMS; nas capacidades do serviço: «no conditions apply»).
 - **Fundo do mar:** levantamentos topo-hidrográficos do Programa COSMO da APA. Os modelos digitais de elevação (DEM) têm 0,30 m de resolução e cotas ao zero hidrográfico. Na ficha: utilização «Sem restrições», com citação.
 
-O DEM original não entra no repositório (o COSMO exige registo para o descarregar). Só se guarda o resultado tratado em `fundos/<id>.json`.
+Há quatro levantamentos, em `config.mapa.fundos`:
+
+| Zona | Produto COSMO | Levantamento |
+|---|---|---|
+| Quarteira–Garrão | `LTHQUGA1_20250612_20250616_DEM` | 12–16/06/2025 |
+| Praia de Faro | `LTHFA1_20250617_DEM` | 17/06/2025 |
+| Barreta–Ilha do Farol (barra de Faro-Olhão) | `LTHBAIF1_20201023_20201029_DEM` | 23–29/10/2020 |
+| Culatra–Armona | `LTHCUAR2_20201015_20201125_DEM` | 15/10–25/11/2020 |
+
+Cada zona só é pedida quando aparece no ecrã, porque os quatro ficheiros somam 3,2 MB. Os `limites` estão no config.
+
+Três das zonas têm um `aviso` que aparece nos balões: esporões e molhe em Quarteira, e as barras nas outras duas. Aí os fundões e cabeços podem ser efeito das estruturas ou de canais que mudam muito.
+
+Os DEM originais não entram no repositório (o COSMO exige registo para os descarregar). Só se guarda o resultado tratado em `fundos/<id>.json`, com o SHA-256 do DEM de onde saiu.
 
 Para acrescentar ou refazer um levantamento:
 
@@ -91,7 +104,9 @@ python3 -I ferramentas/fundos_cosmo.py LTHFA1_20250617_DEM.tif fundos/praia_faro
   --levantamento 2025-06-17 --url https://cosmo.apambiente.pt/prd/LTHFA1_20250617_DEM
 ```
 
-4. Acrescentar o levantamento a `config.mapa.fundos`.
+Se o levantamento durou vários dias, acrescentar `--levantamento-fim AAAA-MM-DD`.
+
+4. Acrescentar o levantamento a `config.mapa.fundos`, com `id`, `nome`, `ficheiro` e `limites` (sul/oeste e norte/este da zona levantada). Um teste confirma que os limites contêm a zona.
 
 Os critérios dos fundões e cabeços estão no cabeçalho da ferramenta e ficam gravados no ficheiro (`tratamento.criterios`). São provisórios. Os bancos mudam com os temporais: vale sempre a data do levantamento, que aparece em todos os balões.
 
