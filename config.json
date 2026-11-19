@@ -361,5 +361,30 @@
       "inicioHora": 18
     }
   ],
-  "periodosProvisorio": true
+  "periodosProvisorio": true,
+  "mapa": {
+    "fundos": [
+      {
+        "id": "praia_faro",
+        "ficheiro": "fundos/praia_faro.json",
+        "pesqueiro": "praia_faro"
+      }
+    ],
+    "fundosBase": {
+      "osm": {
+        "nome": "Mapa (OpenStreetMap)",
+        "url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        "maxZoom": 19,
+        "atribuicao": "© <a href=\"https://www.openstreetmap.org/copyright\">colaboradores do OpenStreetMap</a>"
+      },
+      "ortofoto": {
+        "nome": "Satélite (DGT, 2023)",
+        "wms": "https://ortos.dgterritorio.gov.pt/wms/ortosat2023",
+        "camada": "ortoSat2023-CorVerdadeira",
+        "maxZoom": 19,
+        "atribuicao": "Ortoimagens OrtoSat 2023 © <a href=\"https://www.dgterritorio.gov.pt/\">Direção-Geral do Território</a>"
+      }
+    },
+    "leaflet": "<a href=\"https://leafletjs.com\">Leaflet</a>"
+  }
 }

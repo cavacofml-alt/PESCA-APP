@@ -114,7 +114,9 @@ test("sw: a instalação guarda a shell completa e todos os ficheiros existem", 
   const esperado = ["./", "./manifest.webmanifest",
     ...readdirSync(raiz).filter(f => f.endsWith(".html")).map(f => `./${f}`),
     ...naPasta("css", ".css"), ...naPasta("assets/fotos", ".jpg"),
-    ...[...ficheirosJs("js"), ...ficheirosJs("vendor")].map(f => "./" + f.split("\\").join("/"))];
+    ...[...ficheirosJs("js"), ...ficheirosJs("vendor")].map(f => "./" + f.split("\\").join("/")),
+    // Leaflet: a folha de estilo e o ícone do selector de camadas (os ícones de marcador não são usados).
+    ...naPasta("vendor/leaflet", ".css"), "./vendor/leaflet/images/layers.png", "./vendor/leaflet/images/layers-2x.png"];
   assert.deepEqual([...instalados].sort(), [...esperado].sort());
   for (const f of instalados.filter(f => f !== "./")) {
     assert.doesNotThrow(() => statSync(join(raiz, f)), `${f} não existe`);

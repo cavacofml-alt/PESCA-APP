@@ -8,8 +8,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const PUBLICAR = [
-  "index.html", "diagnostico.html", "manifest.webmanifest", "sw.js", "config.json", "_headers",
-  "css", "js", "vendor", "mares", "assets"
+  "index.html", "diagnostico.html", "mapa.html", "manifest.webmanifest", "sw.js", "config.json", "_headers",
+  "css", "js", "vendor", "mares", "fundos", "assets"
 ];
 export const NUNCA = ["recolha", "testes", "ferramentas", ".github", "CLAUDE.md", "README.md", "package.json"];
 
