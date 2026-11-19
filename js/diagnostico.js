@@ -3,6 +3,7 @@ import { getForecast } from "./fontes/open-meteo-forecast.js";
 import { getSeaForecastDay } from "./fontes/ipma-mar.js";
 import { loadLocalTides } from "./fontes/mares-locais.js";
 import { getSunAndMoon } from "./fontes/suncalc.js";
+import { getBoia } from "./fontes/ih-boias.js";
 import { pontosNecessarios } from "./pontos.js";
 
 const $ = selector => document.querySelector(selector);
@@ -40,11 +41,18 @@ async function run() {
       minIntervalMinutes: config.mares.intervaloEventoMinutos.minimo,
       maxIntervalMinutes: config.mares.intervaloEventoMinutos.maximo })]
   ];
+  const boia = config.boias?.faro;
+  if (boia) pedidos.push([`Instituto Hidrográfico — ${boia.nome} (${boia.codigo}, observado; ${boia.licenca})`,
+    getBoia({ baseUrl: fontes.boiasIhBase, idEstacao: boia.idEstacao, horas: boia.horas })]);
   const tasks = await Promise.all(pedidos.map(([, p]) => p));
   const labels = pedidos.map(([nome]) => nome);
   resultRoot.innerHTML = tasks.map((r, i) => card(labels[i], r,
     r.ok && r.data ? `<details><summary>Ver metadados da resposta</summary><pre>${esc(JSON.stringify({
-      fonte:r.source, leitura:r.readAt, tipo:"previsto", campos:Object.keys(r.data)
+      fonte:r.source, leitura:r.readAt, ...(r.data.observacoes
+        ? { tipo:"observado", medicoes:r.data.observacoes.length,
+            ultimaMedicao:r.data.observacoes.length
+              ? new Date(r.data.observacoes.at(-1).instante).toLocaleString("pt-PT", { timeZone: config.fusoHorario }) : "sem medições" }
+        : { tipo:"previsto", campos:Object.keys(r.data) })
     }, null, 2))}</pre></details>` : "")).join("");
   const solar = getSunAndMoon(new Date(), config.locais.faroTerra.latitude, config.locais.faroTerra.longitude);
   resultRoot.insertAdjacentHTML("beforeend", card("Sol e Lua — SunCalc", solar));

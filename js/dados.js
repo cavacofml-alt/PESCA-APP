@@ -1,9 +1,11 @@
 // Reúne os dados de que o motor precisa: Open-Meteo por ponto (mar e terra), tabela de marés
-// local e nascer/pôr do Sol do SunCalc. Cada fonte falha sozinha (critério 10: a falha de uma
-// fonte nunca bloqueia as outras). Sem cálculo de notas: isso é do motor (js/regras/).
+// local e nascer/pôr do Sol do SunCalc; e a boia de Faro, só para mostrar. Cada fonte falha
+// sozinha (critério 10: a falha de uma fonte nunca bloqueia as outras). Sem cálculo de notas:
+// isso é do motor (js/regras/).
 import { getMarine } from "./fontes/open-meteo-marine.js";
 import { getForecast } from "./fontes/open-meteo-forecast.js";
 import { loadLocalTides } from "./fontes/mares-locais.js";
+import { getBoia } from "./fontes/ih-boias.js";
 import { pontosNecessarios } from "./pontos.js";
 import { lisbonDate, limitesDiaLisboa } from "./normalizacao.js";
 
@@ -46,13 +48,17 @@ export async function carregarDados({ config, fetchImpl = fetch, SunCalc = globa
       minIntervalMinutes: config.mares.intervaloEventoMinutos.minimo,
       maxIntervalMinutes: config.mares.intervaloEventoMinutos.maximo })
   ];
-  const r = await Promise.all(pedidos);
+  // Boia de Faro (observado): fica à parte do motor; a falha não bloqueia as outras fontes.
+  const b = config.boias?.faro;
+  const boia = b ? getBoia({ baseUrl: config.fontes.boiasIhBase, idEstacao: b.idEstacao, horas: b.horas, fetchImpl, now: agora }) : null;
+  const [r, boiaFaro] = await Promise.all([Promise.all(pedidos), boia]);
   const mar = Object.fromEntries(pts.mar.map((k, i) => [k, r[i]]));
   const terra = Object.fromEntries(pts.terra.map((k, i) => [k, r[pts.mar.length + i]]));
   const mares = r[r.length - 1];
   return {
     pontos: { mar, terra },
     mares,
+    boiaFaro,
     sol: SunCalc ? solDoDia(SunCalc, config) : null,
     lua: SunCalc ? luaDoDia(SunCalc) : null,
     dias: diasDoHorizonte(agora, config.horizonteDias ?? 7),
