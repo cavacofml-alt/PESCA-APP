@@ -3,8 +3,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { validarFundos, corIsobata, proximasMares, aguaPorCima, descricaoForma, descricaoIsobata, dataCurta }
-  from "../js/fundos.js";
+import { validarFundos, corIsobata, proximasMares, aguaPorCima, descricaoForma, descricaoIsobata, dataCurta,
+  periodoLevantamento, idadeLevantamento, mesAno } from "../js/fundos.js";
 import { validateTides } from "../js/fontes/mares-locais.js";
 
 const ler = rel => readFileSync(new URL(`../${rel}`, import.meta.url), "utf8");
@@ -12,7 +12,7 @@ const config = JSON.parse(ler("config.json"));
 const FARO = JSON.parse(ler("fundos/praia_faro.json"));
 const MARES = validateTides(JSON.parse(ler("mares/2026.json"))).events;
 
-test("fundos: cada levantamento do config existe, é válido e pertence a um pesqueiro", () => {
+test("fundos: cada levantamento do config existe, é válido e tem o nome do ficheiro", () => {
   assert.ok(config.mapa.fundos.length >= 1);
   for (const f of config.mapa.fundos) {
     assert.ok(existsSync(new URL(`../${f.ficheiro}`, import.meta.url)), f.ficheiro);
@@ -20,8 +20,33 @@ test("fundos: cada levantamento do config existe, é válido e pertence a um pes
     const d = JSON.parse(ler(f.ficheiro));
     assert.deepEqual(validarFundos(d), { ok: true, erros: [] }, f.ficheiro);
     assert.equal(d.id, f.id);
-    assert.ok(config.pesqueiros[f.pesqueiro], f.pesqueiro);
+    assert.equal(d.nome, f.nome);
+    // os limites do config (usados para só pedir o ficheiro quando a zona aparece) contêm a zona levantada
+    const [[s, w], [n, e]] = f.limites;
+    for (const [lon, lat] of d.cobertura) assert.ok(lat >= s && lat <= n && lon >= w && lon <= e, `${f.id}: ${lat}, ${lon}`);
+    if (f.aviso !== undefined) assert.ok(typeof f.aviso === "string" && f.aviso.length > 20, f.id);
   }
+});
+
+test("fundos: os quatro levantamentos, com produto, datas e SHA-256 do DEM descarregado", () => {
+  const esperado = {
+    quarteira_garrao: ["LTHQUGA1_20250612_20250616_DEM", "2025-06-12", "2025-06-16", "9e613e346a1573ae8bd34decbd5ea53c7337acc609189d865f9a38c64b251d72"],
+    praia_faro: ["LTHFA1_20250617_DEM", "2025-06-17", undefined, "f1d57bee5c3add32341ee27a0e6dd63d532e4549f1fc4ae6fccd4e6d5a39e34c"],
+    barreta_farol: ["LTHBAIF1_20201023_20201029_DEM", "2020-10-23", "2020-10-29", "1669be074174ccbfd86dd769b951467281ed738189cc6453250f63b378242185"],
+    culatra_armona: ["LTHCUAR2_20201015_20201125_DEM", "2020-10-15", "2020-11-25", "a74ee71faaae70ab14f44eab844880a8d1f5b3a56d8fa94ee14a8da03315e26b"]
+  };
+  assert.deepEqual(config.mapa.fundos.map(f => f.id).sort(), Object.keys(esperado).sort());
+  for (const f of config.mapa.fundos) {
+    const d = JSON.parse(ler(f.ficheiro)).fonte;
+    assert.deepEqual([d.produto, d.levantamento, d.levantamentoFim, d.sha256], esperado[f.id], f.id);
+    assert.equal(d.url, `https://cosmo.apambiente.pt/prd/${d.produto}`);
+  }
+});
+
+test("fundos: o aviso da zona (config) aparece no rodapé dos balões", () => {
+  const d = { ...FARO, aviso: "Zona com esporões: teste." };
+  assert.match(descricaoIsobata(-1, d), /<b>Zona com esporões: teste\.<\/b>/);
+  assert.doesNotMatch(descricaoIsobata(-1, FARO), /<b>/);
 });
 
 test("fundos: Praia de Faro — produto, data e DEM conferidos (17/06/2025)", () => {
@@ -50,11 +75,19 @@ test("fundos: Praia de Faro — fundões e cabeços dentro da zona levantada", (
   assert.deepEqual([f4.cota, f4.distancia], [-3.3, 190]);
 });
 
-test("fundos: isóbatas de 0,5 em 0,5 m, do nível médio (2 m ZH) para baixo", () => {
-  const cotas = FARO.isobatas.map(i => i.cota);
-  assert.equal(cotas[0], 2);
-  cotas.forEach((c, i) => assert.equal(c, 2 - 0.5 * i));
-  assert.ok(Math.min(...cotas) <= -12);
+test("fundos: isóbatas do nível médio (2 m ZH) para baixo: 0,5 m até −10, 1 m até −20, 5 m daí para baixo", () => {
+  for (const f of config.mapa.fundos) {
+    const cotas = JSON.parse(ler(f.ficheiro)).isobatas.map(i => i.cota);
+    assert.equal(cotas[0], 2, f.id);
+    for (let i = 1; i < cotas.length; i++) {
+      const passo = cotas[i - 1] - cotas[i];
+      const esperado = cotas[i] >= -10 ? 0.5 : cotas[i] >= -20 ? 1 : 5;
+      // pode faltar um nível sem linha (cota que o DEM não atravessa): o passo é então múltiplo
+      assert.ok(passo > 0 && Math.abs(passo / esperado - Math.round(passo / esperado)) < 1e-9, `${f.id}: ${cotas[i - 1]} → ${cotas[i]}`);
+    }
+  }
+  const faro = FARO.isobatas.map(i => i.cota);
+  assert.deepEqual(faro.filter(c => c <= -9), [-9, -9.5, -10, -11, -12]); // DEM até −12,6 m ZH
 });
 
 test("fundos: validação recusa ficheiros com erros", () => {
@@ -124,6 +157,23 @@ test("fundos: isóbata e cores", () => {
   assert.equal(corIsobata(Number.NaN), "#7a8a94");
   assert.equal(dataCurta("2025-06-17"), "17/06/2025");
   assert.equal(dataCurta("x"), "—");
+});
+
+test("fundos: período e idade do levantamento", () => {
+  assert.equal(periodoLevantamento({ levantamento: "2025-06-17" }), "17/06/2025");
+  assert.equal(mesAno({ levantamento: "2020-10-15", levantamentoFim: "2020-11-25" }), "11/2020");
+  assert.equal(mesAno({}), "—");
+  assert.equal(periodoLevantamento({ levantamento: "2025-06-12", levantamentoFim: "2025-06-16" }), "12/06/2025 a 16/06/2025");
+  const agora = new Date("2026-11-19T12:00:00Z");
+  assert.equal(idadeLevantamento({ levantamento: "2025-06-17" }, agora), "há 17 meses");
+  assert.equal(idadeLevantamento({ levantamento: "2020-10-15", levantamentoFim: "2020-11-25" }, agora), "há 5 anos");
+  assert.equal(idadeLevantamento({ levantamento: "2026-11-01" }, agora), "há menos de um mês");
+  assert.equal(idadeLevantamento({ levantamento: "2026-10-19" }, agora), "há 1 mês");
+  assert.equal(idadeLevantamento({ levantamento: "2027-01-01" }, agora), null);
+  assert.match(descricaoIsobata(-3, FARO, agora), /de 17\/06\/2025 \(há 17 meses\)/);
+  const d = structuredClone(FARO);
+  d.fonte.levantamentoFim = "2025-06-01";
+  assert.ok(validarFundos(d).erros.some(e => /levantamentoFim/.test(e)));
 });
 
 test("mapa: página com o Leaflet antes do módulo, ligação na barra e Leaflet conferido", () => {

@@ -2,7 +2,8 @@
 // OpenStreetMap ou a ortoimagem de satélite da DGT. O Leaflet vem de vendor/leaflet (window.L).
 // Os URL dos fundos de mapa estão no config.json (fonte única).
 import { loadLocalTides } from "./fontes/mares-locais.js";
-import { validarFundos, corIsobata, descricaoForma, descricaoIsobata, dataCurta } from "./fundos.js";
+import { validarFundos, corIsobata, descricaoForma, descricaoIsobata, periodoLevantamento, idadeLevantamento, mesAno }
+  from "./fundos.js";
 import { esc } from "./ui/formato.js";
 
 const L = globalThis.L;
@@ -50,7 +51,7 @@ function camadasFundos(fundos, mares) {
     for (const linha of iso.linhas) {
       L.polyline(linha.map(([lon, lat]) => [lat, lon]),
         { color: corIsobata(iso.cota), weight: inteira ? 2 : 1, opacity: 0.9 })
-        .bindPopup(() => descricaoIsobata(iso.cota, fundos))
+        .bindPopup(() => descricaoIsobata(iso.cota, fundos, new Date()))
         .addTo(isobatas);
     }
   }
@@ -68,8 +69,9 @@ function camadasFundos(fundos, mares) {
   // dentro dele e taparia os fundões e cabeços.
   const cobertura = L.polyline(fundos.cobertura.map(([lon, lat]) => [lat, lon]),
     { color: "#37474f", weight: 1.5, dashArray: "6 5" })
-    .bindPopup(`<h3>Zona levantada — ${esc(fundos.nome)}</h3><p>Levantamento do Programa COSMO de ` +
-      `${dataCurta(fundos.fonte.levantamento)}. Fora desta linha não há dados do fundo.</p>`);
+    .bindPopup(() => `<h3>Zona levantada — ${esc(fundos.nome)}</h3><p>Levantamento do Programa COSMO de ` +
+      `${periodoLevantamento(fundos.fonte)} (${idadeLevantamento(fundos.fonte) ?? "data desconhecida"}). ` +
+      "Fora desta linha não há dados do fundo.</p>");
   return { cobertura, isobatas, formas }; // por esta ordem: os fundões e cabeços ficam por cima
 }
 
@@ -123,34 +125,54 @@ async function iniciar() {
   legenda().addTo(mapa);
 
   const m = config.mares.intervaloEventoMinutos;
-  const [mares, ...lidos] = await Promise.all([
-    loadLocalTides({ url: "./mares/2026.json", minIntervalMinutes: m.minimo, maxIntervalMinutes: m.maximo }),
-    ...config.mapa.fundos.map(f => lerJson(`./${f.ficheiro}`).then(d => ({ f, d }), erro => ({ f, erro })))
-  ]);
-  const eventos = mares.ok ? mares.data : null;
-  const linhas = [];
-  for (const { f, d, erro } of lidos) {
-    const nome = config.pesqueiros[f.pesqueiro]?.nomeCurto ?? f.id;
-    const v = d ? validarFundos(d) : null;
-    if (erro || !v.ok) {
-      linhas.push(`${esc(nome)}: fundo não obtido (${esc(erro?.message ?? v.erros.slice(0, 3).join("; "))})`);
-      continue;
+  const mares = loadLocalTides({ url: "./mares/2026.json", minIntervalMinutes: m.minimo, maxIntervalMinutes: m.maximo });
+  // Cada levantamento só é pedido quando a sua zona (config: limites) entra no ecrã: os ficheiros
+  // somam vários MB e o telemóvel não precisa de todos.
+  const situacao = new Map(config.mapa.fundos.map(f => [f.id, "por carregar"]));
+  // Linha curta: só as zonas já pedidas (as outras estão nos botões por baixo).
+  const mostrarSituacao = eventos => {
+    const linhas = config.mapa.fundos.filter(f => situacao.get(f.id) !== "por carregar")
+      .map(f => `${esc(f.nome)} ${esc(situacao.get(f.id))}`);
+    if (eventos === null) linhas.push("tabela de marés não obtida (sem água por cima nos balões)");
+    estado.innerHTML = `Fundo do mar (COSMO): ${linhas.join(" · ") || "escolha uma zona"}. Critérios provisórios.`;
+  };
+  mostrarSituacao();
+  async function carregar(f) {
+    situacao.set(f.id, "a carregar…");
+    mostrarSituacao();
+    const [r, d] = await Promise.all([mares, lerJson(`./${f.ficheiro}`).catch(erro => ({ erro }))]);
+    const eventos = r.ok ? r.data : null;
+    const v = d.erro ? null : validarFundos(d);
+    if (d.erro || !v.ok) {
+      situacao.set(f.id, `não obtido (${d.erro?.message ?? v.erros.slice(0, 3).join("; ")})`);
+      mostrarSituacao(eventos);
+      return;
     }
+    d.aviso = f.aviso;
     const camadas = camadasFundos(d, eventos);
     for (const c of Object.values(camadas)) c.addTo(mapa);
-    controlo.addOverlay(camadas.isobatas, `Linhas de fundo — ${esc(nome)}`);
-    controlo.addOverlay(camadas.formas, `Fundões e cabeços — ${esc(nome)}`);
-    controlo.addOverlay(camadas.cobertura, `Zona levantada — ${esc(nome)}`);
-    linhas.push(`${esc(nome)}: levantamento de ${dataCurta(d.fonte.levantamento)}`);
+    controlo.addOverlay(camadas.isobatas, `Linhas de fundo — ${esc(f.nome)}`);
+    controlo.addOverlay(camadas.formas, `Fundões e cabeços — ${esc(f.nome)}`);
+    controlo.addOverlay(camadas.cobertura, `Zona levantada — ${esc(f.nome)}`);
+    situacao.set(f.id, mesAno(d.fonte));
+    mostrarSituacao(eventos);
+  }
+  const verificar = () => {
+    const vista = mapa.getBounds();
+    for (const f of config.mapa.fundos) {
+      if (situacao.get(f.id) === "por carregar" && vista.intersects(L.latLngBounds(f.limites))) carregar(f);
+    }
+  };
+  for (const f of config.mapa.fundos) {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "atalho";
-    b.textContent = nome;
-    b.addEventListener("click", () => mapa.fitBounds(camadas.cobertura.getBounds(), { padding: [10, 10] }));
+    b.textContent = f.nome;
+    b.addEventListener("click", () => mapa.fitBounds(L.latLngBounds(f.limites), { padding: [10, 10] }));
     atalhos.append(b);
   }
-  if (!eventos) linhas.push("tabela de marés não obtida (sem água por cima nos balões)");
-  estado.innerHTML = `Fundo do mar — ${linhas.join(" · ")}. Fundões e cabeços: critérios provisórios.`;
+  mapa.on("moveend", verificar);
+  verificar();
 }
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
