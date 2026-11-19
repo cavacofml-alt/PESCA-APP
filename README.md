@@ -109,6 +109,28 @@ Se o levantamento durou vários dias, acrescentar `--levantamento-fim AAAA-MM-DD
 
 4. Acrescentar o levantamento a `config.mapa.fundos`, com `id`, `nome`, `ficheiro` e `limites` (sul/oeste e norte/este da zona levantada). Um teste confirma que os limites contêm a zona.
 
+### Fundo típico das praias
+
+Nos cartões das praias, a linha «Fundo a 100/150/200 m» mostra a cota mediana a 100, 150 e 200 m da linha de meia-maré, num troço de ±500 m à volta do pesqueiro. Nos detalhes do cartão aparece também a água por cima na baixa-mar mais baixa e na preia-mar mais alta do dia (altura da tabela − cota). É só informação: não entra nas notas.
+
+Os valores estão em `fundos/tipico.json`, gerado por `ferramentas/fundo_tipico.py`. A fonte de cada praia escolhe-se assim:
+- usa-se o levantamento COSMO mais recente que cubra a praia;
+- se nenhum a cobrir, usa-se o **LiDAR 2011 do Instituto Hidrográfico**, publicado no EMODnet Bathymetry (`590_HR_Lidar_Algarve`):
+  - utilização pública, «não usar para navegação»;
+  - grelha de ~12 × 14 m;
+  - cotas à baixa-mar astronómica mais baixa (LAT). No confronto com o COSMO 2025 ficou 0,1 a 0,25 m acima do zero hidrográfico nas zonas fundas.
+
+Para refazer:
+
+```
+# 590_HR_Lidar_Algarve.emo.zip: https://downloads.emodnet-bathymetry.eu/high_resolution/590_HR_Lidar_Algarve.emo.zip
+python3 -I ferramentas/lidar_emodnet.py 590_HR_Lidar_Algarve.emo lidar2011.tif
+python3 -I ferramentas/fundo_tipico.py fundos/tipico.json \
+  --cosmo fundos/quarteira_garrao.json LTHQUGA1_20250612_20250616_DEM.tif \
+  --cosmo fundos/praia_faro.json LTHFA1_20250617_DEM.tif \
+  --lidar lidar2011.tif 590_HR_Lidar_Algarve.emo.zip
+```
+
 Os critérios dos fundões e cabeços estão no cabeçalho da ferramenta e ficam gravados no ficheiro (`tratamento.criterios`). São provisórios. Os bancos mudam com os temporais: vale sempre a data do levantamento, que aparece em todos os balões.
 
 ## Motor de regras (Fase 3)
