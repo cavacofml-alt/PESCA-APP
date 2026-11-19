@@ -162,9 +162,13 @@ python3 -I ferramentas/batimetria_satelite.py fundos/satelite.json \
 
 Depois, actualizar o nome e os `limites` da entrada `satelite` em `config.mapa.fundos`.
 
-### Ria Formosa e Ancão (LiDAR 2011)
+### Ria Formosa, Ancão, Vilamoura e Falésia (LiDAR 2011)
 
 O COSMO não cobre o interior da Ria Formosa nem o troço Garrão–Ancão. Para essas zonas há a camada «Ria Formosa e Ancão (LiDAR 2011)», com o levantamento LiDAR de 2011 do Instituto Hidrográfico, publicado no EMODnet Bathymetry (utilização pública, «não usar para navegação»). Cobre os canais de Faro, de Olhão e da Armona, e o mar no Ancão e na Culatra.
+
+Há uma segunda camada com o mesmo levantamento, «Vilamoura e Falésia (LiDAR 2011)», de Olhos de Água a Vilamoura: o COSMO também não cobre Vilamoura nem a Falésia. Cada camada só é pedida quando a zona aparece no ecrã.
+
+Nas duas camadas:
 - **O que mostra:** só linhas de fundo de 1 em 1 m a partir de +1 m (de 2 em 2 m abaixo de −6), sem fundões nem cabeços.
 - **Corte:** as linhas são cortadas onde há levantamento COSMO; aí vale o COSMO.
 - **Referência:** as cotas estão à LAT, 0,1–0,25 m acima do zero hidrográfico.
@@ -175,6 +179,10 @@ Para refazer:
 ```
 python3 -I ferramentas/lidar_emodnet.py 590_HR_Lidar_Algarve.emo lidar2011_ria.tif -8.07 36.94 -7.74 37.07
 python3 -I ferramentas/isobatas_lidar.py lidar2011_ria.tif fundos/ria_lidar2011.json 590_HR_Lidar_Algarve.emo.zip \
+  --excluir fundos/praia_faro.json fundos/quarteira_garrao.json fundos/barreta_farol.json fundos/culatra_armona.json
+python3 -I ferramentas/lidar_emodnet.py 590_HR_Lidar_Algarve.emo lidar2011_falesia.tif -8.23 37.02 -8.10 37.11
+python3 -I ferramentas/isobatas_lidar.py lidar2011_falesia.tif fundos/falesia_lidar2011.json 590_HR_Lidar_Algarve.emo.zip \
+  --id falesia_lidar2011 --nome "Vilamoura e Falésia (LiDAR 2011)" \
   --excluir fundos/praia_faro.json fundos/quarteira_garrao.json fundos/barreta_farol.json fundos/culatra_armona.json
 ```
 
