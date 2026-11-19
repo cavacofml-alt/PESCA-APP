@@ -412,6 +412,12 @@
         "ficheiro": "fundos/culatra_armona.json",
         "limites": [[36.9789, -7.8212], [37.0273, -7.753]],
         "aviso": "Barra da Armona: bancos de areia que secam na baixa-mar e canais que mudam muito; este levantamento é de 2020."
+      },
+      {
+        "id": "satelite",
+        "nome": "Satélite (04/11/2026)",
+        "ficheiro": "fundos/satelite.json",
+        "limites": [[36.9753, -8.214], [37.0902, -7.9568]]
       }
     ],
     "fundosBase": {
