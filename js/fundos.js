@@ -22,6 +22,9 @@ export function validarFundos(d) {
     if (typeof f[k] !== "string" || !f[k]) erros.push(`fonte.${k} em falta`);
   }
   if (!DATA.test(f.levantamento ?? "")) erros.push("fonte.levantamento não é uma data AAAA-MM-DD");
+  if (f.levantamentoFim !== undefined && (!DATA.test(f.levantamentoFim) || f.levantamentoFim <= f.levantamento)) {
+    erros.push("fonte.levantamentoFim inválido");
+  }
   if (!/^[0-9a-f]{64}$/.test(f.sha256 ?? "")) erros.push("fonte.sha256 inválido");
   if (!d.tratamento?.criterios) erros.push("tratamento.criterios em falta");
   if (!linhaValida(d.cobertura, 4)) erros.push("cobertura inválida");
@@ -37,7 +40,7 @@ export function validarFundos(d) {
       }
       if (!pontoValido(x?.ponto)) erros.push(`${onde}: ponto inválido`);
       if (!finito(x?.cota) || x.cota < -40 || x.cota > 15) erros.push(`${onde}: cota inválida`);
-      for (const k of ["distancia", "distanciaMin", "distanciaMax", "comprimento", "area"]) {
+      for (const k of ["distancia", "distanciaMin", "distanciaMax", "eixoMaior", "eixoMenor", "area"]) {
         if (!finito(x?.[k]) || x[k] < 0) erros.push(`${onde}: ${k} inválido`);
       }
       if (!linhaValida(x?.contorno, 4)) erros.push(`${onde}: contorno inválido`);
@@ -55,6 +58,33 @@ export function validarFundos(d) {
 
 // "17/06/2025" a partir de "2025-06-17".
 export const dataCurta = iso => (DATA.test(iso ?? "") ? iso.split("-").reverse().join("/") : "—");
+
+// Data do levantamento: um dia, ou o primeiro e o último quando durou vários.
+export function periodoLevantamento(fonte) {
+  const ini = dataCurta(fonte?.levantamento);
+  return fonte?.levantamentoFim ? `${ini} a ${dataCurta(fonte.levantamentoFim)}` : ini;
+}
+
+// Mês e ano do levantamento (do último dia): «06/2025».
+export function mesAno(fonte) {
+  const fim = fonte?.levantamentoFim ?? fonte?.levantamento;
+  return DATA.test(fim ?? "") ? `${fim.slice(5, 7)}/${fim.slice(0, 4)}` : "—";
+}
+
+// Idade do levantamento (a contar do último dia): «há 5 meses», «há 6 anos».
+export function idadeLevantamento(fonte, agora = new Date()) {
+  const fim = fonte?.levantamentoFim ?? fonte?.levantamento;
+  if (!DATA.test(fim ?? "")) return null;
+  const [a, m, d] = fim.split("-").map(Number);
+  const hoje = lisbonDate(agora);
+  if (!hoje) return null;
+  const [ah, mh, dh] = hoje.split("-").map(Number);
+  const meses = (ah - a) * 12 + (mh - m) - (dh < d ? 1 : 0);
+  if (meses < 0) return null;
+  if (meses < 1) return "há menos de um mês";
+  if (meses < 24) return meses === 1 ? "há 1 mês" : `há ${meses} meses`;
+  return `há ${Math.floor(meses / 12)} anos`;
+}
 
 // Cor de uma isóbata: azul-claro junto à costa (2 m ZH), azul-escuro nos -12 m ou mais fundo.
 export function corIsobata(cota) {
@@ -101,25 +131,27 @@ export function descricaoForma(forma, fundos, mares, agora = new Date()) {
   } else {
     linhas.push("<p>Água por cima: tabela de marés não obtida.</p>");
   }
-  linhas.push(`<p>Ocupa dos ${forma.distanciaMin} aos ${forma.distanciaMax} m da costa, ` +
-    `cerca de ${forma.comprimento} m ao longo da praia (${forma.area.toLocaleString("pt-PT")} m²).</p>`);
+  linhas.push(`<p>Ocupa dos ${forma.distanciaMin} aos ${forma.distanciaMax} m da costa; ` +
+    `mede cerca de ${forma.eixoMaior} × ${forma.eixoMenor} m (${forma.area.toLocaleString("pt-PT")} m²).</p>`);
   linhas.push(`<p>Coordenadas: ${forma.ponto[1].toFixed(5)}, ${forma.ponto[0].toFixed(5)}</p>`);
-  linhas.push(`<p class="fonte-mapa">${rodapeFundos(fundos)} Água por cima: calculada com a tabela de marés do ` +
+  linhas.push(`<p class="fonte-mapa">${rodapeFundos(fundos, agora)} Água por cima: calculada com a tabela de marés do ` +
     "Instituto Hidrográfico (Faro-Olhão).</p>");
   return linhas.join("");
 }
 
 // Balão de uma isóbata.
-export function descricaoIsobata(cota, fundos) {
+export function descricaoIsobata(cota, fundos, agora = new Date()) {
   return `<h3>${num(cota, 1)} m ao zero hidrográfico</h3>` +
     `<p>Linha de igual cota do fundo (${num(2 - cota, 1)} m abaixo do nível médio).</p>` +
-    `<p class="fonte-mapa">${rodapeFundos(fundos)}</p>`;
+    `<p class="fonte-mapa">${rodapeFundos(fundos, agora)}</p>`;
 }
 
 // Fonte, tipo e data, em todos os balões do fundo.
-export function rodapeFundos(fundos) {
+export function rodapeFundos(fundos, agora = new Date()) {
   const f = fundos.fonte;
-  return `Medido: levantamento do Programa COSMO (APA) de ${dataCurta(f.levantamento)}, ` +
-    `produto ${esc(f.produto)}; tratado nesta app (critérios provisórios). ` +
-    "Costa = linha de 2 m ZH (nível médio). Os bancos mudam com os temporais.";
+  const idade = idadeLevantamento(f, agora);
+  return `Medido: levantamento do Programa COSMO (APA) de ${periodoLevantamento(f)}` +
+    `${idade ? ` (${idade})` : ""}, produto ${esc(f.produto)}; tratado nesta app (critérios provisórios). ` +
+    "Costa = linha de 2 m ZH (nível médio). Os bancos mudam com os temporais." +
+    (fundos.aviso ? ` <b>${esc(fundos.aviso)}</b>` : "");
 }
