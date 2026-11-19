@@ -3,8 +3,9 @@
 // Requisitos das revisões da Fase 3: nunca mostrar uma nota incompleta como definitiva —
 // intervalo, períodos sem nota, parcelas por avaliar, n.d. e «por confirmar» sempre visíveis.
 // Função pura: devolve HTML (texto escapado).
-import { esc, hora, horaIso, num, rotuloDia, classeNota, textoNota, NOME_ESPECIE, PERIODO_CURTO, NOME_MARE } from "./formato.js";
+import { esc, hora, horaIso, num, rotuloDia, classeNota, textoNota, NOME_ESPECIE, PERIODO_CURTO, NOME_MARE, rumo } from "./formato.js";
 import { ordenarMelhoresDias } from "../regras/notas.js";
+import { resumoBoia } from "../fontes/ih-boias.js";
 
 export const ESPECIES = ["robalo", "dourada"];
 
@@ -65,6 +66,46 @@ function resumo(analise, indice, config, especie) {
     <p><span class="rot">Maré</span><span>${d.amplitude.amplitude === null ? `não obtida${d.amplitude.motivo ? ` (${esc(d.amplitude.motivo)})` : ""}`
       : `${num(d.amplitude.amplitude, 1)} m · ${esc(d.amplitude.classe)}`}${d.repontos ? `<br>${esc(maresPorTipo(d.repontos))}` : ""}</span></p>
     ${ali.length ? `<div class="alinhamento"><b>Alinhamento</b> ${ali.map(a => esc(textoAlinhamento(a))).join("; ")}</div>` : ""}
+  </section>`;
+}
+
+// Valor da boia com o estado quando não há valor (nunca um número inventado).
+const valorBoia = (x, casas, unidade) => (x.estado === "obtido" ? `${num(x.valor, casas)} ${unidade}` : x.estado);
+
+// Previsão do Open-Meteo para a hora certa mais próxima da medição, no ponto indicado no config.
+function previsaoParaHora(contexto, ponto, instante) {
+  const h = contexto.pontos?.mar?.[ponto]?.data?.hourly;
+  const i = h?.time?.indexOf(Math.round(instante / 3600000) * 3600) ?? -1;
+  if (i < 0 || !Number.isFinite(h.wave_height?.[i])) return null;
+  return { instante: h.time[i] * 1000, hs: h.wave_height[i], periodo: h.wave_period?.[i] };
+}
+
+// Boia de Faro (Instituto Hidrográfico): o mar medido agora, ao lado da previsão para a mesma
+// hora. Só para ver: não entra nas notas.
+function marAgora(contexto) {
+  const b = contexto.config.boias?.faro;
+  const r = contexto.boiaFaro;
+  if (!b || !r) return "";
+  const topo = `<h3>Mar agora <small>· ${esc(b.nome)} · observado</small></h3>`;
+  if (!r.ok) return `<section class="mar-agora" aria-label="Mar agora">${topo}<p class="falha">Não obtido${r.error ? ` — ${esc(r.error)}` : ""}</p></section>`;
+  const s = resumoBoia(r.data, { agora: new Date(Date.parse(contexto.lidoEm)), maxIdadeHoras: b.maxIdadeHoras });
+  if (!s) return `<section class="mar-agora" aria-label="Mar agora">${topo}<p class="falha">Sem medições válidas nas últimas ${esc(b.horas)} h</p></section>`;
+  const u = s.ultima;
+  const prev = previsaoParaHora(contexto, b.previsaoPonto, u.instante);
+  const linhas = [
+    ["Onda", `${valorBoia(u.hm0, 2, "m")}${u.hmax.estado === "obtido" ? ` (máx. ${num(u.hmax.valor, 2)} m)` : ""}${u.direcao.estado === "obtido" ? ` · de ${rumo(u.direcao.valor)} (${num(u.direcao.valor, 0)}°)` : ""}`],
+    ["Período", `médio ${valorBoia(u.tm02, 1, "s")} · de pico ${valorBoia(u.tp, 1, "s")}`],
+    ["Água", valorBoia(u.agua, 1, "°C")],
+    ["Tendência", `${s.tresHorasAntes ? `3 h antes ${num(s.tresHorasAntes.hm0.valor, 2)} m · ` : ""}últimas ${b.horas} h: ${num(s.minimo, 2)}–${num(s.maximo, 2)} m`]
+  ];
+  const nomePonto = Object.values(contexto.config.pesqueiros).find(p => p.mar === b.previsaoPonto)?.nomeCurto ?? b.previsaoPonto;
+  if (prev) linhas.push(["Previsão", `Open-Meteo às ${hora(prev.instante)} (${nomePonto}): ${num(prev.hs, 2)} m${Number.isFinite(prev.periodo) ? `, período ${num(prev.periodo, 1)} s` : ""}`]);
+  const idade = s.idadeMin >= 60 ? `há ${Math.floor(s.idadeMin / 60)} h ${s.idadeMin % 60} min` : `há ${s.idadeMin} min`;
+  return `<section class="mar-agora" aria-label="Mar agora">${topo}
+    ${s.desactualizada ? `<p class="falha">Última medição ${esc(idade)}: desactualizada</p>` : ""}
+    <dl class="factos">${linhas.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
+    <p class="fonte-boia">Medido às ${esc(hora(u.instante))} (${esc(idade)}) ao largo, a ${esc(b.profundidadeM)} m de fundo: na praia a onda chega diferente. Não entra nas notas.<br>
+    Instituto Hidrográfico, boia ${esc(b.codigo)} (${esc(b.latitude)}, ${esc(b.longitude)}) · observado · lido às ${esc(horaIso(r.readAt))} · <a href="${esc(b.licencaUrl)}" target="_blank" rel="noopener">${esc(b.licenca)}</a></p>
   </section>`;
 }
 
@@ -237,6 +278,7 @@ export function renderInicio(contexto) {
     ${escolhaEspecie(especie)}
     ${faixaDias(analise, indice, especie)}
     ${resumo(analise, indice, contexto.config, especie)}
+    ${marAgora(contexto)}
     <section class="cartoes">${Object.entries(d.pesqueiros).map(([id, p]) => cartao(id, p, d, contexto)).join("")}</section>
     <p class="legenda">Créditos das fotografias na página <a href="./diagnostico.html">Fontes</a>.</p>
     <p class="legenda">Notas de 1 a 5 por período (madrugada 00–06, manhã 06–12, tarde 12–18, noite 18–24, hora de Portugal continental). <b class="mini nd">n.d.</b> sem dados suficientes · <b class="mini pc">?</b> por confirmar no terreno. Todas as notas são provisórias.</p>`;
