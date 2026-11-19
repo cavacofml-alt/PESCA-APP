@@ -12,6 +12,7 @@ referência LAT). Saída no formato de fundos/<id>.json (o mesmo do COSMO), mas:
 Dependências: numpy, scipy, rasterio, pyproj, shapely, scikit-image. Uso:
   python3 -I ferramentas/isobatas_lidar.py lidar2011_ria.tif fundos/ria_lidar2011.json \\
       590_HR_Lidar_Algarve.emo.zip --excluir fundos/praia_faro.json fundos/quarteira_garrao.json ...
+  Vilamoura e Falésia: --id falesia_lidar2011 --nome "Vilamoura e Falésia (LiDAR 2011)" (ver o README).
 """
 import argparse
 import importlib.util
