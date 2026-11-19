@@ -5,15 +5,17 @@ zero hidrográfico, 2 m abaixo do nível médio). O ficheiro original não entra
 o acesso é limitado a utilizadores registados no COSMO. Só o resultado tratado é guardado.
 
 Saída (JSON, lida pelo ecrã «Mapa»):
-  - isobatas: linhas de igual cota, de 0,5 em 0,5 m, do nível médio (2 m ZH) para baixo;
+  - isobatas: linhas de igual cota do nível médio (2 m ZH) para baixo: de 0,5 em 0,5 m até
+    -10 m ZH, de 1 em 1 m até -20 m e de 5 em 5 m daí para baixo (fora do alcance do surfcasting);
   - formas: fundões e cabeços, com o ponto mais fundo / menos fundo, a cota e o contorno;
   - cobertura: contorno da zona levantada;
   - fonte e tratamento: produto, data do levantamento, SHA-256 do DEM e critérios usados.
 
 Fundões e cabeços (critérios provisórios, iguais para todos os DEM, guardados na saída):
   1. distância à costa = distância ao ponto mais próximo com cota >= 2 m ZH (nível médio);
-  2. perfil típico = mediana das cotas à mesma distância da costa (classes de 1 m), numa janela
-     de 1000 m ao longo da costa;
+  2. perfil típico = mediana das cotas à mesma distância da costa (classes de 1 m), tomadas nos
+     pontos cujo ponto de costa mais próximo fica a 500 m ou menos (serve para costas curvas,
+     cabos e barras entre ilhas);
   3. anomalia = cota - perfil típico (filtro de mediana 3 x 3 para tirar o ruído);
   4. fundão: anomalia <= -0,4 m; cabeço: anomalia >= +0,4 m; zonas com pelo menos 1000 m²,
      entre 15 e 320 m da costa, e cuja anomalia mais forte fica a 200 m da costa ou menos;
@@ -23,7 +25,8 @@ Dependências (só para correr esta ferramenta; a app não usa Python):
   pip install numpy scipy rasterio pyproj shapely scikit-image
 Uso:
   python3 -I ferramentas/fundos_cosmo.py DEM.tif fundos/<id>.json --id <id> --nome "<nome>" \\
-      --produto <produto COSMO> --levantamento AAAA-MM-DD --url <página do produto no COSMO>
+      --produto <produto COSMO> --levantamento AAAA-MM-DD [--levantamento-fim AAAA-MM-DD] \\
+      --url <página do produto no COSMO>
 """
 import argparse
 import datetime as dt
@@ -44,14 +47,16 @@ VERSAO = 1
 CRITERIOS = {
     "cotaCostaM": 2.0,          # nível médio = 2,00 m acima do zero hidrográfico (Faro-Olhão)
     "classeDistanciaM": 1.0,
-    "janelaCostaM": 1000.0,
+    "raioCostaM": 500.0,
     "limiarAnomaliaM": 0.4,
     "areaMinimaM2": 1000.0,
     "distanciaMinimaM": 15.0,
     "faixaM": 320.0,
     "distanciaMaximaM": 200.0,
-    "isobatasIntervaloM": 0.5,
+    # [até esta cota (m ZH), intervalo (m)]: 0,5 m até -10, 1 m até -20, 5 m daí para baixo
+    "isobatasNiveis": [[-10.0, 0.5], [-20.0, 1.0], [-100.0, 5.0]],
 }
+CELULA_COSTA_M = 50.0
 PASSO_FORMAS = 2      # 0,3 m x 2 = 0,6 m
 PASSO_ISOBATAS = 4    # 0,3 m x 4 = 1,2 m
 SIMPLIFICAR_M = 0.6
@@ -78,7 +83,7 @@ def ler(caminho, passo):
         a = ds.read(1, out_shape=forma, resampling=Resampling.average, masked=True)
         t = ds.transform * ds.transform.scale(ds.width / forma[1], ds.height / forma[0])
         info = {"largura": ds.width, "altura": ds.height, "limites": list(ds.bounds)}
-    z = a.filled(np.nan).astype(float)
+    z = a.filled(np.nan).astype(np.float32)
     z[(z < -100) | (z > 100)] = np.nan
     return z, t, info
 
@@ -108,14 +113,6 @@ class Geo:
         return [[round(float(a), 6), round(float(b), 6)] for a, b in zip(lon, lat)]
 
 
-def eixo_costa(x, y):
-    """Direcção principal (unitária) dos pontos da costa, orientada para leste."""
-    p = np.column_stack([x - x.mean(), y - y.mean()])
-    _, _, vt = np.linalg.svd(p, full_matrices=False)
-    u = vt[0]
-    return u if u[0] >= 0 else -u
-
-
 def mar_principal(z, cota):
     """Maior zona ligada com cota abaixo do nível médio: o mar (deixa de fora lagoas e poças)."""
     mar = np.isfinite(z) & (z < cota)
@@ -127,24 +124,31 @@ def mar_principal(z, cota):
     return lab == tam.argmax()
 
 
-def perfil_tipico(dist, s, z, sel, c):
-    """Mediana da cota por classe de distância, numa janela ao longo da costa (ver cabeçalho)."""
-    db = np.floor(dist[sel] / c["classeDistanciaM"]).astype(int)
-    passo_s = 50.0
-    sb = np.floor((s[sel] - s[sel].min()) / passo_s).astype(int)
-    zv = z[sel]
-    meia = int(round(c["janelaCostaM"] / 2 / passo_s))
-    m = np.full(zv.shape, np.nan)
-    ordem = np.lexsort((sb, db))
-    db_o, sb_o, z_o = db[ordem], sb[ordem], zv[ordem]
+def perfil_tipico(dist, cx, cy, zv, c):
+    """Mediana da cota por classe de distância à costa, entre os pontos cujo ponto de costa mais
+    próximo fica a menos de raioCostaM (ver cabeçalho). Os pontos de costa são agrupados em
+    células de 50 m; entram as células cujo centro fica dentro do raio."""
+    from scipy.spatial import cKDTree
+    db = np.floor(dist / c["classeDistanciaM"]).astype(np.int64)
+    cel_x = np.floor(cx / CELULA_COSTA_M).astype(np.int64)
+    cel_y = np.floor(cy / CELULA_COSTA_M).astype(np.int64)
+    celulas, cel = np.unique(np.column_stack([cel_x, cel_y]), axis=0, return_inverse=True)
+    cel = cel.ravel()
+    centros = (celulas + 0.5) * CELULA_COSTA_M
+    vizinhas = cKDTree(centros).query_ball_point(centros, r=c["raioCostaM"])
+    m = np.full(zv.shape, np.nan, dtype=np.float32)
+    ordem = np.lexsort((cel, db))
+    db_o, cel_o = db[ordem], cel[ordem]
     fronteiras = np.flatnonzero(np.diff(db_o)) + 1
     for ini, fim in zip(np.r_[0, fronteiras], np.r_[fronteiras, len(db_o)]):
-        sbs, zs = sb_o[ini:fim], z_o[ini:fim]
-        for k in np.unique(sbs):
-            a, b = np.searchsorted(sbs, [k - meia, k + meia + 1])
-            med = np.median(zs[a:b])
-            sel_k = slice(ini + np.searchsorted(sbs, k), ini + np.searchsorted(sbs, k + 1))
-            m[ordem[sel_k]] = med
+        cs = cel_o[ini:fim]
+        zs = zv[ordem[ini:fim]]
+        presentes, primeiro = np.unique(cs, return_index=True)
+        limites = dict(zip(presentes.tolist(), zip(primeiro.tolist(), np.r_[primeiro[1:], len(cs)].tolist())))
+        for k in presentes.tolist():
+            partes = [zs[a:b] for a, b in (limites[v] for v in vizinhas[k] if v in limites)]
+            a, b = limites[k]
+            m[ordem[ini + a:ini + b]] = np.median(np.concatenate(partes))
     return m
 
 
@@ -154,18 +158,15 @@ def formas(z, t, geo, c):
     dist_px, (li, co) = ndi.distance_transform_edt(~terra, return_indices=True)
     passo = abs(t.a)
     dist = dist_px * passo
-    # eixo ao longo da costa: pontos de terra que tocam no mar
-    borda = terra & ndi.binary_dilation(mar)
-    bx, by = xy(t, *np.nonzero(borda))
-    u = eixo_costa(bx, by)
     faixa = mar & (dist <= c["faixaM"])
-    # posição ao longo da costa do ponto de costa mais próximo de cada célula da faixa
-    cx, cy = xy(t, li[faixa], co[faixa])
-    s = np.full(z.shape, np.nan)
-    s[faixa] = (cx - bx.mean()) * u[0] + (cy - by.mean()) * u[1]
+    # ponto de costa mais próximo de cada célula da faixa (coordenadas EPSG:3763)
+    cxf, cyf = xy(t, li[faixa], co[faixa])
+    cx = np.full(z.shape, np.nan)
+    cy = np.full(z.shape, np.nan)
+    cx[faixa], cy[faixa] = cxf, cyf
     del li, co
-    m = np.full(z.shape, np.nan)
-    m[faixa] = perfil_tipico(dist, s, z, faixa, c)
+    m = np.full(z.shape, np.nan, dtype=np.float32)
+    m[faixa] = perfil_tipico(dist[faixa], cxf, cyf, z[faixa], c)
     anomalia = np.where(faixa, z - m, 0.0)
     anomalia = ndi.median_filter(anomalia, size=3)
     anomalia[~faixa] = 0.0
@@ -192,24 +193,27 @@ def formas(z, t, geo, c):
             cont = max(measure.find_contours(sub.astype(float), 0.5), key=len)
             px, py = xy_continuo(t, cont[:, 0] + reg.slice[0].start - 1, cont[:, 1] + reg.slice[1].start - 1)
             poli = Polygon(np.column_stack([px, py])).simplify(SIMPLIFICAR_M)
-            sv = s[ll, cc]
             saida.append({
-                "tipo": tipo, "s": float(s[lp, cp]),
+                "_costa": float(cx[lp, cp]),   # ordem ao longo da costa (de poente para nascente)
+                "tipo": tipo,
                 "ponto": [lon, lat], "cota": round(float(z[lp, cp]), 2),
                 "anomalia": round(float(an[e]), 2),
                 "distancia": int(round(float(dist[lp, cp]))),
                 "distanciaMin": int(round(float(dist[ll, cc].min()))),
                 "distanciaMax": int(round(float(dist[ll, cc].max()))),
-                "comprimento": int(round(float(sv.max() - sv.min()))),
+                # tamanho da zona: eixos da elipse com os mesmos momentos (arredondados a 10 m)
+                "eixoMaior": int(round(reg.axis_major_length * passo, -1)),
+                "eixoMenor": int(round(reg.axis_minor_length * passo, -1)),
                 "area": int(round(area)),
                 "contorno": geo.linha(list(poli.exterior.coords)),
             })
-    saida.sort(key=lambda f: f["s"])
+    # numeração pela posição do ponto de costa mais próximo, de poente para nascente
+    saida.sort(key=lambda f: f["_costa"])
     n = {"fundão": 0, "cabeço": 0}
     for f in saida:
         n[f["tipo"]] += 1
         f["id"] = ("F" if f["tipo"] == "fundão" else "C") + str(n[f["tipo"]])
-        del f["s"]
+        del f["_costa"]
     return saida
 
 
@@ -223,12 +227,26 @@ def suavizar(z, sigma):
     return out
 
 
+def niveis_isobatas(c, minimo):
+    """Cotas das isóbatas, do nível médio para baixo, até à cota mais funda do DEM."""
+    niveis, topo = [], c["cotaCostaM"]
+    for ate, passo in c["isobatasNiveis"]:
+        n = 0
+        while True:
+            nivel = round(topo - n * passo, 2)
+            if nivel < ate - 1e-9 or nivel < minimo:
+                break
+            if not niveis or nivel < niveis[-1]:
+                niveis.append(nivel)
+            n += 1
+        topo = ate
+    return niveis
+
+
 def isobatas(z, t, geo, c):
     zs = suavizar(z, 1.0)
     valido = np.isfinite(zs)
-    topo = c["cotaCostaM"]
-    fundo = math.floor(np.nanmin(zs) / c["isobatasIntervaloM"]) * c["isobatasIntervaloM"]
-    niveis = np.round(np.arange(topo, fundo - 1e-9, -c["isobatasIntervaloM"]), 2)
+    niveis = niveis_isobatas(c, float(np.nanmin(zs)))
     zz = np.where(valido, zs, np.nanmax(zs))
     saida = []
     for nivel in niveis:
@@ -258,10 +276,13 @@ def main():
     ap.add_argument("--id", required=True)
     ap.add_argument("--nome", required=True)
     ap.add_argument("--produto", required=True)
-    ap.add_argument("--levantamento", required=True, help="data do levantamento (AAAA-MM-DD)")
+    ap.add_argument("--levantamento", required=True, help="data do levantamento (AAAA-MM-DD); se durou vários dias, o primeiro")
+    ap.add_argument("--levantamento-fim", help="último dia do levantamento (AAAA-MM-DD), se durou vários dias")
     ap.add_argument("--url", required=True)
     a = ap.parse_args()
-    dt.date.fromisoformat(a.levantamento)
+    inicio = dt.date.fromisoformat(a.levantamento)
+    if a.levantamento_fim and dt.date.fromisoformat(a.levantamento_fim) <= inicio:
+        sys.exit("--levantamento-fim tem de ser depois de --levantamento")
     geo = Geo()
     z, t, info = ler(a.dem, PASSO_FORMAS)
     zi, ti, _ = ler(a.dem, PASSO_ISOBATAS)
@@ -273,6 +294,7 @@ def main():
             "nome": "Agência Portuguesa do Ambiente, Programa COSMO",
             "produto": a.produto,
             "levantamento": a.levantamento,
+            **({"levantamentoFim": a.levantamento_fim} if a.levantamento_fim else {}),
             "url": a.url,
             "resolucaoM": 0.3,
             "referenciaVertical": "zero hidrográfico (2,00 m abaixo do nível médio, Cascais 1938)",
