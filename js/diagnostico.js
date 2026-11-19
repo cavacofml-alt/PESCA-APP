@@ -5,6 +5,7 @@ import { loadLocalTides } from "./fontes/mares-locais.js";
 import { getSunAndMoon } from "./fontes/suncalc.js";
 import { getBoia } from "./fontes/ih-boias.js";
 import { pontosNecessarios } from "./pontos.js";
+import { registarServiceWorker } from "./registo-sw.js";
 
 const $ = selector => document.querySelector(selector);
 const resultRoot = $("#results");
@@ -61,7 +62,5 @@ async function run() {
   $("#refresh").disabled = false;
 }
 $("#refresh").addEventListener("click", run);
-if ("serviceWorker" in navigator && location.protocol !== "file:") {
-  navigator.serviceWorker.register("./sw.js").catch(() => {});
-}
+registarServiceWorker();
 run();
