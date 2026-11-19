@@ -4,6 +4,7 @@ import { analisarDias } from "./regras/analise.js";
 import { renderInicio, ESPECIES } from "./ui/inicio.js";
 import { renderHorario } from "./ui/horario.js";
 import { esc } from "./ui/formato.js";
+import { registarServiceWorker } from "./registo-sw.js";
 
 const raiz = document.querySelector("#app");
 const painel = document.querySelector("#horario");
@@ -67,7 +68,5 @@ async function actualizar() {
   }
 }
 
-if ("serviceWorker" in navigator && location.protocol !== "file:") {
-  navigator.serviceWorker.register("./sw.js").catch(() => {});
-}
+registarServiceWorker();
 actualizar();

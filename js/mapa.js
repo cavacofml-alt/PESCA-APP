@@ -5,6 +5,7 @@ import { loadLocalTides } from "./fontes/mares-locais.js";
 import { validarFundos, corIsobata, descricaoForma, descricaoIsobata, periodoLevantamento, idadeLevantamento, mesAno,
   estimado } from "./fundos.js";
 import { esc } from "./ui/formato.js";
+import { registarServiceWorker } from "./registo-sw.js";
 
 const L = globalThis.L;
 const estado = document.querySelector("#estado-mapa");
@@ -184,7 +185,5 @@ async function iniciar() {
   verificar();
 }
 
-if ("serviceWorker" in navigator && location.protocol !== "file:") {
-  navigator.serviceWorker.register("./sw.js").catch(() => {});
-}
+registarServiceWorker();
 iniciar();

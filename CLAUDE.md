@@ -67,6 +67,7 @@ Regras de trabalho:
 - GitHub Actions: workflow que corre `node --test` em cada push/PR. Publicação: Cloudflare (secção 2), a cada merge para `main`.
 - Bibliotecas de terceiros (ex.: SunCalc, licença BSD-2) ficam em `vendor/` com o ficheiro de licença.
 - Ao mudar qualquer ficheiro da shell do `sw.js` (JS, CSS, HTML, fotos): `node ferramentas/versao-sw.mjs` antes do commit. Sem isso o telemóvel fica com o código antigo e a config nova (aconteceu no PR #6); um teste falha se for esquecido.
+- Recarga automática (19/11/2026, aprovada pelo utilizador): `js/registo-sw.js` recarrega a página uma vez quando o service worker novo toma conta dela (evento `controllerchange`; não na primeira instalação). Antes, depois de cada publicação, a primeira abertura corria o código antigo com a config nova (a 19/11 o código antigo recusou a data «2011» da camada LiDAR e não a desenhou).
 
 ---
 
