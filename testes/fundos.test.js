@@ -299,8 +299,8 @@ test("referência vertical (revisão de 19/11/2026): LiDAR à LAT com o limite d
   for (const id of ["ria_lidar2011", "falesia_lidar2011"]) {
     const D = JSON.parse(ler(`fundos/${id}.json`));
     assert.equal(D.fonte.datum, "LAT", id);
-    assert.deepEqual(intervaloLat(D.fonte), [0, 0.34], id);
-    assert.match(D.fonte.referenciaVertical, /0 a 0,34 m acima do zero hidrográfico \(IH, Tabela de Marés 2026/);
+    assert.deepEqual(intervaloLat(D.fonte), [0, 0.22], id);
+    assert.match(D.fonte.referenciaVertical, /0 a 0,22 m acima do zero hidrográfico \(IH, Tabelas de Marés 2026 e 2027/);
   }
   for (const id of ["praia_faro", "quarteira_garrao", "barreta_farol", "culatra_armona", "satelite"]) {
     assert.equal(intervaloLat(JSON.parse(ler(`fundos/${id}.json`)).fonte), null, id);
@@ -318,7 +318,7 @@ test("balão de uma linha LiDAR: «à LAT» e o intervalo ao zero hidrográfico;
   const D = JSON.parse(ler("fundos/ria_lidar2011.json"));
   const html = descricaoIsobata(-2, D, new Date("2026-11-19T12:00:00Z"));
   assert.match(html, /<h3>−2,0 m à LAT<\/h3>/);
-  assert.match(html, /Ao zero hidrográfico da tabela de marés fica entre −2,0 e −1,7 m/);
+  assert.match(html, /Ao zero hidrográfico da tabela de marés fica entre −2,0 e −1,8 m/);
   assert.doesNotMatch(html, /ao zero hidrográfico<\/h3>/);
   assert.doesNotMatch(html, /Costa = linha de 2 m ZH/, "o LiDAR não usa a linha de costa");
   assert.match(descricaoIsobata(-3, FARO), /<h3>−3,0 m ao zero hidrográfico<\/h3>/);

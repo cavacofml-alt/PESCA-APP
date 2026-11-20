@@ -55,7 +55,10 @@ function deFicheiros(pasta) {
 }
 
 const pontos = origem === "--rede" ? await daRede() : deFicheiros(origem);
-const mares = validateTides(JSON.parse(fs.readFileSync(new URL("mares/2026.json", raiz), "utf8"))).events;
+// Tabelas de marés dos anos que existirem (mares/<ano>.json), juntas e validadas na passagem de ano.
+const anosMares = fs.readdirSync(new URL("mares/", raiz)).filter(f => /^\d{4}\.json$/.test(f)).sort();
+const mares = validateTides({ schemaVersion: 1, events: anosMares.flatMap(f =>
+  validateTides(JSON.parse(fs.readFileSync(new URL(`mares/${f}`, raiz), "utf8"))).events) }).events;
 const inicio = primeiro ?? lisbonDate(new Date());
 const dias = Array.from({ length: Number(nDias) }, (_, i) => lisbonDate(new Date(limitesDiaLisboa(inicio).inicio + 12 * 3600000), i));
 const sol = (dia, ponto) => {

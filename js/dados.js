@@ -4,7 +4,7 @@
 // isso é do motor (js/regras/).
 import { getMarine } from "./fontes/open-meteo-marine.js";
 import { getForecast } from "./fontes/open-meteo-forecast.js";
-import { loadLocalTides } from "./fontes/mares-locais.js";
+import { loadTidesForWindow } from "./fontes/mares-locais.js";
 import { getBoia } from "./fontes/ih-boias.js";
 import { carregarFundoTipico } from "./fontes/fundo-tipico.js";
 import { pontosNecessarios } from "./pontos.js";
@@ -40,12 +40,14 @@ export function luaDoDia(SunCalc) {
 }
 
 export async function carregarDados({ config, fetchImpl = fetch, SunCalc = globalThis.SunCalc,
-  agora = new Date(), urlMares = "./mares/2026.json", urlFundo = "./fundos/tipico.json" }) {
+  agora = new Date(), urlMares = ano => `./mares/${ano}.json`, urlFundo = "./fundos/tipico.json" }) {
   const pts = pontosNecessarios(config);
   const pedidos = [
     ...pts.mar.map(k => getMarine({ ...config.locais[k], baseUrl: config.fontes.marineBase, fetchImpl, now: agora })),
     ...pts.terra.map(k => getForecast({ ...config.locais[k], baseUrl: config.fontes.forecastBase, fetchImpl, now: agora })),
-    loadLocalTides({ url: urlMares, fetchImpl, now: agora,
+    // Tabelas dos anos que a janela toca (dois dias de folga de cada lado, para os repontos à volta).
+    loadTidesForWindow({ inicio: agora.getTime() - 2 * 86400000,
+      fim: agora.getTime() + ((config.horizonteDias ?? 7) + 2) * 86400000, urlFor: urlMares, fetchImpl, now: agora,
       minIntervalMinutes: config.mares.intervaloEventoMinutos.minimo,
       maxIntervalMinutes: config.mares.intervaloEventoMinutos.maximo })
   ];
