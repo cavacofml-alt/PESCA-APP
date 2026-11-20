@@ -55,16 +55,21 @@ Não há dependências a instalar (o `package.json` só indica que os `.js` são
 
 ## Tabela de marés
 
-`mares/2026.json` foi gerado a partir da tabela oficial do Instituto Hidrográfico (Tabela de Marés 2026, Vol. I, Porto de Faro-Olhão, págs. 2-121 a 2-124). Horas em TU (UTC); alturas referidas ao zero hidrográfico (2,00 m abaixo do nível médio, Cascais 1938); resolução de 0,1 m. A tabela não indica PM/BM: o tipo é deduzido pela alternância das alturas e validado.
+`mares/2026.json` e `mares/2027.json` foram gerados a partir das tabelas oficiais do Instituto Hidrográfico (Tabela de Marés, Vol. I, Porto de Faro-Olhão, págs. 2-121 a 2-124, que são as páginas 143 a 146 do PDF nos dois anos). Horas em TU (UTC); alturas referidas ao zero hidrográfico (2,00 m abaixo do nível médio, Cascais 1938); resolução de 0,1 m. A tabela não indica PM/BM: o tipo é deduzido pela alternância das alturas e validado.
 
-Para gerar o ano seguinte, com o PDF do IH e o `pdftotext` (poppler) instalado:
+**Um ficheiro por ano.** A app lê os anos que a janela de 7 dias toca (`loadTidesForWindow` em `js/fontes/mares-locais.js`): perto do fim do ano lê os dois e confere a passagem de ano (ordem, alternância, intervalo). Se faltar o ano seguinte, os dias que dependem dele ficam «tabela incompleta» (nunca «sem repontos») e a página «Fontes» diz «obtido em parte».
+
+**Licenças.** A de 2026 diz «© Copyright Instituto Hidrográfico». A de 2027 está sob CC BY-NC-ND 4.0: permite copiar e redistribuir sem adaptações e sem fins comerciais, e o IH pede autorização para outros usos (formulário em hidrografico.pt). O ficheiro JSON é uma transcrição dos valores; a licença fica registada no campo `licence`.
+
+Para gerar o ano seguinte, com o PDF do IH (loja.hidrografico.pt, «Publicações digitais», gratuito) e o `pdftotext` (poppler) instalado:
 
 ```
-for p in <páginas de Faro-Olhão>; do pdftotext -f $p -l $p -bbox Tabela.pdf pasta/p$p.html; done
-python3 ferramentas/mares_ih.py pasta mares/AAAA.json $(sha256sum Tabela.pdf | cut -d' ' -f1)
+for p in 143 144 145 146; do pdftotext -f $p -l $p -bbox Tabela.pdf pasta/p$p.html; done
+python3 ferramentas/mares_ih.py pasta mares/AAAA.json $(sha256sum Tabela.pdf | cut -d' ' -f1) \
+  --ano AAAA --paginas 143 144 145 146 --url <página de descarga> --licenca "<licença>"
 ```
 
-O script recusa escrever se alguma validação falhar (dias seguidos, dia da semana impresso, alternância, intervalos, 365/366 dias). Ajustar `PAGINAS` e o ano no script.
+Confirmar antes as páginas de Faro-Olhão no índice do PDF. O script recusa escrever se alguma validação falhar (dias seguidos, dia da semana impresso, alternância, intervalos, 365/366 dias do ano). Depois, conferir à mão alguns dias na imagem do PDF e os extremos com os níveis característicos do Capítulo 3 (PMmáx. e BMmín.).
 
 ## Mapa e fundo do mar
 
@@ -119,7 +124,7 @@ Os valores estão em `fundos/tipico.json`, gerado por `ferramentas/fundo_tipico.
 - se nenhum a cobrir, usa-se o **LiDAR 2011 do Instituto Hidrográfico**, publicado no EMODnet Bathymetry (`590_HR_Lidar_Algarve`):
   - utilização pública, «não usar para navegação»;
   - grelha de ~12 × 14 m;
-  - cotas à baixa-mar astronómica mais baixa (LAT), segundo a ficha. Em Faro-Olhão a LAT fica 0 a 0,34 m acima do zero hidrográfico da tabela de marés: o IH diz que o ZH fica abaixo da LAT, e a baixa-mar mínima de 2026 é 0,34 m. Por isso, nas praias com o LiDAR, a água por cima aparece como intervalo (por exemplo «2,0–2,3 m»), sem correcção constante. No confronto com o COSMO 2025, as cotas LiDAR das zonas fundas ficaram 0,1 a 0,25 m acima das do COSMO.
+  - cotas à baixa-mar astronómica mais baixa (LAT), segundo a ficha. Em Faro-Olhão a LAT fica 0 a 0,22 m acima do zero hidrográfico da tabela de marés: o IH diz que o ZH fica abaixo da LAT, e a LAT não passa da baixa-mar mínima de nenhum ano (0,34 m em 2026, 0,22 m em 2027). Por isso, nas praias com o LiDAR, a água por cima aparece como intervalo (por exemplo «2,0–2,3 m»), sem correcção constante. No confronto com o COSMO 2025, as cotas LiDAR das zonas fundas ficaram 0,1 a 0,25 m acima das do COSMO.
 
 Para refazer:
 
@@ -172,7 +177,7 @@ Há uma segunda camada com o mesmo levantamento, «Vilamoura e Falésia (LiDAR 2
 Nas duas camadas:
 - **O que mostra:** só linhas de fundo de 1 em 1 m a partir de +1 m (de 2 em 2 m abaixo de −6), sem fundões nem cabeços.
 - **Corte:** as linhas são cortadas onde há levantamento COSMO; aí vale o COSMO.
-- **Referência:** as cotas estão à LAT, que em Faro-Olhão fica 0 a 0,34 m acima do zero hidrográfico. O balão de cada linha diz «à LAT» e mostra o intervalo ao ZH.
+- **Referência:** as cotas estão à LAT, que em Faro-Olhão fica 0 a 0,22 m acima do zero hidrográfico. O balão de cada linha diz «à LAT» e mostra o intervalo ao ZH.
 - **Idade:** é de 2011, por isso os canais e os bancos já mudaram.
 
 Para refazer:
