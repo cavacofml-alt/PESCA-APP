@@ -10,6 +10,12 @@ export function hora(ms) {
   return utcToLisbon(new Date(ms))?.slice(11, 16) ?? "—";
 }
 export const horaIso = iso => hora(Date.parse(iso));
+// "DD/MM às HH:MM" na hora legal de Portugal continental; "—" sem valor.
+export function dataHora(ms) {
+  if (typeof ms !== "number" || !Number.isFinite(ms)) return "—";
+  const l = utcToLisbon(new Date(ms));
+  return l ? `${l.slice(8, 10)}/${l.slice(5, 7)} às ${l.slice(11, 16)}` : "—";
+}
 
 // Número com vírgula decimal (pt-PT); "—" sem valor.
 export function num(v, casas = 1) {

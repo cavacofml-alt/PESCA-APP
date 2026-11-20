@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { limitesDiaLisboa } from "../js/normalizacao.js";
 import { horasOpenMeteo, porDia } from "../js/regras/serie.js";
-import { potenciaHora, potenciaMaximaDoDia, AVISO_PERIODO_PICO } from "../js/regras/potencia.js";
+import { potenciaHora, potenciaMaximaDoDia, FONTE_PERIODO } from "../js/regras/potencia.js";
 import { classificarComponentes, energia } from "../js/regras/componentes.js";
 import { classificarAmplitude, amplitudesConsecutivas, CLASSE_MARE } from "../js/regras/mares.js";
 import { getSunAndMoon } from "../js/fontes/suncalc.js";
@@ -35,34 +35,51 @@ test("série Open-Meteo: as duas 01:00 de 25/10 ficam no mesmo dia, com instante
 
 // ---------- Potência (regra 5) ----------
 
-test("potência: P = 0,49 × Hs² × T com o período médio", () => {
-  const p = potenciaHora({ hs: 1.0, periodoMedio: 7.0, periodoPico: 9.0 }, COEF);
+test("potência: P = 0,49 × Hs² × T com o wave_period do Open-Meteo (indicador provisório)", () => {
+  const p = potenciaHora({ hs: 1.0, periodo: 7.0 }, COEF);
   assert.equal(p.valor, 0.49 * 1 * 1 * 7);
-  assert.equal(p.periodo, "médio");
+  assert.equal(p.fontePeriodo, "wave_period (Open-Meteo)");
+  assert.equal(p.fontePeriodo, FONTE_PERIODO);
   assert.equal(p.aviso, null);
+  // O máximo do dia diz de onde veio o período; a fórmula e o valor não mudam.
+  const m = potenciaMaximaDoDia([{ instante: 0, wave_height: 1.0, wave_period: 7.0 }], COEF);
+  assert.deepEqual([m.valor, m.fontePeriodo], [3.43, FONTE_PERIODO]);
 });
 
-test("potência: sem período médio usa o de pico, com aviso; sem os dois → não obtido", () => {
-  const p = potenciaHora({ hs: 1.0, periodoMedio: null, periodoPico: 9.0 }, COEF);
-  assert.equal(p.periodo, "pico");
-  assert.equal(p.aviso, AVISO_PERIODO_PICO);
-  const n = potenciaHora({ hs: 1.0, periodoMedio: null, periodoPico: null }, COEF);
-  assert.equal(n.valor, null);
-  assert.equal(n.status, "não obtido");
+test("potência: o período do Open-Meteo não é apresentado como médio nem de energia (revisão de 20/11/2026)", () => {
+  // A definição espectral do wave_period não está confirmada: nem nomes nem textos o identificam
+  // como período médio, Tm02, Tm−1,0 ou período de energia.
+  const codigo = ["js/regras/potencia.js", "js/regras/limo.js", "js/regras/sul.js"].map(f => readFileSync(f, "utf8")).join("\n");
+  assert.doesNotMatch(codigo, /periodoMedio|periodo: "médio"/);
+  const pot = config.potenciaOndas;
+  assert.doesNotMatch(JSON.stringify(pot), /medio|médio|energia/i);
+  assert.equal(pot.periodo, "wave_period (Open-Meteo)");
+  assert.equal(pot.coeficiente, 0.49);
+});
+
+test("potência: sem período → não obtido; o período de pico nunca o substitui (decisão de 20/11/2026)", () => {
+  // Mesmo que venha um período de pico, não entra: um período de pico não é o período de energia.
+  for (const r of [{ hs: 1.0, periodo: null, periodoPico: 9.0 }, { hs: 1.0, periodo: undefined }]) {
+    const p = potenciaHora(r, COEF);
+    assert.deepEqual(p, { valor: null, status: "não obtido", fontePeriodo: null, aviso: null });
+  }
+  // Um registo do Open-Meteo com wave_peak_period mas sem wave_period: potência não obtida.
+  const reg = { instante: 0, wave_height: 1.2, wave_period: null, wave_peak_period: 11 };
+  assert.equal(potenciaMaximaDoDia([reg], COEF).status, "não obtido");
 });
 
 test("potência: Hs em falta → não obtido; valores impossíveis → inválido", () => {
-  assert.equal(potenciaHora({ hs: null, periodoMedio: 7 }).status, "não obtido");
-  assert.equal(potenciaHora({ hs: -0.5, periodoMedio: 7 }).status, "inválido");
-  assert.equal(potenciaHora({ hs: NaN, periodoMedio: 7 }).status, "inválido");
-  assert.equal(potenciaHora({ hs: 1, periodoMedio: 0 }).status, "inválido");
-  assert.equal(potenciaHora({ hs: 1, periodoMedio: -3 }).status, "inválido");
+  assert.equal(potenciaHora({ hs: null, periodo: 7 }).status, "não obtido");
+  assert.equal(potenciaHora({ hs: -0.5, periodo: 7 }).status, "inválido");
+  assert.equal(potenciaHora({ hs: NaN, periodo: 7 }).status, "inválido");
+  assert.equal(potenciaHora({ hs: 1, periodo: 0 }).status, "inválido");
+  assert.equal(potenciaHora({ hs: 1, periodo: -3 }).status, "inválido");
 });
 
 test("potência: fronteiras 0,99 / 1,00 / 1,50 kW/m (valores exactos para a Fase de notas)", () => {
   // Hs = 1, T escolhido para dar P exacta: T = P / 0,49
   for (const alvo of [0.99, 1.0, 1.5]) {
-    const p = potenciaHora({ hs: 1, periodoMedio: alvo / 0.49 }, COEF);
+    const p = potenciaHora({ hs: 1, periodo: alvo / 0.49 }, COEF);
     assert.ok(Math.abs(p.valor - alvo) < 1e-12, String(alvo));
   }
 });
