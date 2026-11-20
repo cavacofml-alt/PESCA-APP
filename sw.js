@@ -1,18 +1,18 @@
 // Mudar a versão sempre que a shell mudar: a activação apaga as caches antigas.
 // A impressão abaixo (SHA-256 dos ficheiros da SHELL) é conferida por um teste; para actualizar
 // a impressão e a versão de uma vez: node ferramentas/versao-sw.mjs
-const CACHE = "surfcasting-shell-v20";
-// impressão da shell: 2607dfa85ce6
+const CACHE = "surfcasting-shell-v22";
+// impressão da shell: 6b6ac2e8c33b
 const SHELL = [
-  "./", "./index.html", "./diagnostico.html", "./mapa.html", "./manifest.webmanifest", "./css/base.css", "./css/app.css",
+  "./", "./index.html", "./diagnostico.html", "./mapa.html", "./fontes.html", "./manifest.webmanifest", "./css/app.css",
   "./js/app.js", "./js/diagnostico.js", "./js/dados.js", "./js/normalizacao.js", "./js/pontos.js",
-  "./js/mapa.js", "./js/fundos.js", "./js/registo-sw.js",
-  "./js/ui/formato.js", "./js/ui/inicio.js", "./js/ui/horario.js",
+  "./js/mapa.js", "./js/fundos.js", "./js/registo-sw.js", "./js/pagina-fontes.js",
+  "./js/ui/formato.js", "./js/ui/inicio.js", "./js/ui/horario.js", "./js/ui/fontes.js",
   "./assets/fotos/ria.jpg", "./assets/fotos/praia_faro.jpg", "./assets/fotos/ancao.jpg",
   "./assets/fotos/almargem.jpg", "./assets/fotos/molhe_quarteira.jpg",
   "./js/fontes/http.js", "./js/fontes/open-meteo-tempo.js",
   "./js/fontes/open-meteo-marine.js", "./js/fontes/open-meteo-forecast.js",
-  "./js/fontes/ipma-mar.js", "./js/fontes/ih-boias.js", "./js/fontes/fundo-tipico.js",
+  "./js/fontes/ih-boias.js", "./js/fontes/fundo-tipico.js",
   "./js/fontes/mares-locais.js", "./js/fontes/suncalc.js",
   "./js/regras/serie.js", "./js/regras/sectores.js", "./js/regras/potencia.js",
   "./js/regras/componentes.js", "./js/regras/mares.js",

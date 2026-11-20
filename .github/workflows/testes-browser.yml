@@ -1,0 +1,32 @@
+# Testes no browser (Playwright, só de desenvolvimento; aprovado pelo utilizador a 20/11/2026).
+# Sem Internet nos testes: a app é servida localmente e as APIs respondem com testes/reais/.
+# As capturas (Pixel 7 e 360 px) ficam como artifact para a revisão do PR.
+name: Testes no browser
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: capturas-${{ github.run_id }}-${{ github.run_attempt }}
+          path: saida-browser/
+          retention-days: 14
+          if-no-files-found: warn

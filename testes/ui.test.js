@@ -113,14 +113,6 @@ test("ecrã: marés por extenso (preia-mar / baixa-mar), sem PM nem BM", () => {
   assert.ok(!/\b(PM|BM) \d\d:\d\d/.test(html));
 });
 
-test("Fontes: créditos de todas as fotografias, com autor e licença", () => {
-  const src = readFileSync(new URL("js/diagnostico.js", raiz), "utf8");
-  assert.match(src, /Créditos das fotografias/);
-  const comFoto = Object.values(config.pesqueiros).filter(pq => pq.foto);
-  assert.ok(comFoto.length >= 5);
-  for (const pq of comFoto) assert.ok(pq.foto.autor && pq.foto.licenca && pq.foto.pagina, pq.nomeCurto);
-});
-
 // ---------- Boia de Faro (observado) ----------
 import { lerCoberturaBoia } from "../js/fontes/ih-boias.js";
 const BOIA = lerCoberturaBoia(lerJson("testes/reais/ih_boia_faro_20261115.json"));

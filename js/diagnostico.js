@@ -1,6 +1,5 @@
 import { getMarine } from "./fontes/open-meteo-marine.js";
 import { getForecast } from "./fontes/open-meteo-forecast.js";
-import { getSeaForecastDay } from "./fontes/ipma-mar.js";
 import { loadTidesForWindow } from "./fontes/mares-locais.js";
 import { getSunAndMoon } from "./fontes/suncalc.js";
 import { getBoia } from "./fontes/ih-boias.js";
@@ -15,12 +14,6 @@ const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({
 const showStatus = result => `<span class="status ${result.ok ? "ok" : "fail"}">${result.ok ? "Obtido" : "Não obtido"}</span>`;
 function card(title, result, details = "") {
   return `<article class="card"><h2>${esc(title)}</h2>${showStatus(result)}<p>${esc(result.error ?? (result.aviso ? `Obtido em parte: ${result.aviso}.` : "Pedido concluído."))}</p>${details}</article>`;
-}
-// Créditos das fotografias dos cartões (exigidos pelas licenças CC BY e CC BY-SA).
-function creditosFotos(config) {
-  const linhas = Object.values(config.pesqueiros ?? {}).filter(pq => pq.foto).map(pq =>
-    `<li>${esc(pq.nomeCurto ?? pq.nome)}: <a href="${esc(pq.foto.pagina)}" target="_blank" rel="noopener">${esc(pq.foto.autor)}</a>, ${esc(pq.foto.licenca)} (Wikimedia Commons; recortada e reduzida)</li>`);
-  return `<article class="card" id="creditos"><h2>Créditos das fotografias</h2><ul>${linhas.join("")}</ul></article>`;
 }
 async function run() {
   $("#refresh").disabled = true;
@@ -37,7 +30,6 @@ async function run() {
   const pedidos = [
     ...pontos.mar.map(k => [`Open-Meteo Marine — ${k}`, getMarine({ ...locais[k], baseUrl: fontes.marineBase })]),
     ...pontos.terra.map(k => [`Open-Meteo Forecast — ${k}`, getForecast({ ...locais[k], baseUrl: fontes.forecastBase })]),
-    ...[0, 1, 2].map(d => [`IPMA — estado do mar dia ${d}`, getSeaForecastDay(d, { baseUrl: fontes.ipmaSeaForecastBase })]),
     ["Marés locais — Faro-Olhão", loadTidesForWindow({ inicio: Date.now() - 2 * 86400000,
       fim: Date.now() + 9 * 86400000,
       minIntervalMinutes: config.mares.intervaloEventoMinutos.minimo,
@@ -58,7 +50,6 @@ async function run() {
     }, null, 2))}</pre></details>` : "")).join("");
   const solar = getSunAndMoon(new Date(), config.locais.faroTerra.latitude, config.locais.faroTerra.longitude);
   resultRoot.insertAdjacentHTML("beforeend", card("Sol e Lua — SunCalc", solar));
-  resultRoot.insertAdjacentHTML("beforeend", creditosFotos(config));
   $("#updated").textContent = `Última tentativa: ${new Date().toLocaleString("pt-PT", { timeZone: config.fusoHorario })}`;
   $("#refresh").disabled = false;
 }

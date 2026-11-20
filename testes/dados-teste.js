@@ -44,19 +44,3 @@ export const TIDE_FIXTURE = Object.freeze({
     { instant: "2026-10-25T11:30:00Z", type: "PM", heightM: 3.2, source: "fixture" }
   ]
 });
-
-// Estado do mar IPMA (hp-daily-sea-forecast-dayN.json). Valores inventados para teste;
-// nomes dos campos conforme a secção 9 do CLAUDE.md.
-export function ipmaMarFixture(forecastDate) {
-  return {
-    owner: "IPMA", country: "PT", forecastDate, dataUpdate: `${forecastDate}T06:00:00`,
-    data: [
-      { globalIdLocal: 1080526, latitude: "37.1933", longitude: "-8.0",
-        waveHighMin: "0.5", waveHighMax: "1.0", wavePeriodMin: "6.0", wavePeriodMax: "8.0",
-        predWaveDir: "SW", sstMin: "19.5", sstMax: "20.1", totalSeaMin: "0.6", totalSeaMax: "1.2" },
-      { globalIdLocal: 1110600, latitude: "38.7", longitude: "-9.4",
-        waveHighMin: "1.5", waveHighMax: "2.0", wavePeriodMin: "9.0", wavePeriodMax: "11.0",
-        predWaveDir: "NW", sstMin: "17.5", sstMax: "18.0", totalSeaMin: "1.6", totalSeaMax: "2.2" }
-    ]
-  };
-}
