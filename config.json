@@ -504,14 +504,14 @@
         "nome": "Ria Formosa e Ancão (LiDAR 2011)",
         "ficheiro": "fundos/ria_lidar2011.json",
         "limites": [[36.9562, -8.0699], [37.0652, -7.7399]],
-        "aviso": "LiDAR de 2011 (há 15 anos): os canais da Ria e da barra e os bancos mudam muito; serve de orientação, não de medição actual. Cotas à baixa-mar astronómica (LAT), 0,1 a 0,25 m acima do zero hidrográfico. Só aparece onde não há levantamento COSMO."
+        "aviso": "LiDAR de 2011 (há 15 anos): os canais da Ria e da barra e os bancos mudam muito; serve de orientação, não de medição actual. Cotas à baixa-mar astronómica (LAT), 0 a 0,22 m acima do zero hidrográfico. Só aparece onde não há levantamento COSMO."
       },
       {
         "id": "falesia_lidar2011",
         "nome": "Vilamoura e Falésia (LiDAR 2011)",
         "ficheiro": "fundos/falesia_lidar2011.json",
         "limites": [[37.0597, -8.2299], [37.0941, -8.1002]],
-        "aviso": "LiDAR de 2011 (há 15 anos): os bancos mudam com os temporais; serve de orientação, não de medição actual. Cotas à baixa-mar astronómica (LAT), 0,1 a 0,25 m acima do zero hidrográfico. Só aparece onde não há levantamento COSMO."
+        "aviso": "LiDAR de 2011 (há 15 anos): os bancos mudam com os temporais; serve de orientação, não de medição actual. Cotas à baixa-mar astronómica (LAT), 0 a 0,22 m acima do zero hidrográfico. Só aparece onde não há levantamento COSMO."
       }
     ],
     "fundosBase": {
