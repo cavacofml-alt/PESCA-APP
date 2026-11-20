@@ -15,6 +15,9 @@
 // se conhece: nenhum dos serviços identifica a corrida. O admp_updated_data das capacidades do WMTS
 // é a actualização do conjunto de dados de cada camada, nunca a hora da corrida.
 //
+// Open-Meteo: «obtido» só se todas as horas recebidas tiverem wave_height E wave_period; com lacunas
+// fica «parcial» (dados e lacunas guardados) e a recolha não é completa.
+//
 // Boia: «obtido» só se houver pelo menos uma medição com Hm0 E Tm02 válidos (QC 1 ou 2, dentro dos
 // limites físicos). Uma resposta sem medições utilizáveis não serve para validar.
 //
@@ -172,8 +175,27 @@ async function recolherOpenMeteo({ agora, op, falhas, relogio }) {
   om.valores = h.time.map((t, k) => ({ t: t * 1000, k }))
     .filter(({ t }) => t > consultadoEm && t % HORA === 0)
     .map(({ t, k }) => ({ validAt: iso(t), antecedenciaH: horas(t - consultadoEm), wave_height: num(h.wave_height?.[k]), wave_period: num(h.wave_period?.[k]) }));
-  om.horasSemValor = om.valores.filter(x => x.wave_height === null || x.wave_period === null).length;
-  om.estado = om.valores.length ? "obtido" : "inválido";
+  // Revisão de 20/11/2026: resposta recebida e estruturalmente válida ≠ todas as horas utilizáveis.
+  // Uma hora só serve se tiver wave_height E wave_period. «obtido» = todas as horas servem; com
+  // lacunas fica «parcial» (os valores e as lacunas guardam-se); sem nenhuma, «sem valores
+  // utilizáveis». Só «obtido» conta para uma recolha completa.
+  om.respostaValida = true;
+  om.horasRecebidas = om.valores.length;
+  om.horasComPar = om.valores.filter(x => x.wave_height !== null && x.wave_period !== null).length;
+  om.horasSemValor = om.horasRecebidas - om.horasComPar;
+  om.lacunas = om.valores.filter(x => x.wave_height === null || x.wave_period === null).map(x => x.validAt);
+  if (!om.horasRecebidas) {
+    om.estado = "inválido";
+    falhas.push({ fonte: "openMeteo", estado: om.estado, erro: "resposta sem horas depois da consulta" });
+  } else if (!om.horasComPar) {
+    om.estado = "sem valores utilizáveis";
+    falhas.push({ fonte: "openMeteo", estado: om.estado, erro: `${om.horasRecebidas} horas recebidas, nenhuma com wave_height e wave_period` });
+  } else if (om.horasSemValor) {
+    om.estado = "parcial";
+    falhas.push({ fonte: "openMeteo", estado: om.estado, erro: `${om.horasSemValor} de ${om.horasRecebidas} horas sem wave_height ou wave_period` });
+  } else {
+    om.estado = "obtido";
+  }
   om.hashConteudo = sha256(om.valores.map(({ validAt, wave_height, wave_period }) => [validAt, wave_height, wave_period]));
   return om;
 }
@@ -220,7 +242,7 @@ export function resumoTexto(doc) {
     `IBI: ${i.estado}${i.dataset ? ` (${i.dataset}; actualização do conjunto: ${Object.entries(i.actualizacaoConjunto).map(([v, a]) => `${v} ${a}`).join(", ")})` : ""}` +
       (p ? ` · ${p.obtidos}/${p.total} valores · ${p.erros} erros · ${p.invalidos} inválidos · ${p.semDados} sem dados · ${p.naoPedidos} não pedidos · ${p.comRepeticao} com repetição` : "") +
       (i.celulas ? ` · célula ${i.celulas.map(c => `${c.lat}, ${c.lon}`).join(" | ")}` : ""),
-    `Open-Meteo: ${o.estado}${o.valores ? ` · ${o.valores.length} h (${o.horasSemValor} sem valor) · célula ${o.celula.lat}, ${o.celula.lon}` : ` · ${o.motivo ?? ""}`}`,
+    `Open-Meteo: ${o.estado}${o.valores ? ` · ${o.horasComPar}/${o.horasRecebidas} h com wave_height e wave_period (${o.horasSemValor} com lacunas) · célula ${o.celula.lat}, ${o.celula.lon}` : ` · ${o.motivo ?? ""}`}`,
     `Boia: ${b.estado}${b.observacoes ? ` · ${b.medicoesRecebidas} medições, ${b.paresValidos} com Hm0 e Tm02 válidos (${b.janela.inicio} a ${b.janela.fim})` : ` · ${b.motivo ?? ""}`}`,
     `Falhas registadas: ${doc.falhas.length}`
   ].join("\n");

@@ -23,9 +23,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      # Data de fim autorizada. Ensaio técnico de ~72 h; os 30 dias só começam com nova autorização
-      # do utilizador (muda-se esta data num PR). Sem data, o script não recolhe nada.
-      RECOLHA_ATE: "2026-11-24T00:00:00Z"
+      # Data de fim autorizada. Ensaio técnico de ~72 h: primeira recolha agendada a 21/11 às 01:17 UTC
+      # e última a 24/11 às 01:17 UTC (13 recolhas). O fim às 03:00 deixa margem para o atraso dos
+      # agendamentos do GitHub e exclui a das 07:17. Os 30 dias só com nova autorização do utilizador
+      # (muda-se esta data num PR). Sem data, o script não recolhe nada.
+      RECOLHA_ATE: "2026-11-24T03:00:00Z"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

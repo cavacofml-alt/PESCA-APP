@@ -57,7 +57,7 @@ export function relatorio(docs) {
 
   // Cada camada do IBI tem o seu admp_updated_data: analisa-se uma a uma, porque não está demonstrado
   // que as três se actualizam ao mesmo tempo.
-  linhas.push(`## Recolhas`, ``, `| retrievedAt | Completa | Duração | IBI obtidos | Repetições | Falhas | Boia: pares válidos | Camadas com actualização nova | IBI mudou (VHM0 · VTM02 · VTM10) | OM mudou |`, `|---|---|---|---|---|---|---|---|---|---|`);
+  linhas.push(`## Recolhas`, ``, `| retrievedAt | Completa | Duração | IBI obtidos | Repetições | Falhas | Boia: pares válidos | OM: horas utilizáveis | Camadas com actualização nova | IBI mudou (VHM0 · VTM02 · VTM10) | OM mudou |`, `|---|---|---|---|---|---|---|---|---|---|---|`);
   const coerencia = Object.fromEntries(CAMADAS.map(v => [v, { actualizouEMudou: 0, actualizouSemMudar: 0, mudouSemActualizar: 0, nemUmNemOutro: 0 }]));
   let desalinhadas = 0;
   validos.forEach((d, k) => {
@@ -76,7 +76,7 @@ export function relatorio(docs) {
     }
     const co = ant ? compararValores(ant.openMeteo?.valores, d.openMeteo?.valores, ["wave_height", "wave_period"]) : null;
     const p = d.ibi?.pedidos;
-    linhas.push(`| ${d.retrievedAt} | ${d.recolha?.completa ? "sim" : "**não**"} | ${d.recolha?.duracaoS ?? "—"} s | ${p ? `${p.obtidos}/${p.total}` : "—"} | ${p?.comRepeticao ?? "—"} | ${d.falhas?.length ?? "—"} | ${d.boia?.paresValidos ?? "—"} | ${ant ? (novas.join(", ") || "nenhuma") : "—"} | ${ant ? mudou.join(" · ") : "—"} | ${co ? `${co.mudaram}/${co.comuns}` : "—"} |`);
+    linhas.push(`| ${d.retrievedAt} | ${d.recolha?.completa ? "sim" : "**não**"} | ${d.recolha?.duracaoS ?? "—"} s | ${p ? `${p.obtidos}/${p.total}` : "—"} | ${p?.comRepeticao ?? "—"} | ${d.falhas?.length ?? "—"} | ${d.boia?.paresValidos ?? "—"} | ${d.openMeteo?.horasRecebidas ? `${d.openMeteo.horasComPar}/${d.openMeteo.horasRecebidas}` : "—"} | ${ant ? (novas.join(", ") || "nenhuma") : "—"} | ${ant ? mudou.join(" · ") : "—"} | ${co ? `${co.mudaram}/${co.comuns}` : "—"} |`);
   });
   linhas.push(``, `## O admp_updated_data acompanha as mudanças dos valores do IBI? (por camada)`, ``,
     `| Camada | Actualizou e os valores mudaram | Actualizou sem mudarem | **Mudaram sem actualizar** | Nem um nem outro |`, `|---|---|---|---|---|`,

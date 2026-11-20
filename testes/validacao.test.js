@@ -119,7 +119,7 @@ test("validação: no máximo N pedidos em simultâneo, resultados pela ordem", 
 
 // fetch simulado: capacidades reais, valores do WMTS calculados a partir da variável e da hora,
 // Open-Meteo sintético e a boia real. `falhar(variavel, iso, tentativa)` devolve um estado HTTP a forçar.
-function servidor({ falhar = () => null, omUnidades = { time: "unixtime", wave_height: "m", wave_period: "s" }, capStatus = 200 } = {}) {
+function servidor({ falhar = () => null, omUnidades = { time: "unixtime", wave_height: "m", wave_period: "s" }, capStatus = 200, omNulo = () => null } = {}) {
   const tentativas = new Map();
   const pedidos = [];
   const f = async url => {
@@ -140,7 +140,8 @@ function servidor({ falhar = () => null, omUnidades = { time: "unixtime", wave_h
       const t0 = Date.parse("2026-11-20T00:00:00Z") / 1000;
       const time = Array.from({ length: 192 }, (_, i) => t0 + i * 3600);
       return resp(200, { latitude: 36.875, longitude: -7.8749847, hourly_units: omUnidades,
-        hourly: { time, wave_height: time.map((_, i) => 1 + i / 1000), wave_period: time.map(() => 8.5) } });
+        hourly: { time, wave_height: time.map((_, i) => (["hs", "ambos"].includes(omNulo(i)) ? null : 1 + i / 1000)),
+          wave_period: time.map((_, i) => (["tp", "ambos"].includes(omNulo(i)) ? null : 8.5)) } });
     }
     if (url.startsWith("https://ogcapi.hidrografico.pt/")) return resp(200, BOIA_JSON);
     return resp(404, "");
@@ -170,6 +171,8 @@ test("validação: recolha completa — todos os pedidos com valor, uma célula,
   assert.equal(d.openMeteo.valores[0].validAt, "2026-11-20T17:00:00Z");
   assert.equal(d.openMeteo.valores.length, 192 - 17);
   assert.match(d.openMeteo.modelo, /não identificado/);
+  assert.deepEqual([d.openMeteo.respostaValida, d.openMeteo.horasRecebidas, d.openMeteo.horasComPar, d.openMeteo.horasSemValor, d.openMeteo.lacunas],
+    [true, 175, 175, 0, []]);
   // Boia: a resposta real de 15/11, com o QC de cada valor; o registo com QC 9 fica com valor null.
   assert.equal(d.boia.estado, "obtido");
   const q9 = d.boia.observacoes.find(o => o.hm0_qc === 9);
@@ -340,4 +343,44 @@ test("validação: relatório analisa a actualização de cada camada do IBI em 
   assert.match(r, /\| VTM10 \| 0 \| 1 \| \*\*0\*\* \| 1 \|/);  // actualizou sem mudar
   assert.match(r, /datas de actualização diferentes: 2\./);
   assert.match(r, /\| 2026-11-21T07:17:00Z \|[^\n]*\| VTM02 \| 1\/1 · 1\/1 · 0\/1 \|/);
+});
+
+// ---------- Revisão de 20/11/2026 (2.ª): Open-Meteo com horas sem valor ----------
+
+test("validação: Open-Meteo com algumas horas sem valor → «parcial», dados e lacunas guardados, recolha incompleta", async () => {
+  // Índices da série sintética (começa a 20/11 00:00 UTC): 30 sem wave_height, 31 sem wave_period, 40 sem os dois.
+  const nulo = i => ({ 30: "hs", 31: "tp", 40: "ambos" })[i] ?? null;
+  const { f } = servidor({ omNulo: nulo });
+  const d = await recolher({ agora: AGORA, fetchImpl: f, dormir: semEspera, relogio: relogioFixo() });
+  const om = d.openMeteo;
+  assert.equal(om.respostaValida, true);
+  assert.equal(om.estado, "parcial");
+  assert.deepEqual([om.horasRecebidas, om.horasComPar, om.horasSemValor], [175, 172, 3]);
+  assert.deepEqual(om.lacunas, ["2026-11-21T06:00:00Z", "2026-11-21T07:00:00Z", "2026-11-21T16:00:00Z"]);
+  // Os dados parciais ficam: o valor que existe guarda-se, o que falta fica null.
+  const v = Object.fromEntries(om.valores.map(x => [x.validAt, x]));
+  assert.deepEqual([v["2026-11-21T06:00:00Z"].wave_height, v["2026-11-21T06:00:00Z"].wave_period], [null, 8.5]);
+  assert.deepEqual([v["2026-11-21T07:00:00Z"].wave_height, v["2026-11-21T07:00:00Z"].wave_period], [1.031, null]);
+  assert.deepEqual([v["2026-11-21T16:00:00Z"].wave_height, v["2026-11-21T16:00:00Z"].wave_period], [null, null]);
+  assert.equal(v["2026-11-21T08:00:00Z"].wave_height, 1.032);
+  assert.equal(d.recolha.completa, false);
+  assert.equal(d.recolha.partes.openMeteo, "parcial");
+  assert.deepEqual(d.falhas, [{ fonte: "openMeteo", estado: "parcial", erro: "3 de 175 horas sem wave_height ou wave_period" }]);
+  // O IBI e a boia continuam completos: a falha é só do Open-Meteo.
+  assert.equal(d.ibi.estado, "completa");
+  assert.equal(d.boia.estado, "obtido");
+});
+
+test("validação: Open-Meteo sem nenhuma hora utilizável → «sem valores utilizáveis», recolha incompleta", async () => {
+  for (const nulo of [() => "ambos", i => (i % 2 ? "hs" : "tp")]) {
+    const { f } = servidor({ omNulo: nulo });
+    const d = await recolher({ agora: AGORA, fetchImpl: f, dormir: semEspera, relogio: relogioFixo() });
+    const om = d.openMeteo;
+    assert.equal(om.respostaValida, true);
+    assert.equal(om.estado, "sem valores utilizáveis");
+    assert.deepEqual([om.horasRecebidas, om.horasComPar, om.horasSemValor, om.lacunas.length], [175, 0, 175, 175]);
+    assert.equal(om.valores.length, 175, "a resposta fica guardada");
+    assert.equal(d.recolha.completa, false);
+    assert.deepEqual(d.falhas, [{ fonte: "openMeteo", estado: "sem valores utilizáveis", erro: "175 horas recebidas, nenhuma com wave_height e wave_period" }]);
+  }
 });
