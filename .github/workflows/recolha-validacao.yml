@@ -1,0 +1,41 @@
+# Experiência de validação de previsões junto à boia de Faro (autorizada a 20/11/2026).
+# Guarda previsões do Copernicus IBI WAV e do Open-Meteo antes de os instantes chegarem, e as
+# observações da boia, como artifacts (nada vai para o main nem para o site). Não muda notas.
+# O agendamento só corre a partir do ramo por omissão (main). Fora do minuto zero, porque o GitHub
+# pode atrasar ou descartar agendamentos nas horas de muita carga.
+name: Recolha para validação
+
+on:
+  schedule:
+    - cron: "17 1,7,13,19 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Nunca duas recolhas ao mesmo tempo (a segunda espera pela primeira).
+concurrency:
+  group: recolha-validacao
+  cancel-in-progress: false
+
+jobs:
+  recolha:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Data de fim autorizada. Ensaio técnico de ~72 h; os 30 dias só começam com nova autorização
+      # do utilizador (muda-se esta data num PR). Sem data, o script não recolhe nada.
+      RECOLHA_ATE: "2026-11-24T00:00:00Z"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node ferramentas/validacao/recolha.mjs --saida saida
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: recolha-${{ github.run_id }}-${{ github.run_attempt }}
+          path: saida/
+          retention-days: 60
+          if-no-files-found: warn

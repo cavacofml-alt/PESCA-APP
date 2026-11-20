@@ -1,0 +1,31 @@
+# Relatório do ensaio da recolha de validação. Só corre a pedido (Actions → «Análise da validação» →
+# Run workflow). Junta os artifacts das recolhas e escreve o relatório no registo e no resumo da
+# execução. Não publica nada.
+name: Análise da validação
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  analise:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Descarregar os artifacts das recolhas
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p dados
+          for id in $(gh run list --workflow recolha-validacao.yml --status completed --limit 300 --json databaseId --jq '.[].databaseId'); do
+            gh run download "$id" --dir "dados/$id" || echo "Execução $id sem artifacts"
+          done
+      - name: Relatório
+        run: node ferramentas/validacao/ensaio.mjs dados | tee -a "$GITHUB_STEP_SUMMARY"
