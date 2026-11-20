@@ -324,3 +324,16 @@ test("balão de uma linha LiDAR: «à LAT» e o intervalo ao zero hidrográfico;
   assert.match(descricaoIsobata(-3, FARO), /<h3>−3,0 m ao zero hidrográfico<\/h3>/);
   assert.match(descricaoIsobata(-3, FARO), /Costa = linha de 2 m ZH/);
 });
+
+test("mapa: o aviso das camadas LiDAR diz o mesmo intervalo LAT/ZH que os ficheiros (0 a 0,22 m)", () => {
+  // Antes dizia «0,1 a 0,25 m acima do zero hidrográfico», que é a diferença LiDAR–COSMO, não a LAT.
+  const camadas = config.mapa.fundos.filter(f => f.id.endsWith("lidar2011"));
+  assert.equal(camadas.length, 2);
+  for (const c of camadas) {
+    const d = JSON.parse(ler(c.ficheiro));
+    const [a, b] = d.fonte.latAcimaZhM;
+    const txt = v => String(v).replace(".", ",");
+    assert.ok(c.aviso.includes(`(LAT), ${txt(a)} a ${txt(b)} m acima do zero hidrográfico`), c.id);
+    assert.doesNotMatch(c.aviso, /0,1 a 0,25 m acima do zero/, c.id);
+  }
+});
