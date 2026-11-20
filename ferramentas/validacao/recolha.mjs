@@ -8,9 +8,15 @@
 // - Open-Meteo Marine (wave_height, wave_period) no ponto da boia, 8 dias hora a hora;
 // - as observações da boia das últimas 48 h, com o controlo de qualidade (QC) de cada valor.
 //
-// A antecedência é validAt − retrievedAt: um LIMITE INFERIOR da antecedência real, porque a corrida
-// começou antes e nenhum dos serviços a identifica. O admp_updated_data das capacidades do WMTS é a
-// actualização do conjunto de dados, nunca a hora da corrida.
+// Horas: cada consulta tem a sua (consultadoEm: quando a resposta chegou). No IBI, cada valor tem a
+// hora do seu pedido; no Open-Meteo e na boia, a hora do único pedido. retrievedAt é só o início da
+// recolha (identifica-a). A antecedência é validAt − consultadoEm: a antecedência com que o valor
+// estava disponível ao consultá-lo. A antecedência desde a corrida do modelo é maior ou igual e não
+// se conhece: nenhum dos serviços identifica a corrida. O admp_updated_data das capacidades do WMTS
+// é a actualização do conjunto de dados de cada camada, nunca a hora da corrida.
+//
+// Boia: «obtido» só se houver pelo menos uma medição com Hm0 E Tm02 válidos (QC 1 ou 2, dentro dos
+// limites físicos). Uma resposta sem medições utilizáveis não serve para validar.
 //
 // Uma recolha só é «completa» se TODOS os pedidos tiverem valor; senão fica «incompleta», com cada
 // falha registada (erro de rede, HTTP, inválido, sem dados ou não pedido por falta de tempo).
@@ -24,7 +30,7 @@ import { lerCoberturaBoia } from "../../js/fontes/ih-boias.js";
 import { WMTS_BASE, PRODUTO, VARIAVEIS, urlCapacidades, lerCapacidades, instantesPedidos, urlFeatureInfo, lerResposta } from "./wmts.mjs";
 import { pedir, emParalelo } from "./rede.mjs";
 
-export const ESQUEMA = 1;
+export const ESQUEMA = 2;
 export const BOIA = Object.freeze({ nome: "Boia de Faro (IH)", codigo: "CSA82/D", idEstacao: 20, lat: 36.9048, lon: -7.8984 });
 export const URL_BOIA = "https://ogcapi.hidrografico.pt/collections/buoys_datawell/locations/";
 export const URL_MARINE = "https://marine-api.open-meteo.com/v1/marine";
@@ -48,7 +54,8 @@ export async function recolher({
     experiencia: "Validação de previsões junto à boia de Faro (IBI WAV e Open-Meteo contra a boia)",
     retrievedAt: iso(agora.getTime()),
     notas: [
-      "Previsões guardadas antes dos instantes válidos. antecedenciaH = validAt − retrievedAt: limite inferior da antecedência real (a corrida não é identificada).",
+      "retrievedAt = início da recolha. Cada consulta tem a sua hora (consultadoEm); no IBI, uma por valor e variável.",
+      "antecedenciaH = validAt − consultadoEm: antecedência com que o valor estava disponível ao consultá-lo. A antecedência desde a corrida do modelo é maior ou igual e não se conhece (a corrida não é identificada).",
       "ibi.actualizacaoConjunto = admp_updated_data das capacidades do WMTS: actualização do conjunto de dados, NÃO a hora da corrida.",
       "Open-Meteo best_match: modelo interno não identificado pela API.",
       "Dados experimentais: não entram nas notas da app nem são publicados no site."
@@ -57,9 +64,9 @@ export async function recolher({
     ibi: null, openMeteo: null, boia: null, falhas, recolha: null
   };
   const dentroDoPrazo = () => relogio() - t0 <= prazoMs;
-  doc.ibi = await recolherIbi({ agora, op, concorrencia, dentroDoPrazo, falhas });
-  doc.openMeteo = await recolherOpenMeteo({ agora, op, falhas });
-  doc.boia = await recolherBoia({ agora, op, falhas });
+  doc.ibi = await recolherIbi({ agora, op, concorrencia, dentroDoPrazo, falhas, relogio });
+  doc.openMeteo = await recolherOpenMeteo({ agora, op, falhas, relogio });
+  doc.boia = await recolherBoia({ agora, op, falhas, relogio });
   const completa = doc.ibi.estado === "completa" && doc.openMeteo.estado === "obtido" && doc.boia.estado === "obtido";
   doc.recolha = {
     inicio: iso(t0), fim: iso(relogio()), duracaoS: Math.round((relogio() - t0) / 1000),
@@ -69,9 +76,10 @@ export async function recolher({
   return doc;
 }
 
-async function recolherIbi({ agora, op, concorrencia, dentroDoPrazo, falhas }) {
+async function recolherIbi({ agora, op, concorrencia, dentroDoPrazo, falhas, relogio }) {
   const ibi = { fonte: "Copernicus Marine IBI WAV (WMTS GetFeatureInfo)", produto: PRODUTO, servico: WMTS_BASE, estado: "erro", unidades: Object.fromEntries(VARS.map(v => [v, VARIAVEIS[v].unidade])) };
   const cap = await pedir(urlCapacidades(), { ...op, formato: "xml" });
+  ibi.capacidadesConsultadasEm = iso(relogio());
   if (!cap.ok) {
     falhas.push({ fonte: "ibi", pedido: "capacidades", estado: "erro", erro: cap.erro, status: cap.status, tentativas: cap.tentativas });
     return { ...ibi, motivo: `capacidades não obtidas: ${cap.erro}` };
@@ -93,8 +101,9 @@ async function recolherIbi({ agora, op, concorrencia, dentroDoPrazo, falhas }) {
     if (!dentroDoPrazo()) { res.set(chave, { estado: "não pedido", erro: "prazo da recolha esgotado" }); return; }
     const url = urlFeatureInfo({ dataset: c.dataset, variavel: v, estilo: c.camadas[v].estilo, lat: BOIA.lat, lon: BOIA.lon, instante: t });
     const r = await pedir(url, op);
-    res.set(chave, r.ok ? { ...lerResposta(r.corpo, { dataset: c.dataset, variavel: v }), tentativas: r.tentativas }
-      : { estado: "erro", erro: r.erro, status: r.status, tentativas: r.tentativas });
+    const consultadoEm = relogio();
+    res.set(chave, r.ok ? { ...lerResposta(r.corpo, { dataset: c.dataset, variavel: v }), tentativas: r.tentativas, consultadoEm }
+      : { estado: "erro", erro: r.erro, status: r.status, tentativas: r.tentativas, consultadoEm });
   };
   await emParalelo(pedidos, concorrencia, fazer);
   // Segunda passagem, um pedido de cada vez: só os que falharam por erro (rede, 429, 5xx).
@@ -117,9 +126,16 @@ async function recolherIbi({ agora, op, concorrencia, dentroDoPrazo, falhas }) {
     falhas.push({ fonte: "ibi", validAt: iso(p.t), variavel: p.v, estado: r.estado, erro: r.erro ?? r.motivo ?? null, status: r.status ?? null, tentativas: r.tentativas ?? 0 });
   }
   ibi.celulas = [...celulas].map(s => { const [lat, lon] = s.split(",").map(Number); return { lat, lon }; });
+  // Por variável: o valor, a hora a que foi obtido e a antecedência a partir dessa hora (null sem valor).
   ibi.valores = instantes.map(t => {
-    const linha = { validAt: iso(t), antecedenciaH: horas(t - agora.getTime()) };
-    for (const v of VARS) { const r = res.get(`${t}|${v}`); linha[v] = r.estado === "obtido" ? r.valor : null; }
+    const linha = { validAt: iso(t), consultadoEm: {}, antecedenciaH: {} };
+    for (const v of VARS) {
+      const r = res.get(`${t}|${v}`);
+      const ok = r.estado === "obtido";
+      linha[v] = ok ? r.valor : null;
+      linha.consultadoEm[v] = ok ? iso(r.consultadoEm) : null;
+      linha.antecedenciaH[v] = ok ? horas(t - r.consultadoEm) : null;
+    }
     return linha;
   });
   ibi.pedidos = conta;
@@ -129,10 +145,12 @@ async function recolherIbi({ agora, op, concorrencia, dentroDoPrazo, falhas }) {
   return ibi;
 }
 
-async function recolherOpenMeteo({ agora, op, falhas }) {
+async function recolherOpenMeteo({ agora, op, falhas, relogio }) {
   const om = { fonte: "Open-Meteo Marine", modelo: "best_match (modelo interno não identificado pela API)", estado: "erro" };
   om.pedido = `${URL_MARINE}?latitude=${BOIA.lat}&longitude=${BOIA.lon}&hourly=wave_height,wave_period&forecast_days=8&timeformat=unixtime`;
   const r = await pedir(om.pedido, op);
+  const consultadoEm = relogio();
+  om.consultadoEm = iso(consultadoEm);
   if (!r.ok) {
     falhas.push({ fonte: "openMeteo", estado: "erro", erro: r.erro, status: r.status, tentativas: r.tentativas });
     return { ...om, motivo: r.erro };
@@ -152,19 +170,21 @@ async function recolherOpenMeteo({ agora, op, falhas }) {
   om.celula = { lat: j.latitude, lon: j.longitude };
   om.unidades = { wave_height: "m", wave_period: "s" };
   om.valores = h.time.map((t, k) => ({ t: t * 1000, k }))
-    .filter(({ t }) => t > agora.getTime() && t % HORA === 0)
-    .map(({ t, k }) => ({ validAt: iso(t), antecedenciaH: horas(t - agora.getTime()), wave_height: num(h.wave_height?.[k]), wave_period: num(h.wave_period?.[k]) }));
+    .filter(({ t }) => t > consultadoEm && t % HORA === 0)
+    .map(({ t, k }) => ({ validAt: iso(t), antecedenciaH: horas(t - consultadoEm), wave_height: num(h.wave_height?.[k]), wave_period: num(h.wave_period?.[k]) }));
   om.horasSemValor = om.valores.filter(x => x.wave_height === null || x.wave_period === null).length;
   om.estado = om.valores.length ? "obtido" : "inválido";
   om.hashConteudo = sha256(om.valores.map(({ validAt, wave_height, wave_period }) => [validAt, wave_height, wave_period]));
   return om;
 }
 
-async function recolherBoia({ agora, op, falhas }) {
+async function recolherBoia({ agora, op, falhas, relogio }) {
   const b = { fonte: "Instituto Hidrográfico, OGC API EDR buoys_datawell", estado: "erro", licenca: "CC BY-NC 4.0" };
   const inicio = iso(Math.floor((agora.getTime() - 48 * HORA) / 1000) * 1000);
   b.janela = { inicio, fim: iso(Math.floor(agora.getTime() / 1000) * 1000) };
   const r = await pedir(`${URL_BOIA}${BOIA.idEstacao}?datetime=${b.janela.inicio}/${b.janela.fim}&f=json`, op);
+  b.consultadoEm = iso(relogio());
+  b.respostaRecebida = r.ok;
   if (!r.ok) {
     falhas.push({ fonte: "boia", estado: "erro", erro: r.erro, status: r.status, tentativas: r.tentativas });
     return { ...b, motivo: r.erro };
@@ -181,6 +201,14 @@ async function recolherBoia({ agora, op, falhas }) {
     hm0: o.hm0.valor, hm0_qc: o.hm0.qc, tm02: o.tm02.valor, tm02_qc: o.tm02.qc,
     tp: o.tp.valor, tp_qc: o.tp.qc, hmax: o.hmax.valor, hmax_qc: o.hmax.qc
   }));
+  // Resposta recebida ≠ observações utilizáveis: para validar é preciso Hm0 e Tm02 válidos na mesma medição.
+  b.medicoesRecebidas = b.observacoes.length;
+  b.paresValidos = b.observacoes.filter(o => o.hm0 !== null && o.tm02 !== null).length;
+  if (b.paresValidos === 0) {
+    b.estado = "sem observações utilizáveis";
+    falhas.push({ fonte: "boia", estado: b.estado, erro: `${b.medicoesRecebidas} medições recebidas, nenhuma com Hm0 e Tm02 válidos` });
+    return b;
+  }
   b.estado = "obtido";
   return b;
 }
@@ -189,11 +217,11 @@ export function resumoTexto(doc) {
   const i = doc.ibi, o = doc.openMeteo, b = doc.boia, p = i.pedidos;
   return [
     `Recolha ${doc.retrievedAt}: ${doc.recolha.completa ? "COMPLETA" : "INCOMPLETA"} em ${doc.recolha.duracaoS} s`,
-    `IBI: ${i.estado}${i.dataset ? ` (${i.dataset}, actualização do conjunto ${i.actualizacaoConjunto?.VTM02})` : ""}` +
+    `IBI: ${i.estado}${i.dataset ? ` (${i.dataset}; actualização do conjunto: ${Object.entries(i.actualizacaoConjunto).map(([v, a]) => `${v} ${a}`).join(", ")})` : ""}` +
       (p ? ` · ${p.obtidos}/${p.total} valores · ${p.erros} erros · ${p.invalidos} inválidos · ${p.semDados} sem dados · ${p.naoPedidos} não pedidos · ${p.comRepeticao} com repetição` : "") +
       (i.celulas ? ` · célula ${i.celulas.map(c => `${c.lat}, ${c.lon}`).join(" | ")}` : ""),
     `Open-Meteo: ${o.estado}${o.valores ? ` · ${o.valores.length} h (${o.horasSemValor} sem valor) · célula ${o.celula.lat}, ${o.celula.lon}` : ` · ${o.motivo ?? ""}`}`,
-    `Boia: ${b.estado}${b.observacoes ? ` · ${b.observacoes.length} medições (${b.janela.inicio} a ${b.janela.fim})` : ` · ${b.motivo ?? ""}`}`,
+    `Boia: ${b.estado}${b.observacoes ? ` · ${b.medicoesRecebidas} medições, ${b.paresValidos} com Hm0 e Tm02 válidos (${b.janela.inicio} a ${b.janela.fim})` : ` · ${b.motivo ?? ""}`}`,
     `Falhas registadas: ${doc.falhas.length}`
   ].join("\n");
 }

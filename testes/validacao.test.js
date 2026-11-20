@@ -159,10 +159,12 @@ test("validação: recolha completa — todos os pedidos com valor, uma célula,
   assert.equal(d.ibi.dataset, DATASET);
   assert.equal(d.ibi.actualizacaoConjunto.VTM02, "2026-11-20T13:34:18.132Z");
   assert.equal(d.ibi.valores.length, 114);
-  assert.deepEqual(d.ibi.valores[0], { validAt: "2026-11-20T17:00:00Z", antecedenciaH: 0.93, VHM0: 1.5, VTM02: 6, VTM10: 8 });
+  const l0 = d.ibi.valores[0];
+  assert.deepEqual([l0.validAt, l0.VHM0, l0.VTM02, l0.VTM10], ["2026-11-20T17:00:00Z", 1.5, 6, 8]);
+  assert.deepEqual(Object.keys(l0.consultadoEm), ["VHM0", "VTM02", "VTM10"]);
   assert.match(d.ibi.hashConteudo, /^[0-9a-f]{64}$/);
   assert.ok(d.notas.some(n => /NÃO a hora da corrida/.test(n)));
-  assert.ok(d.notas.some(n => /limite inferior/.test(n)));
+  assert.ok(d.notas.some(n => /antecedenciaH = validAt − consultadoEm/.test(n)));
   // Open-Meteo: só as horas futuras; célula e modelo registados.
   assert.equal(d.openMeteo.estado, "obtido");
   assert.equal(d.openMeteo.valores[0].validAt, "2026-11-20T17:00:00Z");
@@ -172,6 +174,10 @@ test("validação: recolha completa — todos os pedidos com valor, uma célula,
   assert.equal(d.boia.estado, "obtido");
   const q9 = d.boia.observacoes.find(o => o.hm0_qc === 9);
   assert.ok(q9 && q9.hm0 === null);
+  assert.equal(d.boia.respostaRecebida, true);
+  assert.equal(d.boia.medicoesRecebidas, d.boia.observacoes.length);
+  assert.equal(d.boia.paresValidos, d.boia.observacoes.filter(o => o.hm0 !== null && o.tm02 !== null).length);
+  assert.ok(d.boia.paresValidos > 0 && d.boia.paresValidos < d.boia.medicoesRecebidas);
   assert.deepEqual(d.falhas, []);
   assert.equal(d.recolha.github.runId, "42");
 });
@@ -224,17 +230,18 @@ test("validação: uma fonte em falha não impede as outras", async () => {
 
 test("validação: relatório do ensaio — mudanças entre recolhas e coerência do admp_updated_data", () => {
   const base = (ret, act, v, completa = true) => ({ retrievedAt: ret, _bytes: 46000, recolha: { completa, duracaoS: 50 },
-    ibi: { actualizacaoConjunto: { VTM02: act }, pedidos: { obtidos: 3, total: 3, comRepeticao: 0 }, celulas: [{ lat: 36.917, lon: -7.889 }],
+    ibi: { actualizacaoConjunto: { VHM0: act, VTM02: act, VTM10: act }, pedidos: { obtidos: 3, total: 3, comRepeticao: 0 }, celulas: [{ lat: 36.917, lon: -7.889 }],
       valores: [{ validAt: "2026-11-21T00:00:00Z", VHM0: v, VTM02: 6, VTM10: 8 }] },
-    openMeteo: { valores: [] }, boia: { observacoes: [] }, falhas: [] });
+    openMeteo: { valores: [] }, boia: { estado: "obtido", paresValidos: 90, observacoes: [] }, falhas: [] });
   assert.deepEqual(compararValores(base(0, 0, 1).ibi.valores, base(0, 0, 1.2).ibi.valores, ["VHM0", "VTM02", "VTM10"]), { comuns: 3, mudaram: 1, maxDif: 0.19999999999999996 });
   const r = relatorio([
     base("2026-11-21T01:17:00Z", "A", 1),
     base("2026-11-21T07:17:00Z", "A", 1.2),          // mudou sem actualizar
     base("2026-11-21T13:17:00Z", "B", 1.3, false)     // actualizou e mudou; incompleta
   ]);
-  assert.match(r, /mudaram sem actualizar 1\*\*/);
-  assert.match(r, /actualizou e os valores mudaram 1;/);
+  // VHM0: mudou sem actualizar (1.ª → 2.ª), actualizou e mudou (2.ª → 3.ª). VTM02 e VTM10: valores iguais.
+  assert.match(r, /\| VHM0 \| 1 \| 0 \| \*\*1\*\* \| 0 \|/);
+  assert.match(r, /\| VTM02 \| 0 \| 1 \| \*\*0\*\* \| 1 \|/);
   assert.match(r, /\| 2026-11-21T13:17:00Z \| \*\*não\*\* \|/);
 });
 
@@ -261,4 +268,76 @@ test("validação: sem data de fim autorizada não recolhe; depois da data tamb�
   const passada = spawnSync(process.execPath, [script], { env: { PATH: process.env.PATH, RECOLHA_ATE: "2020-01-01T00:00:00Z" }, encoding: "utf8" });
   assert.equal(passada.status, 0);
   assert.match(passada.stdout, /já passou\. Nada a fazer/);
+});
+
+// ---------- Revisão de 20/11/2026: horas por consulta, boia utilizável, actualização por camada ----------
+
+test("validação: antecedência a partir da hora de cada consulta, não do início da recolha", async () => {
+  const { f } = servidor();
+  // Relógio que avança 20 s por leitura: as consultas acontecem bem depois do início da recolha.
+  let t = AGORA.getTime();
+  const d = await recolher({ agora: AGORA, fetchImpl: f, dormir: semEspera, relogio: () => (t += 20000), concorrencia: 1, prazoMs: 1e9 });
+  assert.equal(d.recolha.completa, true);
+  assert.equal(d.esquema, 2);
+  const inicio = Date.parse(d.retrievedAt);
+  for (const l of [d.ibi.valores[0], d.ibi.valores.at(-1)]) {
+    for (const v of ["VHM0", "VTM02", "VTM10"]) {
+      const c = Date.parse(l.consultadoEm[v]);
+      assert.ok(c > inicio, `${v}: consultado depois do início`);
+      assert.equal(l.antecedenciaH[v], Math.round((Date.parse(l.validAt) - c) / 3600000 * 100) / 100);
+      assert.ok(l.antecedenciaH[v] < (Date.parse(l.validAt) - inicio) / 3600000, `${v}: menor do que a contada do início`);
+    }
+  }
+  // Os pedidos do fim da recolha foram feitos mais tarde do que os do início.
+  assert.ok(Date.parse(d.ibi.valores.at(-1).consultadoEm.VTM10) > Date.parse(d.ibi.valores[0].consultadoEm.VHM0));
+  // Open-Meteo e boia: a hora do seu próprio pedido, depois da do IBI.
+  const om = Date.parse(d.openMeteo.consultadoEm);
+  assert.ok(om > Date.parse(d.ibi.valores.at(-1).consultadoEm.VTM10));
+  assert.equal(d.openMeteo.valores[0].antecedenciaH, Math.round((Date.parse(d.openMeteo.valores[0].validAt) - om) / 3600000 * 100) / 100);
+  assert.ok(d.openMeteo.valores.every(x => Date.parse(x.validAt) > om), "só horas depois da consulta");
+  assert.ok(Date.parse(d.boia.consultadoEm) > om);
+  assert.ok(d.notas.some(n => /validAt − consultadoEm/.test(n)));
+  assert.ok(!d.notas.some(n => /limite inferior/.test(n)));
+});
+
+test("validação: boia sem observações utilizáveis → não serve, recolha incompleta", async () => {
+  const real = JSON.parse(BOIA_JSON);
+  // (a) resposta recebida, sem nenhuma medição
+  const vazia = structuredClone(real);
+  vazia.coverages[0].domain.axes.t.values = [];
+  for (const k of Object.keys(vazia.coverages[0].ranges)) vazia.coverages[0].ranges[k].values = [];
+  // (b) medições recebidas, mas nenhuma com Tm02 válido (QC 4)
+  const semTm02 = structuredClone(real);
+  semTm02.coverages[0].ranges.wave_tm02_qc.values = semTm02.coverages[0].ranges.wave_tm02_qc.values.map(() => 4);
+  for (const [nome, corpo, recebidas] of [["sem medições", vazia, 0], ["sem Tm02 válido", semTm02, real.coverages[0].domain.axes.t.values.length]]) {
+    const s = servidor();
+    const f = async url => (url.startsWith("https://ogcapi.hidrografico.pt/") ? resp(200, corpo) : s.f(url));
+    const d = await recolher({ agora: AGORA, fetchImpl: f, dormir: semEspera, relogio: relogioFixo() });
+    assert.equal(d.boia.respostaRecebida, true, nome);
+    assert.equal(d.boia.medicoesRecebidas, recebidas, nome);
+    assert.equal(d.boia.paresValidos, 0, nome);
+    assert.equal(d.boia.estado, "sem observações utilizáveis", nome);
+    assert.equal(d.recolha.completa, false, nome);
+    assert.equal(d.recolha.partes.boia, "sem observações utilizáveis", nome);
+    assert.deepEqual(d.falhas.map(x => [x.fonte, x.estado]), [["boia", "sem observações utilizáveis"]], nome);
+  }
+});
+
+test("validação: relatório analisa a actualização de cada camada do IBI em separado", () => {
+  const doc = (ret, act, valores) => ({ retrievedAt: ret, _bytes: 1000, recolha: { completa: true, duracaoS: 40 },
+    ibi: { actualizacaoConjunto: act, pedidos: { obtidos: 3, total: 3, comRepeticao: 0 }, celulas: [],
+      valores: [{ validAt: "2026-11-22T00:00:00Z", ...valores }] },
+    openMeteo: { valores: [] }, boia: { estado: "obtido", paresValidos: 90, observacoes: [] }, falhas: [] });
+  const r = relatorio([
+    doc("2026-11-21T01:17:00Z", { VHM0: "A", VTM02: "A", VTM10: "A" }, { VHM0: 1.0, VTM02: 6.0, VTM10: 8.0 }),
+    // Só a camada VTM02 tem actualização nova; o VTM02 e o VHM0 mudam, o VTM10 não.
+    doc("2026-11-21T07:17:00Z", { VHM0: "A", VTM02: "B", VTM10: "A" }, { VHM0: 1.1, VTM02: 6.2, VTM10: 8.0 }),
+    // Só o VTM10 com actualização nova, sem mudar valores.
+    doc("2026-11-21T13:17:00Z", { VHM0: "A", VTM02: "B", VTM10: "C" }, { VHM0: 1.1, VTM02: 6.2, VTM10: 8.0 })
+  ]);
+  assert.match(r, /\| VHM0 \| 0 \| 0 \| \*\*1\*\* \| 1 \|/);   // mudou sem actualizar uma vez
+  assert.match(r, /\| VTM02 \| 1 \| 0 \| \*\*0\*\* \| 1 \|/);  // actualizou e mudou
+  assert.match(r, /\| VTM10 \| 0 \| 1 \| \*\*0\*\* \| 1 \|/);  // actualizou sem mudar
+  assert.match(r, /datas de actualização diferentes: 2\./);
+  assert.match(r, /\| 2026-11-21T07:17:00Z \|[^\n]*\| VTM02 \| 1\/1 · 1\/1 · 0\/1 \|/);
 });

@@ -38,6 +38,7 @@ export function compararValores(antes, depois, campos) {
   return { comuns, mudaram, maxDif };
 }
 
+const CAMADAS = ["VHM0", "VTM02", "VTM10"];
 const mediana = v => { const s = [...v].sort((a, b) => a - b); return s.length ? (s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : null; };
 const n2 = v => (v === null || v === undefined ? "—" : Number(v).toFixed(2).replace(".", ","));
 
@@ -54,23 +55,34 @@ export function relatorio(docs) {
   const datasets = new Set(validos.map(d => d.ibi?.dataset).filter(Boolean));
   linhas.push(`Células: IBI ${[...celIbi].join(" | ") || "—"}; Open-Meteo ${[...celOm].join(" | ") || "—"}. Conjuntos IBI: ${[...datasets].join(", ") || "—"}.`, ``);
 
-  linhas.push(`## Recolhas`, ``, `| retrievedAt | Completa | Duração | IBI obtidos | Repetições | Falhas | Actualização do conjunto (VTM02) | IBI mudou | OM mudou |`, `|---|---|---|---|---|---|---|---|---|`);
-  const coerencia = { actualizouEMudou: 0, actualizouSemMudar: 0, mudouSemActualizar: 0, nemUmNemOutro: 0 };
+  // Cada camada do IBI tem o seu admp_updated_data: analisa-se uma a uma, porque não está demonstrado
+  // que as três se actualizam ao mesmo tempo.
+  linhas.push(`## Recolhas`, ``, `| retrievedAt | Completa | Duração | IBI obtidos | Repetições | Falhas | Boia: pares válidos | Camadas com actualização nova | IBI mudou (VHM0 · VTM02 · VTM10) | OM mudou |`, `|---|---|---|---|---|---|---|---|---|---|`);
+  const coerencia = Object.fromEntries(CAMADAS.map(v => [v, { actualizouEMudou: 0, actualizouSemMudar: 0, mudouSemActualizar: 0, nemUmNemOutro: 0 }]));
+  let desalinhadas = 0;
   validos.forEach((d, k) => {
     const ant = k > 0 ? validos[k - 1] : null;
-    const ci = ant ? compararValores(ant.ibi?.valores, d.ibi?.valores, ["VHM0", "VTM02", "VTM10"]) : null;
-    const co = ant ? compararValores(ant.openMeteo?.valores, d.openMeteo?.valores, ["wave_height", "wave_period"]) : null;
-    const actAnt = ant?.ibi?.actualizacaoConjunto?.VTM02, act = d.ibi?.actualizacaoConjunto?.VTM02;
-    if (ant && ci.comuns) {
-      const actualizou = Boolean(actAnt && act && actAnt !== act), mudou = ci.mudaram > 0;
-      coerencia[actualizou ? (mudou ? "actualizouEMudou" : "actualizouSemMudar") : (mudou ? "mudouSemActualizar" : "nemUmNemOutro")]++;
+    const act = d.ibi?.actualizacaoConjunto ?? {};
+    const actAnt = ant?.ibi?.actualizacaoConjunto ?? {};
+    if (new Set(CAMADAS.map(v => act[v]).filter(Boolean)).size > 1) desalinhadas++;
+    const novas = [], mudou = [];
+    for (const v of CAMADAS) {
+      if (!ant) continue;
+      const c = compararValores(ant.ibi?.valores, d.ibi?.valores, [v]);
+      mudou.push(`${c.mudaram}/${c.comuns}`);
+      const actualizou = Boolean(actAnt[v] && act[v] && actAnt[v] !== act[v]);
+      if (actualizou) novas.push(v);
+      if (c.comuns) coerencia[v][actualizou ? (c.mudaram ? "actualizouEMudou" : "actualizouSemMudar") : (c.mudaram ? "mudouSemActualizar" : "nemUmNemOutro")]++;
     }
+    const co = ant ? compararValores(ant.openMeteo?.valores, d.openMeteo?.valores, ["wave_height", "wave_period"]) : null;
     const p = d.ibi?.pedidos;
-    linhas.push(`| ${d.retrievedAt} | ${d.recolha?.completa ? "sim" : "**não**"} | ${d.recolha?.duracaoS ?? "—"} s | ${p ? `${p.obtidos}/${p.total}` : "—"} | ${p?.comRepeticao ?? "—"} | ${d.falhas?.length ?? "—"} | ${act ?? "—"}${ant && act !== actAnt ? " (nova)" : ""} | ${ci ? `${ci.mudaram}/${ci.comuns} (máx. ${n2(ci.maxDif)})` : "—"} | ${co ? `${co.mudaram}/${co.comuns}` : "—"} |`);
+    linhas.push(`| ${d.retrievedAt} | ${d.recolha?.completa ? "sim" : "**não**"} | ${d.recolha?.duracaoS ?? "—"} s | ${p ? `${p.obtidos}/${p.total}` : "—"} | ${p?.comRepeticao ?? "—"} | ${d.falhas?.length ?? "—"} | ${d.boia?.paresValidos ?? "—"} | ${ant ? (novas.join(", ") || "nenhuma") : "—"} | ${ant ? mudou.join(" · ") : "—"} | ${co ? `${co.mudaram}/${co.comuns}` : "—"} |`);
   });
-  linhas.push(``, `## O admp_updated_data acompanha as mudanças dos valores do IBI?`, ``,
-    `Pares de recolhas seguidas: actualizou e os valores mudaram ${coerencia.actualizouEMudou}; actualizou sem mudarem ${coerencia.actualizouSemMudar}; **mudaram sem actualizar ${coerencia.mudouSemActualizar}**; nem um nem outro ${coerencia.nemUmNemOutro}.`,
-    `Só se pode usar como detector se as duas casas do meio ficarem a zero. Até lá, cada recolha pede tudo.`, ``);
+  linhas.push(``, `## O admp_updated_data acompanha as mudanças dos valores do IBI? (por camada)`, ``,
+    `| Camada | Actualizou e os valores mudaram | Actualizou sem mudarem | **Mudaram sem actualizar** | Nem um nem outro |`, `|---|---|---|---|---|`,
+    ...CAMADAS.map(v => { const c = coerencia[v]; return `| ${v} | ${c.actualizouEMudou} | ${c.actualizouSemMudar} | **${c.mudouSemActualizar}** | ${c.nemUmNemOutro} |`; }),
+    ``, `Recolhas em que as três camadas tinham datas de actualização diferentes: ${desalinhadas}.`,
+    `Uma camada só pode servir de detector se as duas colunas do meio ficarem a zero para ela. Até lá, cada recolha pede tudo.`, ``);
 
   const falhas = validos.flatMap(d => (d.falhas ?? []).map(f => ({ ...f, recolha: d.retrievedAt })));
   const porTipo = {};
@@ -81,7 +93,10 @@ export function relatorio(docs) {
   for (const d of validos) for (const o of d.boia?.observacoes ?? []) obs.set(o.instante, o);
   const qc = {};
   for (const o of obs.values()) { const c = `${o.hm0_qc}/${o.tm02_qc}`; qc[c] = (qc[c] ?? 0) + 1; }
-  linhas.push(`## Boia`, ``, `Medições distintas acumuladas: ${obs.size}. QC Hm0/Tm02: ${Object.entries(qc).map(([c, n]) => `${c}: ${n}`).join(", ") || "—"}.`);
+  const semPares = validos.filter(d => d.boia && d.boia.estado !== "obtido").length;
+  const paresDistintos = [...obs.values()].filter(o => o.hm0 !== null && o.tm02 !== null).length;
+  linhas.push(`## Boia`, ``, `Medições distintas acumuladas: ${obs.size}, das quais ${paresDistintos} com Hm0 e Tm02 válidos. QC Hm0/Tm02: ${Object.entries(qc).map(([c, n]) => `${c}: ${n}`).join(", ") || "—"}.`,
+    `Recolhas sem observações utilizáveis da boia (ou com falha): ${semPares}.`);
   return linhas.join("\n");
 }
 
