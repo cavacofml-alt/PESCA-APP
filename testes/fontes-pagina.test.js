@@ -77,6 +77,10 @@ test("barra de navegação: a mesma nos quatro ecrãs (Início, Mapa, Fontes), c
     assert.deepEqual(ligacoes.filter(l => l[2]).map(l => l[0]), [activo], `${pagina}: marcado ${activo}`);
   }
   for (const f of Object.keys(PAGINAS)) assert.doesNotMatch(ler(f), /href="\.\/diagnostico\.html">Fontes/, f);
+  // Os créditos das fotografias estão nas Fontes: nenhuma ligação do início manda para o diagnóstico.
+  const inicio = ler("js/ui/inicio.js");
+  assert.doesNotMatch(inicio, /diagnostico\.html/);
+  assert.match(inicio, /Créditos das fotografias na página <a href="\.\/fontes\.html">Fontes<\/a>/);
 });
 
 test("Fontes: página na shell do service worker e na publicação", async () => {

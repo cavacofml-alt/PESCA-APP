@@ -349,6 +349,6 @@ export function renderInicio(contexto) {
     ${resumo(analise, indice, contexto.config, especie)}
     ${marAgora(contexto)}
     <section class="cartoes">${Object.entries(d.pesqueiros).map(([id, p]) => cartao(id, p, d, contexto)).join("")}</section>
-    <p class="legenda">Créditos das fotografias na página <a href="./diagnostico.html">Fontes</a>.</p>
+    <p class="legenda">Créditos das fotografias na página <a href="./fontes.html">Fontes</a>.</p>
     <p class="legenda">Notas de 1 a 5 por período (madrugada 00–06, manhã 06–12, tarde 12–18, noite 18–24, hora de Portugal continental). <b class="mini nd">n.d.</b> sem dados suficientes · <b class="mini pc">?</b> por confirmar no terreno. Todas as notas são provisórias.</p>`;
 }
