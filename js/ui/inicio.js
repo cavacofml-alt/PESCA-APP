@@ -7,6 +7,7 @@ import { esc, hora, horaIso, num, rotuloDia, classeNota, textoNota, NOME_ESPECIE
 import { ordenarMelhoresDias } from "../regras/notas.js";
 import { resumoBoia } from "../fontes/ih-boias.js";
 import { DISTANCIAS_FUNDO } from "../fontes/fundo-tipico.js";
+import { intervaloLat } from "../fundos.js";
 
 export const ESPECIES = ["robalo", "dourada"];
 
@@ -163,13 +164,24 @@ export function fundoDoCartao(id, d, contexto) {
   const f = r.data.fontes[p.fonte];
   const cotas = DISTANCIAS_FUNDO.map(k => p.cotas[k]);
   const lista = vals => vals.map(v => num(v, 1)).join(" / ");
-  const curto = `${lista(cotas)} m (${f.rotulo})`;
+  // Cotas à LAT (LiDAR): ao zero hidrográfico da tabela ficam entre cota + lat[0] e cota + lat[1],
+  // por isso a água por cima é um intervalo (revisão de 19/11/2026).
+  const lat = intervaloLat(f);
+  const curto = `${lista(cotas)} m (${f.rotulo}${lat ? ", à LAT" : ""})`;
   const partes = [`cota mediana a ${DISTANCIAS_FUNDO.join(" / ")} m da linha de meia-maré: ${curto}`];
+  if (lat) {
+    partes.push(`a LAT fica ${num(lat[0], 2)} a ${num(lat[1], 2)} m acima do zero hidrográfico da tabela de marés, ` +
+      "por isso a água por cima vai em intervalo");
+  }
   const rep = d?.repontos ?? [];
   const extremo = (tipo, pior) => rep.filter(x => x.tipo === tipo).reduce((a, x) => (!a || pior(x.alturaM, a.alturaM) ? x : a), null);
+  const dec = v => Math.round(v * 10) / 10;
   const agua = x => cotas.map(c => {
-    const v = Math.round((x.alturaM - c) * 10) / 10;
-    return v <= 0 ? "a descoberto" : num(v, 1);
+    const max = dec(x.alturaM - c - (lat ? lat[0] : 0));
+    if (max <= 0) return "a descoberto";
+    if (!lat) return num(max, 1);
+    const min = dec(x.alturaM - c - lat[1]);
+    return min === max ? num(max, 1) : `${min <= 0 ? "0" : num(min, 1)}–${num(max, 1)}`;
   }).join(" / ");
   const bm = extremo("BM", (a, b) => a < b), pm = extremo("PM", (a, b) => a > b);
   if (bm) partes.push(`água na baixa-mar mais baixa do dia (${hora(bm.instante)}, ${num(bm.alturaM, 1)} m): ${agua(bm)} m`);

@@ -28,6 +28,8 @@ from rasterio.windows import from_bounds
 from scipy import ndimage as ndi
 
 DISTANCIAS = (100, 150, 200)
+# cotaCostaM: linha de meia-maré, 2 m ao ZH. No LiDAR (à LAT) usa-se o mesmo valor: a LAT fica 0 a 0,34 m acima
+# do ZH em Faro-Olhão, o que pode deslocar a linha de costa uns metros para o largo (limitação conhecida).
 CRITERIOS = {"cotaCostaM": 2.0, "raioM": 500, "faixaM": 5, "resolucaoM": 3.0,
              "coberturaCostaMin": 0.6, "celulasMin": 30, "distanciasM": list(DISTANCIAS)}
 LIDAR = {
@@ -36,8 +38,15 @@ LIDAR = {
     "produto": "590_HR_Lidar_Algarve",
     "levantamento": "2011",
     "url": "https://emodnet.ec.europa.eu/geonetwork/srv/api/records/SDN_CPRD_590_HR_Lidar_Algarve",
-    "referenciaVertical": "baixa-mar astronómica mais baixa (LAT); no confronto com o COSMO 2025, 0,1 a 0,25 m "
-                          "acima do zero hidrográfico nas zonas fundas",
+    # Referência vertical: a ficha do EMODnet diz LAT. O IH (Tabela de Marés 2026, §1.06) diz que o ZH fica
+    # abaixo da LAT, e em Faro-Olhão a baixa-mar mínima de 2026 é 0,34 m: a LAT fica 0 a 0,34 m acima do ZH.
+    # A app mostra intervalos com esse limite em vez de uma correcção constante (revisão de 19/11/2026).
+    "referenciaVertical": "baixa-mar astronómica mais baixa (LAT), segundo a ficha do EMODnet. Em Faro-Olhão a LAT "
+                          "fica 0 a 0,34 m acima do zero hidrográfico (IH, Tabela de Marés 2026: o ZH fica abaixo da "
+                          "LAT, e a baixa-mar mínima de 2026 é 0,34 m). No confronto com o COSMO 2025, as cotas LiDAR "
+                          "das zonas fundas ficaram 0,1 a 0,25 m acima das do COSMO",
+    "datum": "LAT",
+    "latAcimaZhM": [0, 0.34],
     "utilizacao": "pública; não usar para navegação",
     "tratamento": "grelha de ~12 x 14 m (1/128 de minuto); ~1 % de falhas preenchidas com a média das vizinhas "
                   "(ferramentas/lidar_emodnet.py)",
@@ -115,6 +124,7 @@ def main():
                                                  "referenciaVertical", "utilizacao", "sha256") if k in f}
         fim = f.get("levantamentoFim") or f["levantamento"]
         fontes[d["id"]]["rotulo"] = f"COSMO {fim[5:7]}/{fim[:4]}"
+        fontes[d["id"]]["datum"] = "ZH"
         ordem.append((fim, d["id"], tif))
     ordem.sort(reverse=True)
     if a.lidar:

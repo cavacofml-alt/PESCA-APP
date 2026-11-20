@@ -92,7 +92,7 @@ function legenda() {
     div.innerHTML = "<b>Fundo (m ao zero hidrográfico)</b><div class=\"escala\">" +
       cotas.map(z => `<span style="--c:${corIsobata(z)}">${z === 0 ? "0" : `−${-z}`}</span>`).join("") +
       "</div><span class=\"f\">■</span> fundão · <span class=\"c\">■</span> cabeço · " +
-      "ZH = 2 m abaixo do nível médio";
+      "ZH = 2 m abaixo do nível médio. LiDAR 2011: m à LAT (0 a 0,34 m acima do ZH)";
     L.DomEvent.disableClickPropagation(div);
     return div;
   };

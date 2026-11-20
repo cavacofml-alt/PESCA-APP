@@ -55,24 +55,40 @@ test("fundo típico no cartão: cotas, água na baixa-mar e na preia-mar do dia,
     { tipo: "BM", instante: Date.parse("2026-11-19T16:24:00Z"), alturaM: 1.2 },
     { tipo: "PM", instante: Date.parse("2026-11-19T22:46:00Z"), alturaM: 2.6 }] };
   const f = fundoDoCartao("ancao", d, { config, fundoTipico: ok });
-  assert.equal(f.curto, "−1,1 / −1,7 / −2,7 m (LiDAR 2011)");
-  // baixa-mar mais baixa (16:24, 1,2 m): 1,2 − (−1,1) = 2,3 …; preia-mar mais alta (10:08, 2,7 m)
-  assert.match(f.longo, /água na baixa-mar mais baixa do dia \(16:24, 1,2 m\): 2,3 \/ 2,9 \/ 3,9 m/);
-  assert.match(f.longo, /na preia-mar mais alta \(10:08, 2,7 m\): 3,8 \/ 4,4 \/ 5,4 m/);
+  assert.equal(f.curto, "−1,1 / −1,7 / −2,7 m (LiDAR 2011, à LAT)");
+  // LiDAR à LAT, que fica 0 a 0,34 m acima do ZH da tabela: água = maré − cota − (0 a 0,34).
+  // Baixa-mar mais baixa (16:24, 1,2 m): 1,2 − (−1,1) = 2,3 e 2,3 − 0,34 = 1,96 → «2,0–2,3» …
+  assert.match(f.longo, /a LAT fica 0,00 a 0,34 m acima do zero hidrográfico da tabela de marés/);
+  assert.match(f.longo, /água na baixa-mar mais baixa do dia \(16:24, 1,2 m\): 2,0–2,3 \/ 2,6–2,9 \/ 3,6–3,9 m/);
+  assert.match(f.longo, /na preia-mar mais alta \(10:08, 2,7 m\): 3,5–3,8 \/ 4,1–4,4 \/ 5,1–5,4 m/);
   assert.match(f.fonte, /Instituto Hidrográfico — LiDAR 2011.*\(2011\) · medido e tratado.*cotas: baixa-mar astronómica/);
   assert.ok(!/\b(PM|BM)\b/.test(f.longo), "marés por extenso");
   const alm = fundoDoCartao("almargem", d, { config, fundoTipico: ok });
   assert.equal(alm.curto, "−2,0 / −3,4 / −4,1 m (COSMO 06/2025)");
   assert.match(alm.fonte, /LTHQUGA1_20250612_20250616_DEM \(12\/06\/2025 a 16\/06\/2025\).*zero hidrográfico/);
+  // COSMO ao ZH: valor único, sem intervalo.
+  assert.match(alm.longo, /\(16:24, 1,2 m\): 3,2 \/ 4,6 \/ 5,3 m/);
+  assert.doesNotMatch(alm.longo, /LAT/);
 });
 
 test("fundo típico no cartão: a descoberto, molhes e Ria sem linha, falha de leitura", () => {
   const d = { repontos: [{ tipo: "BM", instante: Date.parse("2026-11-19T16:24:00Z"), alturaM: 0.3 }] };
-  assert.match(fundoDoCartao("falesia", d, { config, fundoTipico: ok }).longo, /\(16:24, 0,3 m\): 0,7 \/ 1,9 \/ 3,1 m/);
+  assert.match(fundoDoCartao("falesia", d, { config, fundoTipico: ok }).longo, /\(16:24, 0,3 m\): 0,4–0,7 \/ 1,6–1,9 \/ 2,8–3,1 m/);
   const seco = structuredClone(T); seco.praias.falesia.cotas["100"] = 0.5;
-  assert.match(fundoDoCartao("falesia", d, { config, fundoTipico: { ok: true, data: seco } }).longo, /: a descoberto \/ 1,9 \/ 3,1 m/);
+  assert.match(fundoDoCartao("falesia", d, { config, fundoTipico: { ok: true, data: seco } }).longo, /: a descoberto \/ 1,6–1,9 \/ 2,8–3,1 m/);
+  // Só o limite de cima acima de zero: pode estar a descoberto.
+  const raso = structuredClone(T); raso.praias.falesia.cotas["100"] = 0.1;
+  assert.match(fundoDoCartao("falesia", d, { config, fundoTipico: { ok: true, data: raso } }).longo, /: 0–0,2 \/ 1,6–1,9 \/ 2,8–3,1 m/);
   assert.equal(fundoDoCartao("molhe_quarteira", d, { config, fundoTipico: ok }), null);
   assert.equal(fundoDoCartao("ria", d, { config, fundoTipico: ok }), null);
   assert.equal(fundoDoCartao("ancao", d, { config }), null);
   assert.deepEqual(fundoDoCartao("ancao", d, { config, fundoTipico: { ok: false, error: "HTTP 500" } }), { erro: "não obtido (HTTP 500)" });
+});
+
+test("fundo típico: datum de cada fonte (LiDAR à LAT com limite, COSMO ao ZH) e validação", () => {
+  assert.equal(T.fontes.lidar2011.datum, "LAT");
+  assert.deepEqual(T.fontes.lidar2011.latAcimaZhM, [0, 0.34]);
+  assert.equal(T.fontes.quarteira_garrao.datum, "ZH");
+  const mau = structuredClone(T); mau.fontes.lidar2011.latAcimaZhM = [0.5];
+  assert.ok(validarFundoTipico(mau).erros.some(e => /fontes\.lidar2011\.latAcimaZhM/.test(e)));
 });

@@ -2,6 +2,7 @@
 // a 100, 150 e 200 m da linha de meia-maré, de um levantamento COSMO ou do LiDAR 2011 do IH.
 // Só se mostra nos cartões; não entra nas notas.
 import { sourceResult } from "../normalizacao.js";
+import { errosDatum } from "../fundos.js";
 
 export const DISTANCIAS_FUNDO = ["100", "150", "200"];
 const finito = v => typeof v === "number" && Number.isFinite(v);
@@ -16,6 +17,7 @@ export function validarFundoTipico(d) {
         if (typeof f?.[c] !== "string" || !f[c]) erros.push(`fontes.${k}.${c} em falta`);
       }
       if (!/^[0-9a-f]{64}$/.test(f?.sha256 ?? "")) erros.push(`fontes.${k}.sha256 inválido`);
+      erros.push(...errosDatum(f, `fontes.${k}`));
     }
   }
   if (!d.praias || typeof d.praias !== "object") erros.push("praias em falta");

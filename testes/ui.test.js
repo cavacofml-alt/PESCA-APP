@@ -165,7 +165,7 @@ test("ecrã: cartões das praias com o fundo típico (molhes sem ele); fonte nas
   const c = { ...contexto(), fundoTipico: { ok: true, data: lerJson("fundos/tipico.json"), error: null } };
   const html = renderInicio(c);
   const cartaoDe = id => html.slice(html.indexOf(`id="pq-${id}"`), html.indexOf("</article>", html.indexOf(`id="pq-${id}"`)));
-  assert.match(cartaoDe("ancao"), /<dt>Fundo a 100\/150\/200 m<\/dt><dd>−1,1 \/ −1,7 \/ −2,7 m \(LiDAR 2011\)<\/dd>/);
+  assert.match(cartaoDe("ancao"), /<dt>Fundo a 100\/150\/200 m<\/dt><dd>−1,1 \/ −1,7 \/ −2,7 m \(LiDAR 2011, à LAT\)<\/dd>/);
   assert.match(cartaoDe("ancao"), /<dt>Fundo típico<\/dt><dd>cota mediana a 100 \/ 150 \/ 200 m/);
   assert.match(cartaoDe("ancao"), /<li>Fundo: Instituto Hidrográfico — LiDAR 2011/);
   assert.match(cartaoDe("almargem"), /−2,0 \/ −3,4 \/ −4,1 m \(COSMO 06\/2025\)/);
