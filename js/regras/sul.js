@@ -46,7 +46,7 @@ export function marForteForaDoSul(horasMar, cfg, esperados = null) {
   let indeterminadas = 0;
   const horasSul = [];
   for (const r of registos) {
-    const p = potenciaHora({ hs: r.wave_height, periodoMedio: r.wave_period }, cfg.coeficiente).valor;
+    const p = potenciaHora({ hs: r.wave_height, periodo: r.wave_period }, cfg.coeficiente).valor;
     if (p === null) { semPotencia++; continue; }
     if (p < cfg.potenciaRobaloIntermediaKWm) continue;
     const d = ondaDominante(r, cfg);
