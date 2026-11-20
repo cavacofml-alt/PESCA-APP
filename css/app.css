@@ -33,13 +33,24 @@ a { color: var(--azul2); }
 .mini, .selo, .nota { background: var(--c); }
 .pc.mini, .pc.selo, .pc.nota { background: white; color: var(--pc); outline: 2px dashed var(--pc); outline-offset: -2px; }
 
-/* Resumo */
-.resumo { background: white; border-radius: 1rem; padding: .75rem .9rem; box-shadow: 0 1px 4px rgb(11 59 83 / .1); font-size: .92rem; }
-.resumo p { display: grid; grid-template-columns: 6.4rem 1fr; gap: .5rem; align-items: baseline; margin: .35rem 0; }
+/* «Onde e quando» (Fase 1, 20/11/2026): melhores pesqueiros e períodos do dia, a partir das notas */
+.onde-quando { background: white; border-radius: 1rem; padding: .75rem .9rem; box-shadow: 0 1px 4px rgb(11 59 83 / .1); font-size: .92rem; }
+.onde-quando h2 { margin: 0 0 .4rem; font-size: 1.05rem; color: var(--azul); }
+.onde-quando h2 small { color: var(--suave); font-weight: normal; font-size: .8rem; }
+.onde-quando p { display: grid; grid-template-columns: 6.4rem 1fr; gap: .5rem; align-items: baseline; margin: .35rem 0; }
+.onde-quando p.motivo { display: block; }
+.janelas { list-style: none; margin: 0 0 .5rem; padding: 0; display: grid; gap: .4rem; }
+.janelas li { display: flex; gap: .55rem; align-items: baseline; line-height: 1.35; }
+.janelas li .mini { flex: none; }
+.janelas li a { font-weight: 650; text-decoration: none; }
+.mini.inc { outline: 2px dashed var(--c); outline-offset: 1px; }
 .rot { color: var(--suave); font-size: .74rem; text-transform: uppercase; letter-spacing: .03em; }
 .mar-agora { background: white; border-radius: 1rem; padding: .75rem .9rem; margin-top: .75rem; box-shadow: 0 1px 4px rgb(11 59 83 / .1); font-size: .92rem; }
 .mar-agora h3 { margin: 0; font-size: 1rem; color: var(--azul); }
-.mar-agora h3 small { color: var(--suave); font-weight: normal; font-size: .8rem; }
+.mar-agora h3 small, .mar-agora summary small { color: var(--suave); font-weight: normal; font-size: .8rem; }
+.mar-agora summary { cursor: pointer; list-style-position: inside; }
+.mar-titulo { font-weight: 700; color: var(--azul); }
+.mar-curto { display: block; margin-top: .2rem; font-size: .85rem; color: var(--texto); }
 .mar-agora .falha { color: #8a2a1f; margin: .4rem 0 0; }
 .fonte-boia { color: var(--suave); font-size: .78rem; margin: .4rem 0 0; }
 .alinhamento { margin-top: .5rem; padding: .5rem .65rem; border-radius: .7rem; background: #fff4d6; color: #5c4300; font-size: .88rem; }
@@ -48,7 +59,7 @@ a { color: var(--azul2); }
 /* Cartões */
 .cartoes { display: grid; gap: .9rem; margin-top: .9rem; }
 .cartao { background: white; border-radius: 1.1rem; overflow: hidden; box-shadow: 0 2px 10px rgb(11 59 83 / .12); }
-.foto { position: relative; height: 9.5rem; background: linear-gradient(135deg, #0b3b53, #1d7fa8) center / cover no-repeat; }
+.foto { position: relative; height: 7rem; background: linear-gradient(135deg, #0b3b53, #1d7fa8) center / cover no-repeat; }
 .foto::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgb(0 0 0 / 0) 35%, rgb(0 0 0 / .62)); }
 .foto-texto { position: absolute; left: .9rem; bottom: .7rem; z-index: 1; color: white; }
 .foto-texto h2 { margin: 0; font-size: 1.3rem; text-shadow: 0 1px 3px rgb(0 0 0 / .5); }

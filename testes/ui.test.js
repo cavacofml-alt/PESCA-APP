@@ -80,10 +80,10 @@ test("ecrã: texto vindo da configuração é escapado", () => {
   assert.match(html, /&lt;img src=x onerror=alert\(1\)&gt;/);
 });
 
-test("ecrã: escolher outro dia muda a faixa e o resumo", () => {
+test("ecrã: escolher outro dia muda a faixa e «Onde e quando»", () => {
   const html = renderInicio(contexto({ indice: 2 }));
   assert.match(html, /class="dia sel" data-dia="2"/);
-  assert.match(html, /<span class="rot">sex 16<\/span>/);
+  assert.match(html, /<h2>Onde e quando <small>· sex 16 · Robalo<\/small><\/h2>/);
 });
 
 test("formato: horas de Lisboa, vírgula decimal e sinal de menos", () => {
@@ -122,7 +122,10 @@ test("ecrã: «Mar agora» com a última medição da boia, fonte, tipo, licenç
   const c = { ...contexto(), lidoEm: "2026-11-15T10:40:00.000Z", boiaFaro: boiaOk("2026-11-15T10:40:00.000Z") };
   const html = renderInicio(c);
   const bloco = html.split('<section class="mar-agora"')[1].split("</section>")[0];
-  assert.match(bloco, /Mar agora <small>· Boia de Faro · observado<\/small>/);
+  // Fase 1 (20/11/2026): uma linha sempre visível, com fonte, tipo e hora; o resto ao tocar.
+  assert.match(bloco, /<details><summary><span class="mar-titulo">Mar agora<\/span> <small>· Boia de Faro · observado<\/small>/);
+  assert.match(bloco, /<span class="mar-curto">onda 0,84 m de O · período médio 6,1 s · água 19,4 °C · medido a 15\/11 às 10:26 \(há 13 min\)<\/span><\/summary>/);
+  assert.ok(bloco.indexOf("<dd>") > bloco.indexOf("</summary>"), "os pormenores ficam dentro do details");
   assert.match(bloco, /<dd>0,84 m \(máx\. 1,11 m\) · de O \(259°\)<\/dd>/);
   assert.match(bloco, /<dd>médio 6,1 s · de pico 10,5 s<\/dd>/);
   assert.match(bloco, /<dd>19,4 °C<\/dd>/);

@@ -1,5 +1,6 @@
-// Ecrã inicial (Fase 4): resumo, escolha do dia e um cartão por pesqueiro.
-// Só apresenta o que o motor calculou (js/regras/): não calcula notas.
+// Ecrã inicial (Fase 4; reorganizado na Fase 1 da evolução, 20/11/2026): «Onde e quando» no topo,
+// escolha do dia e um cartão por pesqueiro. Só apresenta o que o motor calculou (js/regras/): não
+// calcula notas nem cria outra classificação.
 // Requisitos das revisões da Fase 3: nunca mostrar uma nota incompleta como definitiva —
 // intervalo, períodos sem nota, parcelas por avaliar, n.d. e «por confirmar» sempre visíveis.
 // Função pura: devolve HTML (texto escapado).
@@ -8,6 +9,8 @@ import { ordenarMelhoresDias } from "../regras/notas.js";
 import { resumoBoia } from "../fontes/ih-boias.js";
 import { DISTANCIAS_FUNDO } from "../fontes/fundo-tipico.js";
 import { intervaloLat } from "../fundos.js";
+import { utcToLisbon, lisbonDate } from "../normalizacao.js";
+import { PERIODOS_PADRAO } from "../regras/periodos.js";
 
 export const ESPECIES = ["robalo", "dourada"];
 
@@ -16,18 +19,6 @@ const melhorNotaDoDia = (d, esp) => {
   const v = esp === "dourada" ? d.melhorDourada : d.melhorRobalo;
   return typeof v === "number" ? v : null;
 };
-
-// Melhor combinação pesqueiro/espécie de um dia (só notas "ok").
-function melhorDoDia(d, config, especie) {
-  let melhor = null;
-  for (const [id, p] of Object.entries(d.pesqueiros)) {
-    for (const [esp, n] of Object.entries(p.notas)) {
-      if (esp !== especie || n?.estado !== "ok") continue;
-      if (!melhor || n.nota > melhor.n.nota) melhor = { id, esp, n, nome: config.pesqueiros[id]?.nomeCurto ?? id };
-    }
-  }
-  return melhor;
-}
 
 // Alinhamentos reponto/Sol do dia, sem repetir o mesmo reponto entre pesqueiros.
 function alinhamentosDoDia(d) {
@@ -52,22 +43,80 @@ function maresPorTipo(repontos) {
 const textoAlinhamento = a =>
   `${a.tipo === "PM" ? "Preia-mar" : "Baixa-mar"} às ${hora(a.reponto)}, a ${a.minutos} min do ${a.evento}`;
 
-function resumo(analise, indice, config, especie) {
+// Horas de início e fim de cada período (config.periodos, hora de Lisboa).
+function horasDosPeriodos(config) {
+  const cfg = config.periodos ?? PERIODOS_PADRAO;
+  return Object.fromEntries(cfg.map((p, k) => [p.nome, [p.inicioHora, k + 1 < cfg.length ? cfg[k + 1].inicioHora : 24]]));
+}
+const hh = h => `${String(h).padStart(2, "0")}`;
+
+// «Onde e quando» (Fase 1 da evolução, 20/11/2026): as melhores combinações pesqueiro × período do dia
+// escolhido, só com as notas que o motor já calculou — sem outra classificação. Só entram notas «ok»
+// (n.d. e «por confirmar» ficam nos cartões). Ordem: a nota; em empate, o período com alinhamento
+// reponto/Sol, depois a nota da outra espécie no mesmo período (como no desempate dos melhores dias,
+// CLAUDE.md §6), depois o período mais cedo e a ordem dos pesqueiros (nascente → poente). Hoje, os
+// períodos que já acabaram à hora da leitura não entram. Função pura.
+export function janelasDoDia(d, contexto, especie, { maximo = 3 } = {}) {
+  const horas = horasDosPeriodos(contexto.config);
+  const lido = contexto.lidoEm ? new Date(Date.parse(contexto.lidoEm)) : null;
+  const hoje = Boolean(lido && d.dia === lisbonDate(lido));
+  const horaAgora = hoje ? Number(utcToLisbon(lido).slice(11, 13)) : null;
+  const outra = ESPECIES.find(e => e !== especie);
+  const ordem = Object.keys(contexto.config.pesqueiros);
+  const lista = [];
+  for (const [id, p] of Object.entries(d.pesqueiros)) {
+    (p.periodos ?? []).forEach((per, k) => {
+      const n = per.notas?.[especie];
+      if (n?.estado !== "ok") return;
+      const [inicio, fim] = horas[per.nome] ?? [null, null];
+      if (hoje && fim !== null && fim <= horaAgora) return;
+      const o = per.notas?.[outra];
+      lista.push({ id, nome: contexto.config.pesqueiros[id]?.nomeCurto ?? id, periodo: per.nome, inicio, fim, n,
+        alinhamentos: per.alinhamento?.alinhado === true ? per.alinhamento.alinhamentos ?? [] : [],
+        k, outra: o?.estado === "ok" ? o.nota : -1, ordem: ordem.indexOf(id) });
+    });
+  }
+  lista.sort((a, b) => b.n.nota - a.n.nota || (b.alinhamentos.length > 0) - (a.alinhamentos.length > 0)
+    || b.outra - a.outra || a.k - b.k || a.ordem - b.ordem);
+  const janelas = lista.slice(0, maximo);
+  const topo = lista.length ? lista[0].n.nota : null;
+  const mais = topo === null ? 0 : lista.filter(x => x.n.nota === topo).length - janelas.filter(x => x.n.nota === topo).length;
+  return { janelas, maisComMesmaNota: mais, hoje };
+}
+
+function linhaJanela(j) {
+  const inc = j.n.completa ? "" : ` · incompleta${j.n.intervalo && j.n.intervalo.min !== j.n.intervalo.max ? ` (pode ser ${j.n.intervalo.min} a ${j.n.intervalo.max})` : ""}`;
+  const ali = j.alinhamentos.length ? ` · ${j.alinhamentos.map(textoAlinhamento).join("; ")}` : "";
+  return `<li><b class="mini ${classeNota(j.n)}${j.n.completa ? "" : " inc"}">${j.n.nota}</b><span><a href="#pq-${esc(j.id)}">${esc(j.nome)}</a> · ${esc(j.periodo)}${j.inicio === null ? "" : ` ${hh(j.inicio)}–${hh(j.fim)} h`}${esc(inc)}${esc(ali)}</span></li>`;
+}
+
+export function ondeQuando(analise, indice, contexto, especie) {
   const d = analise.dias[indice];
+  const { janelas, maisComMesmaNota, hoje } = janelasDoDia(d, contexto, especie);
   const melhoresDias = ordenarMelhoresDias(analise.dias, especie).slice(0, 3).map(dd => {
     const m = melhorNotaDoDia(dd, especie);
     return m === null ? null : `${rotuloDia(dd.dia, dd.indice)} (${m})`;
   }).filter(Boolean);
-  const m = melhorDoDia(d, config, especie);
-  const ali = alinhamentosDoDia(d);
-  return `<section class="resumo" aria-label="Resumo">
+  // Alinhamento do dia, uma vez. Cada pesqueiro tem a sua hora do Sol: se os minutos diferem, mostra-se o
+  // intervalo; se não acontece em todos os pesqueiros, diz-se em quais.
+  const ali = alinhamentosDoDia(d).map(a => {
+    const iguais = Object.entries(d.pesqueiros).map(([id, p]) => [id, (p.alinhamento?.alinhamentos ?? [])
+      .find(x => x.reponto === a.reponto && x.evento === a.evento)]).filter(([, x]) => x);
+    const mins = iguais.map(([, x]) => x.minutos);
+    const minutos = Math.min(...mins) === Math.max(...mins) ? `${mins[0]}` : `${Math.min(...mins)}–${Math.max(...mins)}`;
+    const texto = `${a.tipo === "PM" ? "Preia-mar" : "Baixa-mar"} às ${hora(a.reponto)}, a ${minutos} min do ${a.evento}`;
+    return iguais.length === Object.keys(d.pesqueiros).length ? texto
+      : `${texto} (só em: ${iguais.map(([id]) => contexto.config.pesqueiros[id]?.nomeCurto ?? id).join(", ")})`;
+  });
+  return `<section class="onde-quando" aria-label="Onde e quando">
+    <h2>Onde e quando <small>· ${esc(rotuloDia(d.dia, indice))} · ${esc(NOME_ESPECIE[especie])}</small></h2>
+    ${janelas.length ? `<ol class="janelas">${janelas.map(linhaJanela).join("")}</ol>`
+      : `<p class="motivo">Sem notas para ${hoje ? "o resto de hoje" : "este dia"}.</p>`}
+    ${maisComMesmaNota > 0 ? `<p class="motivo">E mais ${maisComMesmaNota} com a mesma nota (ver os cartões).</p>` : ""}
     <p><span class="rot">Melhores dias</span><span>${melhoresDias.length ? esc(melhoresDias.join(" · ")) : "sem notas"}</span></p>
-    <p><span class="rot">${esc(rotuloDia(d.dia, indice))}</span><span>${m
-      ? `${esc(m.nome)} · ${esc(NOME_ESPECIE[m.esp])} <b class="mini ${classeNota(m.n)}">${m.n.nota}</b> ${esc(m.n.periodo)}${m.n.completa ? "" : " · incompleta"}`
-      : "sem notas para este dia"}</span></p>
     <p><span class="rot">Maré</span><span>${d.amplitude.amplitude === null ? `não obtida${d.amplitude.motivo ? ` (${esc(d.amplitude.motivo)})` : ""}`
       : `${num(d.amplitude.amplitude, 1)} m · ${esc(d.amplitude.classe)}`}${d.repontos ? `<br>${esc(maresPorTipo(d.repontos))}` : ""}</span></p>
-    ${ali.length ? `<div class="alinhamento"><b>Alinhamento</b> ${ali.map(a => esc(textoAlinhamento(a))).join("; ")}</div>` : ""}
+    ${ali.length ? `<div class="alinhamento"><b>Alinhamento</b> ${ali.map(esc).join("; ")}</div>` : ""}
   </section>`;
 }
 
@@ -97,6 +146,7 @@ function marAgora(contexto) {
   const r = contexto.boiaFaro;
   if (!b || !r) return "";
   const topo = `<h3>Mar agora <small>· ${esc(b.nome)} · observado</small></h3>`;
+  const titulo = `<span class="mar-titulo">Mar agora</span> <small>· ${esc(b.nome)} · observado</small>`;
   if (!r.ok) return `<section class="mar-agora" aria-label="Mar agora">${topo}<p class="falha">Não obtido${r.error ? ` — ${esc(r.error)}` : ""}</p></section>`;
   const s = resumoBoia(r.data, { agora: new Date(Date.parse(contexto.lidoEm)), maxIdadeHoras: b.maxIdadeHoras });
   if (!s) return `<section class="mar-agora" aria-label="Mar agora">${topo}<p class="falha">Sem medições válidas nas últimas ${esc(b.horas)} h</p></section>`;
@@ -118,11 +168,17 @@ function marAgora(contexto) {
     linhas.push(["Previsão", `Open-Meteo para ${dataHora(prev.instante)}, ${onde}: Hs ${num(prev.hs, 2)} m${Number.isFinite(prev.periodo) ? ` · «wave_period» ${num(prev.periodo, 1)} s (não é o Tm02 da boia)` : ""}`]);
   }
   const idade = s.idadeMin >= 60 ? `há ${Math.floor(s.idadeMin / 60)} h ${s.idadeMin % 60} min` : `há ${s.idadeMin} min`;
-  return `<section class="mar-agora" aria-label="Mar agora">${topo}
-    ${s.desactualizada ? `<p class="falha">Última medição ${esc(idade)}: desactualizada</p>` : ""}
+  // Fase 1 (20/11/2026): uma linha sempre visível, com a fonte, o tipo e a hora da medição; o resto
+  // (tendência, previsão, fonte completa e licença) ao tocar.
+  const curto = [`onda ${valorBoia(u.hm0, 2, "m")}${u.direcao.estado === "obtido" ? ` de ${rumo(u.direcao.valor)}` : ""}`,
+    `período médio ${valorBoia(u.tm02, 1, "s")}`, `água ${valorBoia(u.agua, 1, "°C")}`].join(" · ");
+  return `<section class="mar-agora" aria-label="Mar agora">
+    <details><summary>${titulo}<span class="mar-curto">${esc(curto)} · medido a ${esc(dataHora(u.instante))} (${esc(idade)})</span></summary>
     <dl class="factos">${linhas.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
     <p class="fonte-boia">Medido a ${esc(dataHora(u.instante))} (${esc(idade)}) ao largo, a ${esc(b.profundidadeM)} m de fundo: na praia a onda chega diferente. Não entra nas notas. Horas de Portugal continental.<br>
     Instituto Hidrográfico, boia ${esc(b.codigo)} (${esc(b.latitude)}, ${esc(b.longitude)}) · observado · lido às ${esc(horaIso(r.readAt))} · <a href="${esc(b.licencaUrl)}" target="_blank" rel="noopener">${esc(b.licenca)}</a></p>
+    </details>
+    ${s.desactualizada ? `<p class="falha">Última medição ${esc(idade)}: desactualizada</p>` : ""}
   </section>`;
 }
 
@@ -304,6 +360,8 @@ function semEspecie(esp, pq) {
   return `<div class="especie sem"><div class="esp-topo"><span class="esp-nome">${esc(NOME_ESPECIE[esp])}</span><span class="nota nd">—</span></div><p class="motivo">${esc(texto)}</p></div>`;
 }
 
+const chaveAlinhamentos = lista => lista.map(a => `${a.reponto}|${a.evento}`).join(";");
+
 function cartao(id, p, d, contexto) {
   const pq = contexto.config.pesqueiros[id];
   const especies = Object.keys(p.notas);
@@ -311,7 +369,10 @@ function cartao(id, p, d, contexto) {
   const nEsp = p.notas[esp];
   const melhor = nEsp?.estado === "ok" ? nEsp : null;
   const foto = pq.foto;
-  const ali = alinhamentosDoDia({ pesqueiros: { [id]: p } });
+  // Fase 1 (20/11/2026): o alinhamento do dia aparece uma vez, no topo; o cartão só o repete quando
+  // é diferente (por exemplo, quando nem todos os pesqueiros o têm).
+  const aliCartao = alinhamentosDoDia({ pesqueiros: { [id]: p } });
+  const ali = aliCartao.length && chaveAlinhamentos(aliCartao) !== chaveAlinhamentos(alinhamentosDoDia(d)) ? aliCartao : [];
   const fundo = fundoDoCartao(id, d, contexto);
   return `<article class="cartao" id="pq-${esc(id)}">
     <div class="foto"${foto ? ` style="background-image:url('${esc(foto.ficheiro)}')"` : ""}>
@@ -330,6 +391,13 @@ function cartao(id, p, d, contexto) {
   </article>`;
 }
 
+// Ordem dos cartões: nascente → poente, mas os pesqueiros sem nota para a espécie escolhida (a Ria,
+// para o robalo) vão para o fim (Fase 1, 20/11/2026). Só muda a ordem; nenhum cartão desaparece.
+export function ordemDosCartoes(d, especie) {
+  const lista = Object.entries(d.pesqueiros);
+  return [...lista.filter(([, p]) => p.notas[especie]), ...lista.filter(([, p]) => !p.notas[especie])];
+}
+
 // contexto: { analise, config, pontos, mares, sol, lidoEm, indice }
 // Escolha da espécie: as notas, a faixa de dias e o resumo seguem-na.
 function escolhaEspecie(especie) {
@@ -346,9 +414,9 @@ export function renderInicio(contexto) {
       <button type="button" id="actualizar" class="btn-actualizar" aria-label="Actualizar dados">↻</button></header>
     ${escolhaEspecie(especie)}
     ${faixaDias(analise, indice, especie)}
-    ${resumo(analise, indice, contexto.config, especie)}
+    ${ondeQuando(analise, indice, contexto, especie)}
     ${marAgora(contexto)}
-    <section class="cartoes">${Object.entries(d.pesqueiros).map(([id, p]) => cartao(id, p, d, contexto)).join("")}</section>
+    <section class="cartoes">${ordemDosCartoes(d, especie).map(([id, p]) => cartao(id, p, d, contexto)).join("")}</section>
     <p class="legenda">Créditos das fotografias na página <a href="./fontes.html">Fontes</a>.</p>
     <p class="legenda">Notas de 1 a 5 por período (madrugada 00–06, manhã 06–12, tarde 12–18, noite 18–24, hora de Portugal continental). <b class="mini nd">n.d.</b> sem dados suficientes · <b class="mini pc">?</b> por confirmar no terreno. Todas as notas são provisórias.</p>`;
 }
