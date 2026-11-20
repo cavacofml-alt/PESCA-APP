@@ -41,6 +41,16 @@ test("service worker: primeira instalação (sem service worker antes) não reca
   assert.equal(r.recargas, 0);
 });
 
+test("service worker: depois da primeira instalação, uma versão nova com a app aberta recarrega", () => {
+  const r = simular({ controlador: null });
+  r.mudar();                 // instalação: o service worker toma conta da página pela primeira vez
+  assert.equal(r.recargas, 0);
+  r.mudar();                 // versão nova publicada sem fechar a app
+  assert.equal(r.recargas, 1);
+  r.mudar();
+  assert.equal(r.recargas, 1, "só uma recarga por página");
+});
+
 test("service worker: sem suporte ou em file:// não faz nada", () => {
   assert.equal(registarServiceWorker({}, { protocol: "https:", reload() {} }), false);
   assert.equal(registarServiceWorker(undefined, undefined), false);
