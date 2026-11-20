@@ -9,7 +9,7 @@ import { validateTides } from "../js/fontes/mares-locais.js";
 import { pontosNecessarios } from "../js/pontos.js";
 import { diasDoHorizonte, solDoDia } from "../js/dados.js";
 import { renderInicio, fontesDoCartao } from "../js/ui/inicio.js";
-import { num, hora, rotuloDia, classeNota, textoNota, esc } from "../js/ui/formato.js";
+import { num, hora, dataHora, rotuloDia, classeNota, textoNota, esc } from "../js/ui/formato.js";
 
 const raiz = new URL("..", import.meta.url);
 const lerJson = f => JSON.parse(readFileSync(new URL(f, raiz), "utf8"));
@@ -38,7 +38,7 @@ test("ecrã: um cartão por pesqueiro, com nota, períodos, fontes e créditos d
   const html = renderInicio(contexto());
   for (const pq of Object.values(config.pesqueiros)) assert.ok(html.includes(esc(pq.nomeCurto)), pq.nomeCurto);
   assert.equal((html.match(/<article class="cartao"/g) ?? []).length, Object.keys(config.pesqueiros).length);
-  assert.match(html, /Dados lidos às 10:46/);
+  assert.match(html, /Dados lidos às 10:46 \(hora de Portugal continental\)/);
   assert.equal((html.match(/<h4>Fontes<\/h4>/g) ?? []).length, Object.keys(config.pesqueiros).length);
   assert.match(html, /Open-Meteo Marine \(37\.0133, -8\.00567\) · previsto \(os 7 dias anteriores, usados na comparação da água, são previsões arquivadas, não medições\) · lido às 10:46/);
   assert.ok(!/Wikimedia Commons/.test(html), "créditos das fotos fora dos cartões (página Fontes)");
@@ -135,7 +135,9 @@ test("ecrã: «Mar agora» com a última medição da boia, fonte, tipo, licenç
   assert.match(bloco, /<dd>médio 6,1 s · de pico 10,5 s<\/dd>/);
   assert.match(bloco, /<dd>19,4 °C<\/dd>/);
   assert.match(bloco, /3 h antes 0,96 m · últimas 24 h: 0,84–1,22 m/);
-  assert.match(bloco, /Medido às 10:26 \(há 13 min\) ao largo, a 90 m de fundo/);
+  assert.match(bloco, /Medido a 15\/11 às 10:26 \(há 13 min\) ao largo, a 90 m de fundo/);
+  // Revisão de 20/11/2026: data e fuso, para não haver dúvida sobre o instante.
+  assert.match(bloco, /Não entra nas notas\. Horas de Portugal continental\./);
   assert.match(bloco, /Não entra nas notas/);
   assert.match(bloco, /Instituto Hidrográfico, boia CSA82\/D \(36\.9048, -7\.8984\) · observado · lido às 10:40/);
   assert.match(bloco, /href="https:\/\/creativecommons\.org\/licenses\/by-nc\/4\.0\/"[^>]*>CC BY-NC 4\.0<\/a>/);
@@ -151,11 +153,11 @@ test("ecrã: «Mar agora» mostra a previsão do Open-Meteo para a mesma hora (s
   // Revisão de 20/11/2026: diz de que célula vem a previsão e a que distância da boia, e o «wave_period»
   // não aparece como «período médio» ao lado do Tm02.
   const html = renderInicio(c);
-  assert.match(html, /<dd>Open-Meteo às 10:00, célula 36,958, −8,042 \(Praia de Faro\), a 14 km da boia: Hs 0,90 m · «wave_period» 8,2 s \(não é o Tm02 da boia\)<\/dd>/);
+  assert.match(html, /<dd>Open-Meteo para 15\/11 às 10:00, célula 36,958, −8,042 \(Praia de Faro\), a 14 km da boia: Hs 0,90 m · «wave_period» 8,2 s \(não é o Tm02 da boia\)<\/dd>/);
   assert.doesNotMatch(html, /período 8,2 s/);
   // Sem as coordenadas da célula na resposta, fica só o nome do ponto.
   delete c.pontos.mar.faroMarPoente.data.latitude;
-  assert.match(renderInicio(c), /<dd>Open-Meteo às 10:00, Praia de Faro: Hs 0,90 m/);
+  assert.match(renderInicio(c), /<dd>Open-Meteo para 15\/11 às 10:00, Praia de Faro: Hs 0,90 m/);
 });
 
 test("ecrã: boia desactualizada, sem medições válidas ou não obtida — sempre dito, nunca um número", () => {
@@ -189,4 +191,13 @@ test("fontes do cartão: marés com os anos lidos (passagem de ano) e o aviso de
   c.mares = { ...c.mares, anos: [2027], aviso: "tabela de 2028 não obtida (HTTP 404)" };
   assert.match(fontesDoCartao(pq, c), /Faro-Olhão 2027 \(tabela oficial, horas TU\) · tabela de 2028 não obtida \(HTTP 404\)/);
   assert.doesNotMatch(fontesDoCartao(pq, c), /Faro-Olhão 2026 \(/, "o ano já não está escrito no código");
+});
+
+test("formato: dataHora em hora de Portugal continental (Inverno, Verão, mudança de dia, sem valor)", () => {
+  assert.equal(dataHora(Date.parse("2026-11-15T10:26:00Z")), "15/11 às 10:26");
+  assert.equal(dataHora(Date.parse("2026-07-15T10:26:00Z")), "15/07 às 11:26");
+  assert.equal(dataHora(Date.parse("2026-07-15T23:30:00Z")), "16/07 às 00:30");
+  assert.equal(dataHora(Date.parse("2026-12-31T23:59:00Z")), "31/12 às 23:59");
+  assert.equal(dataHora(NaN), "—");
+  assert.equal(dataHora(undefined), "—");
 });
