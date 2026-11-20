@@ -15,7 +15,8 @@ const naoNegativo = v => (valido(v) ? v : null);
 // Direcção em graus [0, 360): números fora desse intervalo ou inválidos → null.
 const direcao = v => (typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 360 ? v % 360 : null);
 
-const componente = c => ({ hs: naoNegativo(c.hs), periodo: naoNegativo(c.periodo), direcao: direcao(c.direcao), nota: c.nota ?? null });
+const componente = c => ({ origem: c.origem, hs: naoNegativo(c.hs), periodo: naoNegativo(c.periodo), direcao: direcao(c.direcao),
+  nota: c.nota ?? null });
 
 // esperados: instantes do dia; mar/terra/agua: registos do dia de cada ponto (ou null se o ponto
 // não se aplica); cfgMar: config.mar com o coeficiente; tipo: "ria" | "praia" | "molhe".
@@ -40,11 +41,12 @@ export function horasDoPesqueiro({ esperados, mar, terra, agua, cfgMar, tipo, pe
     };
     if (rm) {
       const p = potenciaDoRegisto(rm, cfgMar.coeficiente);
-      const { fundo, vaga, porClassificar } = classificarComponentes(rm, cfgMar.periodoVagaVentoSegundos);
+      const { fundo, vaga, porClassificar, semAltura } = classificarComponentes(rm, cfgMar.periodoVagaVentoSegundos);
       linha.mar = {
         hs: naoNegativo(rm.wave_height), periodo: naoNegativo(rm.wave_period), direcao: direcao(rm.wave_direction),
         potencia: { valor: p.valor, status: p.status, aviso: p.aviso },
-        fundo: fundo.map(componente), vaga: vaga.map(componente), porClassificar: porClassificar.map(componente)
+        fundo: fundo.map(componente), vaga: vaga.map(componente), porClassificar: porClassificar.map(componente),
+        semAltura: semAltura.map(componente)
       };
       if (tipo !== "ria") {
         const l = limoDaHora(rm, rt, cfgMar);

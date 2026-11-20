@@ -866,3 +866,31 @@ test("análise: todas as praias com robalo e dourada; a Ria só com dourada", ()
   }
   assert.deepEqual(Object.keys(p.ria.notas), ["dourada"]);
 });
+
+// ---------- Revisão do ChatGPT (19/11/2026): componentes com a altura em falta ----------
+
+test("limo: altura total mexida mas fundo e vaga sem altura → indeterminado, nunca «sem limo»", () => {
+  const semComp = mar(1.2, 270, 8, { swell_wave_height: null, wind_wave_height: null });
+  const r = limoDaHora(semComp, terra(10, 270), cfgMar);
+  assert.equal(r.limo, null);
+  assert.match(r.motivo, /altura em falta: wind_wave, swell/);
+  // Só a vaga sem altura (swell de Oeste conhecido): continua indeterminado.
+  assert.equal(limoDaHora(mar(1.2, 270, 8, { wind_wave_height: undefined }), terra(10, 270), cfgMar).limo, null);
+  // NaN conta como não obtido, como null.
+  assert.equal(limoDaHora(mar(1.2, 270, 8, { swell_wave_height: NaN }), terra(10, 270), cfgMar).limo, null);
+  // Uma componente conhecida de SE confirma o limo, mesmo com outra sem altura.
+  assert.equal(limoDaHora(semComp, terra(10, 120), cfgMar).limo, true);
+  // Altura 0 é ausência medida: sem SE, conclui-se «sem limo».
+  assert.equal(limoDaHora(mar(1.2, 270, 8, { wind_wave_height: 0 }), terra(10, 270), cfgMar).limo, false);
+  // Mar calmo: a altura das componentes não importa.
+  assert.equal(limoDaHora(mar(0.5, 270, 5, { swell_wave_height: null, wind_wave_height: null }), terra(10, 270), cfgMar).limo, false);
+});
+
+test("lado do molhe: componente sem altura → indeterminado, sem passar a decidir pelo vento", () => {
+  const r = ladoDaHora(mar(1.2, 120, 8, { swell_wave_height: null }), terra(10, 270), cfgMar);
+  assert.equal(r.lado, null);
+  assert.equal(r.decide, null);
+  assert.match(r.motivo, /altura em falta: swell/);
+  // Com as alturas todas conhecidas, continua como antes.
+  assert.equal(ladoDaHora(mar(1.2, 120, 8), terra(10, 270), cfgMar).lado, LADO.POENTE);
+});

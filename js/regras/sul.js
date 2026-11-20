@@ -20,8 +20,13 @@ export function eSul(direcao, { sulPorConfirmarGraus = null } = {}) {
 // Onda dominante de uma hora. { componente } ou { componente: null, motivo }; semOndas=true
 // quando nenhuma componente de onda tem Hs ≥ mínimo (o molhe passa então a decidir pelo vento).
 export function ondaDominante(regMar, { hsMinimaDecisaoMolheM = 0.2, sectoresGraus, periodoVagaVentoSegundos = 6 }) {
-  const ondas = componentesDaHora(regMar, null, periodoVagaVentoSegundos)
-    .filter(c => c.tipo !== "vento" && valido(c.hs) && c.hs >= hsMinimaDecisaoMolheM);
+  const todas = componentesDaHora(regMar, null, periodoVagaVentoSegundos);
+  // Uma componente com a altura em falta pode ser a dominante: não se decide (nem pelo vento).
+  const semAltura = todas.filter(c => c.tipo === "altura não obtida");
+  if (semAltura.length) {
+    return { componente: null, motivo: `altura em falta: ${semAltura.map(c => c.origem).join(", ")}` };
+  }
+  const ondas = todas.filter(c => c.tipo !== "vento" && valido(c.hs) && c.hs >= hsMinimaDecisaoMolheM);
   if (!ondas.length) return { componente: null, semOndas: true, motivo: "sem onda relevante" };
   // Uma onda relevante sem período ou direcção impede decidir com segurança.
   if (ondas.some(c => energia(c) === null || sectorDaDirecao(c.direcao, sectoresGraus) === null)) {

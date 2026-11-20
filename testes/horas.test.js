@@ -92,6 +92,18 @@ test("painel: uma coluna por hora, notas por período que somam o dia, maré ilu
   assert.match(html, /Open-Meteo Marine/);
 });
 
+test("painel: componente sem altura aparece «n.d.», nunca «nenhum» (revisão de 19/11/2026)", () => {
+  const c = contexto();
+  const h = c.analise.dias[0].pesqueiros.ancao.horas[0];
+  h.mar = { ...h.mar, fundo: [], vaga: [], semAltura: [{ origem: "swell", hs: null, periodo: 9, direcao: 250, nota: "altura do swell não obtida" }] };
+  const html = renderHorario(c, "ancao");
+  const celula = linha => html.split(`<th scope="row">${linha}</th>`)[1].split("</td>")[0];
+  assert.match(celula("Fundo"), /n\.d\./);
+  assert.match(celula("Vaga"), /n\.d\./);
+  // A série hora a hora guarda as componentes sem altura.
+  assert.ok(Array.isArray(c.analise.dias[0].pesqueiros.ancao.horas[1].mar.semAltura));
+});
+
 test("painel: Ria sem limo nem lado; marés em falta dizem-no; pesqueiro inexistente → vazio", () => {
   const c = contexto();
   const ria = renderHorario(c, "ria");
