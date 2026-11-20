@@ -28,8 +28,8 @@ Abrir o endereço no Chrome → menu ⋮ → **Instalar app** (ou «Adicionar ao
 - Open-Meteo (Marine e Forecast): pedidos com `timeformat=unixtime` (instantes absolutos; a hora local repete-se a 25/10/2026). Consulta Faro e Quarteira.
 - IPMA estado do mar: consulta `oceanography/daily/hp-daily-sea-forecast-day{0,1,2}.json`, filtra `globalIdLocal=1080526` e recusa ficheiros cujo `forecastDate` não seja o dia pedido (`não obtido (desactualizado)`).
 - Boia de Faro (Instituto Hidrográfico, OGC API): última medição da onda e da água, com o indicador de qualidade de cada valor (1 e 2 aceites; 9 → `não obtido`; outros ou fora dos limites físicos → `inválido`). Mostrada em «Mar agora»; não entra nas notas.
-- Marés locais: valida formato, ordem, alternância PM/BM e intervalos de 30 a 480 minutos. `mares/2026.json` está vazio até chegar a tabela oficial.
-- SunCalc: adaptador preparado; colocar uma distribuição local licenciada em `vendor/suncalc.js` e carregá-la antes de usar o adaptador. A aplicação não consulta outra fonte solar.
+- Marés locais: valida formato, ordem, alternância PM/BM e intervalos de 30 a 480 minutos. `mares/2026.json` tem a tabela oficial do IH de 2026 (ver «Tabela de marés»).
+- SunCalc 1.9.0 (BSD-2) em `vendor/suncalc.js`: nascer e pôr do Sol e fases da Lua, calculados no aparelho. A aplicação não consulta outra fonte solar.
 
 ## Modelo de valor
 
@@ -119,7 +119,7 @@ Os valores estão em `fundos/tipico.json`, gerado por `ferramentas/fundo_tipico.
 - se nenhum a cobrir, usa-se o **LiDAR 2011 do Instituto Hidrográfico**, publicado no EMODnet Bathymetry (`590_HR_Lidar_Algarve`):
   - utilização pública, «não usar para navegação»;
   - grelha de ~12 × 14 m;
-  - cotas à baixa-mar astronómica mais baixa (LAT). No confronto com o COSMO 2025 ficou 0,1 a 0,25 m acima do zero hidrográfico nas zonas fundas.
+  - cotas à baixa-mar astronómica mais baixa (LAT), segundo a ficha. Em Faro-Olhão a LAT fica 0 a 0,34 m acima do zero hidrográfico da tabela de marés: o IH diz que o ZH fica abaixo da LAT, e a baixa-mar mínima de 2026 é 0,34 m. Por isso, nas praias com o LiDAR, a água por cima aparece como intervalo (por exemplo «2,0–2,3 m»), sem correcção constante. No confronto com o COSMO 2025, as cotas LiDAR das zonas fundas ficaram 0,1 a 0,25 m acima das do COSMO.
 
 Para refazer:
 
@@ -172,7 +172,7 @@ Há uma segunda camada com o mesmo levantamento, «Vilamoura e Falésia (LiDAR 2
 Nas duas camadas:
 - **O que mostra:** só linhas de fundo de 1 em 1 m a partir de +1 m (de 2 em 2 m abaixo de −6), sem fundões nem cabeços.
 - **Corte:** as linhas são cortadas onde há levantamento COSMO; aí vale o COSMO.
-- **Referência:** as cotas estão à LAT, 0,1–0,25 m acima do zero hidrográfico.
+- **Referência:** as cotas estão à LAT, que em Faro-Olhão fica 0 a 0,34 m acima do zero hidrográfico. O balão de cada linha diz «à LAT» e mostra o intervalo ao ZH.
 - **Idade:** é de 2011, por isso os canais e os bancos já mudaram.
 
 Para refazer:
