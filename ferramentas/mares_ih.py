@@ -1,10 +1,13 @@
-"""Converte a tabela de marés do IH (Faro-Olhão, 2026) em mares/2026.json.
+"""Converte a tabela de marés do IH (Faro-Olhão) em mares/<ano>.json.
 
-Lê as caixas de palavras (pdftotext -bbox) das páginas 143–146 do PDF oficial
+Lê as caixas de palavras (pdftotext -bbox) das páginas de Faro-Olhão do PDF oficial
 e valida tudo antes de escrever: dias seguidos, dia da semana, alternância
-PM/BM, intervalos e número de dias. Uso:
-  python3 mares_ih.py <dir_com_pNNN.html> <saida.json> <sha256_pdf>
+PM/BM, intervalos e número de dias do ano. Uso:
+  python3 mares_ih.py <dir_com_pNNN.html> <saida.json> <sha256_pdf> \
+      [--ano 2027] [--paginas 143 144 145 146] [--rotulo-paginas "2-121 a 2-124"] [--url <PDF>]
+Sem opções, os valores são os de 2026.
 """
+import argparse
 import datetime as dt
 import html
 import json
@@ -13,6 +16,7 @@ import sys
 from collections import defaultdict
 
 PAGINAS = [143, 144, 145, 146]
+ANO = 2026  # mudado por --ano em main()
 MESES = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO",
          "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"]
 SEMANA = ["SEG", "TER", "QUA", "QUI", "SEX", "SÁB", "DOM"]
@@ -66,7 +70,7 @@ def pagina(path, erros):
         labels = sorted([p for p in rot if coluna_de(p["x0"]) == c], key=lambda p: p["yc"])
         dias = [int(p["t"]) for p in labels]
         esperado_ini = 1 if c % 2 == 0 else 17
-        ultimo_dia = (dt.date(2026, mes % 12 + 1, 1) - dt.timedelta(days=1)).day if mes < 12 else 31
+        ultimo_dia = (dt.date(ANO, mes % 12 + 1, 1) - dt.timedelta(days=1)).day if mes < 12 else 31
         esperado = list(range(esperado_ini, (16 if c % 2 == 0 else ultimo_dia) + 1))
         if dias != esperado:
             erros.append(f"{path} col {c} mês {mes}: dias {dias} != {esperado}")
@@ -79,7 +83,7 @@ def pagina(path, erros):
         hs = [p for p in horas if coluna_de(p["x0"]) == c]
         usados = set()
         for i, (lo, hi) in enumerate(limites):
-            d = dt.date(2026, mes, dias[i])
+            d = dt.date(ANO, mes, dias[i])
             # Dia da semana impresso (quando existe) tem de bater certo.
             sem = [p for p in semanas if coluna_de(p["x0"]) == c and lo <= p["yc"] < hi]
             if sem and sem[0]["t"] != SEMANA[d.weekday()]:
@@ -101,15 +105,26 @@ def pagina(path, erros):
 
 
 def main():
-    pasta, saida, sha = sys.argv[1:4]
+    global ANO
+    ap = argparse.ArgumentParser(description="Tabela de marés do IH (Faro-Olhão) → mares/<ano>.json")
+    ap.add_argument("pasta"); ap.add_argument("saida"); ap.add_argument("sha")
+    ap.add_argument("--ano", type=int, default=2026)
+    ap.add_argument("--paginas", type=int, nargs=4, default=PAGINAS)
+    ap.add_argument("--rotulo-paginas", default="2-121 a 2-124")
+    ap.add_argument("--url", default="https://loja.hidrografico.pt/ln/web/wp-content/uploads/2023/11/TabelaMare_I_2026_signed.pdf")
+    ap.add_argument("--licenca", default=None)
+    a = ap.parse_args()
+    ANO = a.ano
+    pasta, saida, sha = a.pasta, a.saida, a.sha
     erros = []
     eventos = []
-    for p in PAGINAS:
+    for p in a.paginas:
         eventos += pagina(f"{pasta}/p{p}.html", erros)
     eventos.sort()
     dias = {e[0].date() for e in eventos}
-    if len(dias) != 365:
-        erros.append(f"{len(dias)} dias com eventos (esperados 365)")
+    n_dias = (dt.date(ANO + 1, 1, 1) - dt.date(ANO, 1, 1)).days
+    if len(dias) != n_dias or any(d.year != ANO for d in dias):
+        erros.append(f"{len(dias)} dias com eventos (esperados {n_dias} de {ANO})")
     # Tipo: a tabela não o indica. Alternância a partir do primeiro evento (PM se for mais
     # alto do que o segundo); depois verifica-se que cada PM é mais alta do que as BM vizinhas.
     primeiro = "PM" if eventos[0][1] > eventos[1][1] else "BM"
@@ -126,20 +141,21 @@ def main():
     if erros:
         print("ERROS:\n" + "\n".join(erros[:80]))
         sys.exit(1)
-    fonte = "Instituto Hidrográfico, Tabela de Marés 2026, Vol. I, Porto de Faro-Olhão"
+    fonte = f"Instituto Hidrográfico, Tabela de Marés {ANO}, Vol. I, Porto de Faro-Olhão"
     doc = {
         "schemaVersion": 1,
         "station": "Faro-Olhão",
-        "year": 2026,
+        "year": ANO,
         "timezone": "UTC",
         "source": fonte,
-        "sourceUrl": "https://loja.hidrografico.pt/ln/web/wp-content/uploads/2023/11/TabelaMare_I_2026_signed.pdf",
-        "sourcePages": "2-121 a 2-124 (páginas 143 a 146 do PDF)",
+        "sourceUrl": a.url,
+        "sourcePages": f"{a.rotulo_paginas} (páginas {a.paginas[0]} a {a.paginas[-1]} do PDF)",
+        **({"licence": a.licenca} if a.licenca else {}),
         "sourceSha256": sha,
         "heightDatum": "zero hidrográfico (2,00 m abaixo do nível médio adotado, Cascais 1938)",
         "heightResolutionM": 0.1,
         "notice": "Horas da tabela em TU (UTC), convertidas para instantes ISO com Z. Tipo PM/BM deduzido pela alternância das alturas (a tabela não o indica). Transcrição automática validada: dias seguidos, dia da semana, alternância e intervalos.",
-        "events": [{"instant": t.strftime("%Y-%m-%dT%H:%M:00Z"), "type": tp, "heightM": h, "source": "IH 2026 Faro-Olhão"}
+        "events": [{"instant": t.strftime("%Y-%m-%dT%H:%M:00Z"), "type": tp, "heightM": h, "source": f"IH {ANO} Faro-Olhão"}
                    for (t, h), tp in zip(eventos, tipos)]
     }
     with open(saida, "w", encoding="utf-8") as f:
