@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { limitesDiaLisboa } from "../js/normalizacao.js";
 import { horasOpenMeteo, porDia } from "../js/regras/serie.js";
-import { potenciaHora, potenciaMaximaDoDia, AVISO_PERIODO_PICO } from "../js/regras/potencia.js";
+import { potenciaHora, potenciaMaximaDoDia } from "../js/regras/potencia.js";
 import { classificarComponentes, energia } from "../js/regras/componentes.js";
 import { classificarAmplitude, amplitudesConsecutivas, CLASSE_MARE } from "../js/regras/mares.js";
 import { getSunAndMoon } from "../js/fontes/suncalc.js";
@@ -36,19 +36,21 @@ test("série Open-Meteo: as duas 01:00 de 25/10 ficam no mesmo dia, com instante
 // ---------- Potência (regra 5) ----------
 
 test("potência: P = 0,49 × Hs² × T com o período médio", () => {
-  const p = potenciaHora({ hs: 1.0, periodoMedio: 7.0, periodoPico: 9.0 }, COEF);
+  const p = potenciaHora({ hs: 1.0, periodoMedio: 7.0 }, COEF);
   assert.equal(p.valor, 0.49 * 1 * 1 * 7);
   assert.equal(p.periodo, "médio");
   assert.equal(p.aviso, null);
 });
 
-test("potência: sem período médio usa o de pico, com aviso; sem os dois → não obtido", () => {
-  const p = potenciaHora({ hs: 1.0, periodoMedio: null, periodoPico: 9.0 }, COEF);
-  assert.equal(p.periodo, "pico");
-  assert.equal(p.aviso, AVISO_PERIODO_PICO);
-  const n = potenciaHora({ hs: 1.0, periodoMedio: null, periodoPico: null }, COEF);
-  assert.equal(n.valor, null);
-  assert.equal(n.status, "não obtido");
+test("potência: sem período → não obtido; o período de pico nunca o substitui (decisão de 20/11/2026)", () => {
+  // Mesmo que venha um período de pico, não entra: um período de pico não é o período de energia.
+  for (const r of [{ hs: 1.0, periodoMedio: null, periodoPico: 9.0 }, { hs: 1.0, periodoMedio: undefined }]) {
+    const p = potenciaHora(r, COEF);
+    assert.deepEqual(p, { valor: null, status: "não obtido", periodo: null, aviso: null });
+  }
+  // Um registo do Open-Meteo com wave_peak_period mas sem wave_period: potência não obtida.
+  const reg = { instante: 0, wave_height: 1.2, wave_period: null, wave_peak_period: 11 };
+  assert.equal(potenciaMaximaDoDia([reg], COEF).status, "não obtido");
 });
 
 test("potência: Hs em falta → não obtido; valores impossíveis → inválido", () => {

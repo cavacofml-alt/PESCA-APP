@@ -40,8 +40,7 @@ export function componentesDaHora(regMar, regTerra, limiarPeriodo = 6) {
 }
 
 export function limoDaHora(regMar, regTerra, cfg) {
-  const potencia = potenciaHora({ hs: regMar?.wave_height, periodoMedio: regMar?.wave_period,
-    periodoPico: regMar?.wave_peak_period }, cfg.coeficiente).valor;
+  const potencia = potenciaHora({ hs: regMar?.wave_height, periodoMedio: regMar?.wave_period }, cfg.coeficiente).valor;
   const mexido = marMexido({ hs: regMar?.wave_height, potencia }, cfg);
   const todas = componentesDaHora(regMar, regTerra, cfg.periodoVagaVentoSegundos);
   const comps = todas.filter(c => c.tipo !== "altura não obtida");

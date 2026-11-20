@@ -1,8 +1,8 @@
 // Mudar a versão sempre que a shell mudar: a activação apaga as caches antigas.
 // A impressão abaixo (SHA-256 dos ficheiros da SHELL) é conferida por um teste; para actualizar
 // a impressão e a versão de uma vez: node ferramentas/versao-sw.mjs
-const CACHE = "surfcasting-shell-v21";
-// impressão da shell: 7a1f38d47fb1
+const CACHE = "surfcasting-shell-v22";
+// impressão da shell: c7d725ec2126
 const SHELL = [
   "./", "./index.html", "./diagnostico.html", "./mapa.html", "./manifest.webmanifest", "./css/base.css", "./css/app.css",
   "./js/app.js", "./js/diagnostico.js", "./js/dados.js", "./js/normalizacao.js", "./js/pontos.js",

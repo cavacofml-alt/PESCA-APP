@@ -1,34 +1,25 @@
 // Regra 5 — potência da ondulação, hora a hora: P ≈ coef × Hs² × T (kW/m).
-// Hs total e período da MESMA hora. Período médio total; se faltar, período de pico com
-// aviso; se faltarem os dois → não obtido. Função pura.
+// Hs total e período da MESMA hora: o «wave_period» do Open-Meteo. Se faltar → não obtido.
+// Decisão do utilizador de 20/11/2026: o período de pico já não substitui o período em falta
+// (um período de pico não é o período de energia que a fórmula de 0,49 pede; a decisão da Fase 1
+// permitia-o, com aviso). O campo `aviso` fica para o motor e a interface, hoje sempre null.
+// Indicador de águas profundas, não a energia na rebentação. Função pura.
 import { ESTADO, roundTo } from "../normalizacao.js";
 import { valido } from "./serie.js";
 
-export const AVISO_PERIODO_PICO = "calculado com período de pico";
-
-export function potenciaHora({ hs, periodoMedio, periodoPico }, coeficiente = 0.49) {
-  if (hs === null || hs === undefined) return { valor: null, status: ESTADO.NAO_OBTIDO, periodo: null, aviso: null };
-  if (!valido(hs)) return { valor: null, status: ESTADO.INVALIDO, periodo: null, aviso: null };
-  let periodo = null;
-  let aviso = null;
-  if (periodoMedio !== null && periodoMedio !== undefined) {
-    if (!valido(periodoMedio) || periodoMedio === 0) return { valor: null, status: ESTADO.INVALIDO, periodo: null, aviso: null };
-    periodo = "médio";
-  } else if (periodoPico !== null && periodoPico !== undefined) {
-    if (!valido(periodoPico) || periodoPico === 0) return { valor: null, status: ESTADO.INVALIDO, periodo: null, aviso: null };
-    periodo = "pico";
-    aviso = AVISO_PERIODO_PICO;
-  } else {
-    return { valor: null, status: ESTADO.NAO_OBTIDO, periodo: null, aviso: null };
-  }
-  const t = periodo === "médio" ? periodoMedio : periodoPico;
-  return { valor: coeficiente * hs * hs * t, status: ESTADO.OBTIDO, periodo, aviso };
+export function potenciaHora({ hs, periodoMedio }, coeficiente = 0.49) {
+  const sem = status => ({ valor: null, status, periodo: null, aviso: null });
+  if (hs === null || hs === undefined) return sem(ESTADO.NAO_OBTIDO);
+  if (!valido(hs)) return sem(ESTADO.INVALIDO);
+  if (periodoMedio === null || periodoMedio === undefined) return sem(ESTADO.NAO_OBTIDO);
+  if (!valido(periodoMedio) || periodoMedio === 0) return sem(ESTADO.INVALIDO);
+  return { valor: coeficiente * hs * hs * periodoMedio, status: ESTADO.OBTIDO, periodo: "médio", aviso: null };
 }
 
 // Potência de cada hora de um registo do Open-Meteo Marine.
 export function potenciaDoRegisto(r, coeficiente) {
   return { instante: r.instante, ...potenciaHora({
-    hs: r.wave_height, periodoMedio: r.wave_period, periodoPico: r.wave_peak_period
+    hs: r.wave_height, periodoMedio: r.wave_period
   }, coeficiente) };
 }
 
