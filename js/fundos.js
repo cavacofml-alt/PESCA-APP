@@ -17,7 +17,7 @@ export const estimado = fundos => fundos?.fonte?.tipo === "estimado";
 
 // Referência vertical de uma fonte. Sem «datum», ou «ZH»: zero hidrográfico (COSMO, satélite
 // calibrado no COSMO). «LAT» (LiDAR 2011 do EMODnet): devolve [mín, máx] da altura da LAT acima do
-// ZH (em Faro-Olhão 0 a 0,34 m, Tabela de Marés do IH). A cota ao ZH fica entre cota + mín e
+// ZH (em Faro-Olhão 0 a 0,22 m, Tabelas de Marés do IH de 2026 e 2027). A cota ao ZH fica entre cota + mín e
 // cota + máx; não se aplica uma correcção constante (revisão de 19/11/2026).
 export function intervaloLat(fonte) {
   return fonte?.datum === "LAT" ? fonte.latAcimaZhM : null;

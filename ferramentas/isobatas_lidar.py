@@ -43,15 +43,16 @@ FONTE = {
     "levantamento": "2011",
     "url": "https://emodnet.ec.europa.eu/geonetwork/srv/api/records/SDN_CPRD_590_HR_Lidar_Algarve",
     "resolucaoM": 12,
-    # Referência vertical: a ficha do EMODnet diz LAT. O IH (Tabela de Marés 2026, §1.06) diz que o ZH fica
-    # abaixo da LAT, e em Faro-Olhão a baixa-mar mínima de 2026 é 0,34 m: a LAT fica 0 a 0,34 m acima do ZH.
-    # A app mostra intervalos com esse limite em vez de uma correcção constante (revisão de 19/11/2026).
-    "referenciaVertical": "baixa-mar astronómica mais baixa (LAT), segundo a ficha do EMODnet. Em Faro-Olhão a LAT "
-                          "fica 0 a 0,34 m acima do zero hidrográfico (IH, Tabela de Marés 2026: o ZH fica abaixo da "
-                          "LAT, e a baixa-mar mínima de 2026 é 0,34 m). No confronto com o COSMO 2025, as cotas LiDAR "
-                          "das zonas fundas ficaram 0,1 a 0,25 m acima das do COSMO",
+    # Referência vertical: a ficha do EMODnet diz LAT. O IH (Tabela de Marés, §1.06) diz que o ZH fica abaixo
+    # da LAT; e a LAT não passa da baixa-mar mínima de nenhum ano (Faro-Olhão: 0,34 m em 2026, 0,22 m em 2027).
+    # Logo, a LAT fica 0 a 0,22 m acima do ZH. A app mostra intervalos com esse limite em vez de uma
+    # correcção constante (revisão de 19/11/2026; limite apertado com a tabela de 2027 a 20/11/2026).
+    "referenciaVertical": "baixa-mar astronómica mais baixa (LAT), segundo a ficha do EMODnet. Em Faro-Olhão a LAT fica 0 a"
+                          " 0,22 m acima do zero hidrográfico (IH, Tabelas de Marés 2026 e 2027: o ZH fica abaixo da LAT, e"
+                          " a LAT não passa da baixa-mar mínima de cada ano, 0,34 m em 2026 e 0,22 m em 2027). No confronto"
+                          " com o COSMO 2025, as cotas LiDAR das zonas fundas ficaram 0,1 a 0,25 m acima das do COSMO",
     "datum": "LAT",
-    "latAcimaZhM": [0, 0.34],
+    "latAcimaZhM": [0, 0.22],
     "utilizacao": "pública; não usar para navegação",
 }
 
