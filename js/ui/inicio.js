@@ -3,7 +3,7 @@
 // Requisitos das revisões da Fase 3: nunca mostrar uma nota incompleta como definitiva —
 // intervalo, períodos sem nota, parcelas por avaliar, n.d. e «por confirmar» sempre visíveis.
 // Função pura: devolve HTML (texto escapado).
-import { esc, hora, horaIso, num, rotuloDia, classeNota, textoNota, NOME_ESPECIE, PERIODO_CURTO, NOME_MARE, rumo } from "./formato.js";
+import { esc, hora, horaIso, dataHora, num, rotuloDia, classeNota, textoNota, NOME_ESPECIE, PERIODO_CURTO, NOME_MARE, rumo } from "./formato.js";
 import { ordenarMelhoresDias } from "../regras/notas.js";
 import { resumoBoia } from "../fontes/ih-boias.js";
 import { DISTANCIAS_FUNDO } from "../fontes/fundo-tipico.js";
@@ -115,13 +115,13 @@ function marAgora(contexto) {
   if (prev) {
     const km = prev.celula ? distanciaKm(prev.celula, { lat: Number(b.latitude), lon: Number(b.longitude) }) : null;
     const onde = prev.celula ? `célula ${num(prev.celula.lat, 3)}, ${num(prev.celula.lon, 3)} (${nomePonto})${km === null ? "" : `, a ${num(km, 0)} km da boia`}` : nomePonto;
-    linhas.push(["Previsão", `Open-Meteo às ${hora(prev.instante)}, ${onde}: Hs ${num(prev.hs, 2)} m${Number.isFinite(prev.periodo) ? ` · «wave_period» ${num(prev.periodo, 1)} s (não é o Tm02 da boia)` : ""}`]);
+    linhas.push(["Previsão", `Open-Meteo para ${dataHora(prev.instante)}, ${onde}: Hs ${num(prev.hs, 2)} m${Number.isFinite(prev.periodo) ? ` · «wave_period» ${num(prev.periodo, 1)} s (não é o Tm02 da boia)` : ""}`]);
   }
   const idade = s.idadeMin >= 60 ? `há ${Math.floor(s.idadeMin / 60)} h ${s.idadeMin % 60} min` : `há ${s.idadeMin} min`;
   return `<section class="mar-agora" aria-label="Mar agora">${topo}
     ${s.desactualizada ? `<p class="falha">Última medição ${esc(idade)}: desactualizada</p>` : ""}
     <dl class="factos">${linhas.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
-    <p class="fonte-boia">Medido às ${esc(hora(u.instante))} (${esc(idade)}) ao largo, a ${esc(b.profundidadeM)} m de fundo: na praia a onda chega diferente. Não entra nas notas.<br>
+    <p class="fonte-boia">Medido a ${esc(dataHora(u.instante))} (${esc(idade)}) ao largo, a ${esc(b.profundidadeM)} m de fundo: na praia a onda chega diferente. Não entra nas notas. Horas de Portugal continental.<br>
     Instituto Hidrográfico, boia ${esc(b.codigo)} (${esc(b.latitude)}, ${esc(b.longitude)}) · observado · lido às ${esc(horaIso(r.readAt))} · <a href="${esc(b.licencaUrl)}" target="_blank" rel="noopener">${esc(b.licenca)}</a></p>
   </section>`;
 }
@@ -342,7 +342,7 @@ export function renderInicio(contexto) {
   const especie = contexto.especie ?? "robalo";
   const d = analise.dias[indice];
   return `<header class="topo"><div><h1>Surfcasting Algarve</h1>
-      <p class="lido">Dados lidos às ${esc(horaIso(lidoEm))} · notas provisórias</p></div>
+      <p class="lido">Dados lidos às ${esc(horaIso(lidoEm))} (hora de Portugal continental) · notas provisórias</p></div>
       <button type="button" id="actualizar" class="btn-actualizar" aria-label="Actualizar dados">↻</button></header>
     ${escolhaEspecie(especie)}
     ${faixaDias(analise, indice, especie)}
