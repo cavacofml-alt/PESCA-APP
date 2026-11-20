@@ -2,8 +2,12 @@
   "name": "surfcasting-algarve",
   "private": true,
   "type": "module",
-  "description": "Sem dependências. Só serve para os testes (node --test) tratarem os .js como módulos ES.",
+  "description": "Sem dependências na app publicada. O Playwright é só de desenvolvimento, para os testes no browser (testes-browser/).",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "test:browser": "node --test testes-browser/*.e2e.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
   }
 }

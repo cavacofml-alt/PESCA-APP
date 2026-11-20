@@ -4,10 +4,9 @@ import { readFileSync } from "node:fs";
 import { getMarine } from "../js/fontes/open-meteo-marine.js";
 import { getForecast } from "../js/fontes/open-meteo-forecast.js";
 import { validarSerieUnix } from "../js/fontes/open-meteo-tempo.js";
-import { getSeaForecastDay } from "../js/fontes/ipma-mar.js";
 import { validateTides } from "../js/fontes/mares-locais.js";
 import {
-  MARINE_FIXTURE, FORECAST_FIXTURE, TIDE_FIXTURE, ipmaMarFixture
+  MARINE_FIXTURE, FORECAST_FIXTURE, TIDE_FIXTURE
 } from "./dados-teste.js";
 
 const config = JSON.parse(readFileSync(new URL("../config.json", import.meta.url), "utf8"));
@@ -82,58 +81,6 @@ test("Erros de rede e JSON aparecem em português", async () => {
   const jsonMau = async () => ({ ok: true, status: 200, json: async () => JSON.parse("<html>") });
   const r2 = await getMarine({ latitude: 1, longitude: 1, baseUrl: fontes.marineBase, fetchImpl: jsonMau, now: NOW });
   assert.equal(r2.error, "Resposta não é JSON válido");
-});
-
-// ---------- IPMA estado do mar ----------
-
-test("Estado do mar: URL correcto e só Faro (1080526)", async () => {
-  const f = fakeFetch(ipmaMarFixture("2026-10-09"));
-  const r = await getSeaForecastDay(1, { baseUrl: fontes.ipmaSeaForecastBase, fetchImpl: f, now: NOW });
-  assert.equal(r.ok, true, r.error);
-  assert.equal(f.pedidos[0],
-    "https://api.ipma.pt/open-data/forecast/oceanography/daily/hp-daily-sea-forecast-day1.json");
-  assert.equal(r.data.length, 1);
-  assert.equal(r.data[0].globalIdLocal, 1080526);
-});
-
-test("Estado do mar: forecastDate diferente do dia pedido → desactualizado", async () => {
-  // Caso observado: a 08/10 o day0 ainda tinha forecastDate 07/10.
-  const r = await getSeaForecastDay(0, { baseUrl: fontes.ipmaSeaForecastBase,
-    fetchImpl: fakeFetch(ipmaMarFixture("2026-10-07")), now: NOW });
-  assert.equal(r.ok, false);
-  assert.match(r.error, /desactualizado/);
-});
-
-test("Estado do mar: sem registo de Faro → não obtido", async () => {
-  const pedir = body => getSeaForecastDay(0, { baseUrl: fontes.ipmaSeaForecastBase, fetchImpl: fakeFetch(body), now: NOW });
-  const vazio = { ...ipmaMarFixture("2026-10-08"), data: [] };
-  const soOutros = ipmaMarFixture("2026-10-08");
-  soOutros.data = soOutros.data.filter(r => r.globalIdLocal !== 1080526);
-  for (const body of [vazio, soOutros]) {
-    const r = await pedir(body);
-    assert.equal(r.ok, false);
-    assert.match(r.error, /sem registo de Faro/);
-  }
-  const duplicado = ipmaMarFixture("2026-10-08");
-  duplicado.data.push({ ...duplicado.data[0] });
-  const r = await pedir(duplicado);
-  assert.equal(r.ok, false);
-  assert.match(r.error, /2 registos de Faro/);
-});
-
-test("Estado do mar: forecastDate em falta → desactualizado", async () => {
-  const semData = ipmaMarFixture("2026-10-08");
-  delete semData.forecastDate;
-  const r = await getSeaForecastDay(0, { baseUrl: fontes.ipmaSeaForecastBase, fetchImpl: fakeFetch(semData), now: NOW });
-  assert.equal(r.ok, false);
-  assert.match(r.error, /em falta/);
-});
-
-test("Estado do mar: o dia pedido é o dia de Lisboa, não o UTC", async () => {
-  // 23:30 UTC de 07/10 = 00:30 de 08/10 em Lisboa → day0 tem de ser 08/10.
-  const r = await getSeaForecastDay(0, { baseUrl: fontes.ipmaSeaForecastBase,
-    fetchImpl: fakeFetch(ipmaMarFixture("2026-10-08")), now: new Date("2026-10-07T23:30:00Z") });
-  assert.equal(r.ok, true, r.error);
 });
 
 // ---------- Marés locais (mantido da Fase 2) ----------

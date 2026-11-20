@@ -1,6 +1,6 @@
 # Surfcasting Algarve
 
-App pessoal (PWA, para Android) com as condições de surfcasting para dourada e robalo entre Faro e Quarteira. Sem build e sem dependências de runtime. O ecrã inicial (`index.html`) mostra um cartão por pesqueiro com as notas por período; `diagnostico.html` mostra o estado de cada fonte.
+App pessoal (PWA, para Android) com as condições de surfcasting para dourada e robalo entre Faro e Quarteira. Sem build e sem dependências de runtime. O ecrã inicial (`index.html`) mostra um cartão por pesqueiro com as notas por período; `mapa.html` mostra os pesqueiros e o fundo do mar; `fontes.html` diz de onde vem cada dado, de que tipo é e com que licença (e os créditos das fotografias); `diagnostico.html`, aberto a partir das «Fontes», mostra o estado técnico de cada pedido. Os quatro ecrãs têm a mesma barra de navegação (Início, Mapa, Fontes).
 
 ## Executar localmente
 
@@ -26,7 +26,7 @@ Abrir o endereço no Chrome → menu ⋮ → **Instalar app** (ou «Adicionar ao
 - Open-Meteo Marine: consulta horária marinha.
 - Open-Meteo Forecast: vento, rajadas, pressão e precipitação. **Não pede nascer/pôr do Sol.**
 - Open-Meteo (Marine e Forecast): pedidos com `timeformat=unixtime` (instantes absolutos; a hora local repete-se a 25/10/2026). Consulta Faro e Quarteira.
-- IPMA estado do mar: consulta `oceanography/daily/hp-daily-sea-forecast-day{0,1,2}.json`, filtra `globalIdLocal=1080526` e recusa ficheiros cujo `forecastDate` não seja o dia pedido (`não obtido (desactualizado)`).
+- IPMA estado do mar: **deixou de ser consultado** (decisão do utilizador, 20/11/2026): só aparecia no diagnóstico e não dava informação útil. Só volta como funcionalidade explícita, com atribuição e validação.
 - Boia de Faro (Instituto Hidrográfico, OGC API): última medição da onda e da água, com o indicador de qualidade de cada valor (1 e 2 aceites; 9 → `não obtido`; outros ou fora dos limites físicos → `inválido`). Mostrada em «Mar agora»; não entra nas notas.
 - Marés locais: valida formato, ordem, alternância PM/BM e intervalos de 30 a 480 minutos. `mares/2026.json` tem a tabela oficial do IH de 2026 (ver «Tabela de marés»).
 - SunCalc 1.9.0 (BSD-2) em `vendor/suncalc.js`: nascer e pôr do Sol e fases da Lua, calculados no aparelho. A aplicação não consulta outra fonte solar.
@@ -45,7 +45,19 @@ Com Node ≥ 20, na raiz do projecto:
 node --test
 ```
 
-Não há dependências a instalar (o `package.json` só indica que os `.js` são módulos ES). Os testes não usam a Internet: as respostas das APIs são simuladas com as fixtures de `testes/dados-teste.js`, que não são previsões reais. O GitHub Actions corre os testes em cada push e PR, com Node 20 e 22 e quatro fusos horários (UTC, Europe/Lisbon, America/New_York, Asia/Tokyo).
+Não há dependências a instalar para estes testes. Os testes não usam a Internet: as respostas das APIs são simuladas com as fixtures de `testes/dados-teste.js` e com respostas reais guardadas em `testes/reais/`, que não são previsões actuais. O GitHub Actions corre os testes em cada push e PR, com Node 20 e 22 e quatro fusos horários (UTC, Europe/Lisbon, America/New_York, Asia/Tokyo).
+
+### Testes no browser (Playwright)
+
+O Playwright é **só de desenvolvimento** (aprovado pelo utilizador a 20/11/2026): nunca entra na app publicada. Os testes em `testes-browser/*.e2e.mjs` abrem a app num Chromium, servida localmente a partir da mesma pasta que se publica, com as APIs a responder com `testes/reais/` (sem Internet) e o relógio fixo. Verificam a navegação, as páginas e que não há deslocamento horizontal num Pixel 7 emulado e a 360 px, e guardam capturas em `saida-browser/`.
+
+```
+npm ci
+npx playwright install chromium   # uma vez, se o Chromium ainda não estiver instalado
+npm run test:browser
+```
+
+O GitHub Actions corre-os em cada push e PR (workflow «Testes no browser») e guarda as capturas como artifact.
 
 ## Limitações desta entrega
 

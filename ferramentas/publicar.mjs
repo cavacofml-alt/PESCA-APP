@@ -8,10 +8,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const PUBLICAR = [
-  "index.html", "diagnostico.html", "mapa.html", "manifest.webmanifest", "sw.js", "config.json", "_headers",
+  "index.html", "diagnostico.html", "mapa.html", "fontes.html", "manifest.webmanifest", "sw.js", "config.json", "_headers",
   "css", "js", "vendor", "mares", "fundos", "assets"
 ];
-export const NUNCA = ["recolha", "testes", "ferramentas", ".github", "CLAUDE.md", "README.md", "package.json"];
+export const NUNCA = ["recolha", "testes", "testes-browser", "ferramentas", ".github", "node_modules", "CLAUDE.md", "README.md",
+  "package.json", "package-lock.json"];
 
 export function publicar(raiz, destino = path.join(raiz, "publicar")) {
   fs.rmSync(destino, { recursive: true, force: true });

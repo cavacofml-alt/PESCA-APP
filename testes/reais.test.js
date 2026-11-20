@@ -7,7 +7,6 @@ import { getForecast } from "../js/fontes/open-meteo-forecast.js";
 import { amplitudeDoDia, repontosDoDia, CLASSE_MARE } from "../js/regras/mares.js";
 import { horasOpenMeteo } from "../js/regras/serie.js";
 import { getMarine } from "../js/fontes/open-meteo-marine.js";
-import { getSeaForecastDay } from "../js/fontes/ipma-mar.js";
 import { analisarDias } from "../js/regras/analise.js";
 import { createRequire } from "node:module";
 import { pontosNecessarios } from "../js/pontos.js";
@@ -97,13 +96,6 @@ test("Open-Meteo Marine real (14/10): aceite; wave_peak_period sempre nulo neste
     assert.ok(r.data.hourly.wave_peak_period.every(v => v === null));
     assert.ok(r.data.hourly.wave_period.every(v => typeof v === "number"));
   }
-});
-
-test("IPMA estado do mar real (14/10): forecastDate certo e registo de Faro", async () => {
-  const r = await getSeaForecastDay(0, { baseUrl: config.fontes.ipmaSeaForecastBase,
-    fetchImpl: fakeFetch("./reais/ipma_mar_day0_20261014_0946.json"), now: new Date("2026-10-14T08:46:00Z") });
-  assert.equal(r.ok, true, r.error);
-  assert.equal(r.data[0].globalIdLocal, 1080526);
 });
 
 test("motor completo com dados reais de 14/10: 7 dias, todos os pesqueiros com nota ou n.d. justificado", () => {

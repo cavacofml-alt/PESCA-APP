@@ -130,7 +130,6 @@
   "fontes": {
     "marineBase": "https://marine-api.open-meteo.com/v1/marine",
     "forecastBase": "https://api.open-meteo.com/v1/forecast",
-    "ipmaSeaForecastBase": "https://api.ipma.pt/open-data/forecast/oceanography/daily/",
     "boiasIhBase": "https://ogcapi.hidrografico.pt/collections/buoys_datawell/locations/"
   },
   "boias": {
@@ -148,6 +147,86 @@
       "licencaUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
       "origem": "Instituto Hidrográfico, rede de boias Datawell Waverider (OGC API, colecção buoys_datawell, id_est 20), lido a 17/11/2026"
     }
+  },
+  "paginaFontes": {
+    "aviso": "De onde vem cada dado da app, de que tipo é e com que licença. O estado técnico de cada pedido está no diagnóstico.",
+    "fontes": [
+      {
+        "nome": "Open-Meteo (Marine e Forecast)",
+        "tipo": "previsto",
+        "uso": "Ondulação (total, de fundo e vaga de vento), temperatura da água, vento, rajadas, pressão e chuva. É a base das notas.",
+        "nota": "Os 7 dias anteriores, usados na comparação da água, são previsões arquivadas, não medições.",
+        "licenca": "Termos e licença no site do Open-Meteo",
+        "ligacao": "https://open-meteo.com/"
+      },
+      {
+        "nome": "Instituto Hidrográfico — Tabela de Marés, Faro-Olhão",
+        "tipo": "previsão oficial",
+        "uso": "Horas e alturas de preia-mar e baixa-mar, amplitude e repontos.",
+        "licenca": "2026: © Instituto Hidrográfico · 2027: CC BY-NC-ND 4.0",
+        "licencaUrl": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+        "licencaLigada": "CC BY-NC-ND 4.0",
+        "ligacao": "https://loja.hidrografico.pt/sdm_downloads/tabela-mares-vol-i-portugal-2027/"
+      },
+      {
+        "nome": "Instituto Hidrográfico — boia ondógrafo de Faro (CSA82/D)",
+        "tipo": "observado",
+        "uso": "«Mar agora»: altura, períodos, direcção e temperatura da água medidos ao largo. Não entra nas notas.",
+        "licenca": "CC BY-NC 4.0",
+        "licencaUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+        "ligacao": "https://www.hidrografico.pt/"
+      },
+      {
+        "nome": "SunCalc",
+        "tipo": "calculado no aparelho",
+        "uso": "Nascer e pôr do Sol e fase da Lua.",
+        "licenca": "BSD 2-Clause",
+        "ligacao": "https://github.com/mourner/suncalc"
+      },
+      {
+        "nome": "Agência Portuguesa do Ambiente — Programa COSMO",
+        "tipo": "medido",
+        "uso": "Fundo do mar medido (levantamentos de 2025 e de 2020), no mapa e no fundo típico das praias.",
+        "licenca": "Utilização sem restrições; citar «Agência Portuguesa do Ambiente. Programa COSMO»",
+        "ligacao": "https://cosmo.apambiente.pt/"
+      },
+      {
+        "nome": "Instituto Hidrográfico — LiDAR 2011 (EMODnet Bathymetry)",
+        "tipo": "medido em 2011",
+        "uso": "Fundo do mar onde não há levantamento COSMO (Ria Formosa, Ancão, Vilamoura, Falésia).",
+        "licenca": "Utilização pública; não serve para navegação",
+        "ligacao": "https://emodnet.ec.europa.eu/en/bathymetry"
+      },
+      {
+        "nome": "Copernicus Sentinel-2",
+        "tipo": "estimado",
+        "uso": "Fundões e cabeços estimados por satélite, no mapa.",
+        "licenca": "Contém dados Copernicus Sentinel modificados (2025–2026)",
+        "ligacao": "https://www.copernicus.eu/"
+      },
+      {
+        "nome": "OpenStreetMap",
+        "tipo": "mapa base",
+        "uso": "Mapa de fundo do ecrã «Mapa».",
+        "licenca": "© colaboradores do OpenStreetMap (ODbL)",
+        "ligacao": "https://www.openstreetmap.org/copyright"
+      },
+      {
+        "nome": "Direção-Geral do Território — OrtoSat 2023",
+        "tipo": "imagem de satélite",
+        "uso": "Fundo de satélite do ecrã «Mapa».",
+        "licenca": "Sem custos nem restrições de acesso indicados no serviço",
+        "ligacao": "https://www.dgterritorio.gov.pt/"
+      },
+      {
+        "nome": "Leaflet",
+        "tipo": "biblioteca",
+        "uso": "Desenho do mapa interactivo.",
+        "licenca": "BSD 2-Clause",
+        "ligacao": "https://leafletjs.com/"
+      }
+    ],
+    "ligacoesExternas": "As ligações dos cartões («vento agora», câmaras) abrem sites de terceiros: não são fontes de dados da app."
   },
   "locais": {
     "faroMar": {

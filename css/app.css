@@ -145,6 +145,23 @@ a { color: var(--azul2); }
 .tabela-horas td.lado { font-size: .7rem; }
 .nota-mare { margin: .6rem .2rem; color: var(--suave); font-size: .75rem; line-height: 1.45; }
 
+/* Ecrãs «Fontes» e «Diagnóstico» */
+.aviso-fontes, .notice { margin: .3rem .1rem .8rem; padding: .7rem .8rem; border-left: 4px solid #b57a14; border-radius: .4rem;
+  background: #fff6e5; font-size: .88rem; line-height: 1.45; }
+.cartao-fonte, .pagina-diag .card, .creditos { margin: 0 0 .7rem; padding: .8rem .9rem; border-radius: .9rem; background: white;
+  box-shadow: 0 1px 6px rgb(11 59 83 / .1); overflow-wrap: anywhere; }
+.cartao-fonte h2, .pagina-diag .card h2, .creditos h2 { margin: 0 0 .25rem; font-size: 1rem; color: var(--azul); }
+.cartao-fonte p, .pagina-diag .card p { margin: .3rem 0; font-size: .88rem; line-height: 1.45; }
+.tipo-fonte { color: var(--suave); font-size: .78rem !important; text-transform: uppercase; letter-spacing: .03em; }
+.creditos ul { margin: .3rem 0 0; padding-left: 1.1rem; font-size: .85rem; line-height: 1.5; }
+.ir-diagnostico { margin: 1rem .2rem; font-weight: 650; }
+.pagina-diag #refresh { padding: .6rem 1rem; border: 0; border-radius: .7rem; background: var(--azul); color: white; font: inherit; font-weight: 650; }
+.pagina-diag #updated { color: var(--suave); font-size: .85rem; }
+.pagina-diag .status { font-weight: 700; }
+.pagina-diag .ok { color: #17633a; }
+.pagina-diag .fail { color: #a33a2b; }
+.pagina-diag pre { overflow-x: auto; font-size: .75rem; }
+
 /* Ecrã «Mapa» (Leaflet) */
 /* Coluna da altura do ecrã: cabeçalho, mapa (o resto) e espaço para a barra de baixo. */
 .pagina-mapa { display: flex; flex-direction: column; height: 100dvh; padding-bottom: calc(3.3rem + env(safe-area-inset-bottom)); }

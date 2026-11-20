@@ -21,7 +21,6 @@ test("config.json tem os URL correctos das fontes", () => {
   assert.deepEqual(config.fontes, {
     marineBase: "https://marine-api.open-meteo.com/v1/marine",
     forecastBase: "https://api.open-meteo.com/v1/forecast",
-    ipmaSeaForecastBase: "https://api.ipma.pt/open-data/forecast/oceanography/daily/",
     boiasIhBase: "https://ogcapi.hidrografico.pt/collections/buoys_datawell/locations/"
   });
 });
