@@ -8,7 +8,7 @@ import { aguaTurvaDoDia } from "../js/regras/chuva.js";
 import { validateTides } from "../js/fontes/mares-locais.js";
 import { pontosNecessarios } from "../js/pontos.js";
 import { diasDoHorizonte, solDoDia } from "../js/dados.js";
-import { renderInicio } from "../js/ui/inicio.js";
+import { renderInicio, fontesDoCartao } from "../js/ui/inicio.js";
 import { num, hora, rotuloDia, classeNota, textoNota, esc } from "../js/ui/formato.js";
 
 const raiz = new URL("..", import.meta.url);
@@ -40,7 +40,7 @@ test("ecrã: um cartão por pesqueiro, com nota, períodos, fontes e créditos d
   assert.equal((html.match(/<article class="cartao"/g) ?? []).length, Object.keys(config.pesqueiros).length);
   assert.match(html, /Dados lidos às 10:46/);
   assert.equal((html.match(/<h4>Fontes<\/h4>/g) ?? []).length, Object.keys(config.pesqueiros).length);
-  assert.match(html, /Open-Meteo Marine \(37\.0133, -8\.00567\) · previsto · lido às 10:46/);
+  assert.match(html, /Open-Meteo Marine \(37\.0133, -8\.00567\) · previsto \(os 7 dias anteriores, usados na comparação da água, são previsões arquivadas, não medições\) · lido às 10:46/);
   assert.ok(!/Wikimedia Commons/.test(html), "créditos das fotos fora dos cartões (página Fontes)");
   assert.match(html, /Créditos das fotografias na página <a href="\.\/diagnostico\.html">Fontes<\/a>/);
   assert.match(html, /Vento agora \(Windguru\): <a href="https:\/\/www\.windguru\.cz\/station\/3324"/);
@@ -146,9 +146,16 @@ test("ecrã: «Mar agora» com a última medição da boia, fonte, tipo, licenç
 test("ecrã: «Mar agora» mostra a previsão do Open-Meteo para a mesma hora (série sintética do teste)", () => {
   const c = { ...contexto(), lidoEm: "2026-11-15T10:40:00.000Z", boiaFaro: boiaOk("2026-11-15T10:40:00.000Z") };
   const t = Date.parse("2026-11-15T10:00:00Z") / 1000;
-  c.pontos = { ...c.pontos, mar: { ...c.pontos.mar, faroMarPoente: { ok: true, data: { hourly: {
+  c.pontos = { ...c.pontos, mar: { ...c.pontos.mar, faroMarPoente: { ok: true, data: { latitude: 36.958336, longitude: -8.0416565, hourly: {
     time: [t - 3600, t, t + 3600], wave_height: [0.8, 0.9, 1], wave_period: [8.1, 8.2, 8.3] } } } } };
-  assert.match(renderInicio(c), /<dd>Open-Meteo às 10:00 \(Praia de Faro\): 0,90 m, período 8,2 s<\/dd>/);
+  // Revisão de 20/11/2026: diz de que célula vem a previsão e a que distância da boia, e o «wave_period»
+  // não aparece como «período médio» ao lado do Tm02.
+  const html = renderInicio(c);
+  assert.match(html, /<dd>Open-Meteo às 10:00, célula 36,958, −8,042 \(Praia de Faro\), a 14 km da boia: Hs 0,90 m · «wave_period» 8,2 s \(não é o Tm02 da boia\)<\/dd>/);
+  assert.doesNotMatch(html, /período 8,2 s/);
+  // Sem as coordenadas da célula na resposta, fica só o nome do ponto.
+  delete c.pontos.mar.faroMarPoente.data.latitude;
+  assert.match(renderInicio(c), /<dd>Open-Meteo às 10:00, Praia de Faro: Hs 0,90 m/);
 });
 
 test("ecrã: boia desactualizada, sem medições válidas ou não obtida — sempre dito, nunca um número", () => {
@@ -172,4 +179,14 @@ test("ecrã: cartões das praias com o fundo típico (molhes sem ele); fonte nas
   assert.doesNotMatch(cartaoDe("molhe_quarteira"), /Fundo a 100/);
   const falhou = renderInicio({ ...contexto(), fundoTipico: { ok: false, data: null, error: "HTTP 500" } });
   assert.match(falhou, /<dt>Fundo a 100\/150\/200 m<\/dt><dd>não obtido \(HTTP 500\)<\/dd>/);
+});
+
+test("fontes do cartão: marés com os anos lidos (passagem de ano) e o aviso de ano em falta", () => {
+  const c = contexto();
+  const pq = config.pesqueiros.ancao;
+  c.mares = { ...c.mares, ok: true, anos: [2026, 2027], aviso: null };
+  assert.match(fontesDoCartao(pq, c), /Marés: Instituto Hidrográfico, Faro-Olhão 2026 e 2027 \(tabela oficial, horas TU\)/);
+  c.mares = { ...c.mares, anos: [2027], aviso: "tabela de 2028 não obtida (HTTP 404)" };
+  assert.match(fontesDoCartao(pq, c), /Faro-Olhão 2027 \(tabela oficial, horas TU\) · tabela de 2028 não obtida \(HTTP 404\)/);
+  assert.doesNotMatch(fontesDoCartao(pq, c), /Faro-Olhão 2026 \(/, "o ano já não está escrito no código");
 });

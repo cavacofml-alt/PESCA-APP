@@ -79,7 +79,15 @@ function previsaoParaHora(contexto, ponto, instante) {
   const h = contexto.pontos?.mar?.[ponto]?.data?.hourly;
   const i = h?.time?.indexOf(Math.round(instante / 3600000) * 3600) ?? -1;
   if (i < 0 || !Number.isFinite(h.wave_height?.[i])) return null;
-  return { instante: h.time[i] * 1000, hs: h.wave_height[i], periodo: h.wave_period?.[i] };
+  const d = contexto.pontos.mar[ponto].data;
+  return { instante: h.time[i] * 1000, hs: h.wave_height[i], periodo: h.wave_period?.[i],
+    celula: Number.isFinite(d.latitude) && Number.isFinite(d.longitude) ? { lat: d.latitude, lon: d.longitude } : null };
+}
+
+// Distância aproximada entre dois pontos (km), para dizer a que distância da boia está a célula.
+function distanciaKm(a, b) {
+  const kx = 111.32 * Math.cos(((a.lat + b.lat) / 2) * Math.PI / 180);
+  return Math.hypot((a.lon - b.lon) * kx, (a.lat - b.lat) * 110.57);
 }
 
 // Boia de Faro (Instituto Hidrográfico): o mar medido agora, ao lado da previsão para a mesma
@@ -101,7 +109,14 @@ function marAgora(contexto) {
     ["Tendência", `${s.tresHorasAntes ? `3 h antes ${num(s.tresHorasAntes.hm0.valor, 2)} m · ` : ""}últimas ${b.horas} h: ${num(s.minimo, 2)}–${num(s.maximo, 2)} m`]
   ];
   const nomePonto = Object.values(contexto.config.pesqueiros).find(p => p.mar === b.previsaoPonto)?.nomeCurto ?? b.previsaoPonto;
-  if (prev) linhas.push(["Previsão", `Open-Meteo às ${hora(prev.instante)} (${nomePonto}): ${num(prev.hs, 2)} m${Number.isFinite(prev.periodo) ? `, período ${num(prev.periodo, 1)} s` : ""}`]);
+  // Revisão do ChatGPT (20/11/2026): a previsão é de outra célula (a do pesqueiro), e o «wave_period» do
+  // Open-Meteo não é o Tm02 da boia (a fonte não diz que momento espectral é): mostram-se lado a lado,
+  // com o nome de cada grandeza e de onde vem, sem calcular diferenças.
+  if (prev) {
+    const km = prev.celula ? distanciaKm(prev.celula, { lat: Number(b.latitude), lon: Number(b.longitude) }) : null;
+    const onde = prev.celula ? `célula ${num(prev.celula.lat, 3)}, ${num(prev.celula.lon, 3)} (${nomePonto})${km === null ? "" : `, a ${num(km, 0)} km da boia`}` : nomePonto;
+    linhas.push(["Previsão", `Open-Meteo às ${hora(prev.instante)}, ${onde}: Hs ${num(prev.hs, 2)} m${Number.isFinite(prev.periodo) ? ` · «wave_period» ${num(prev.periodo, 1)} s (não é o Tm02 da boia)` : ""}`]);
+  }
   const idade = s.idadeMin >= 60 ? `há ${Math.floor(s.idadeMin / 60)} h ${s.idadeMin % 60} min` : `há ${s.idadeMin} min`;
   return `<section class="mar-agora" aria-label="Mar agora">${topo}
     ${s.desactualizada ? `<p class="falha">Última medição ${esc(idade)}: desactualizada</p>` : ""}
@@ -181,7 +196,8 @@ export function fundoDoCartao(id, d, contexto) {
     if (max <= 0) return "a descoberto";
     if (!lat) return num(max, 1);
     const min = dec(x.alturaM - c - lat[1]);
-    return min === max ? num(max, 1) : `${min <= 0 ? "0" : num(min, 1)}–${num(max, 1)}`;
+    if (min <= 0) return `0–${num(max, 1)} (pode secar)`;
+    return min === max ? num(max, 1) : `${num(min, 1)}–${num(max, 1)}`;
   }).join(" / ");
   const bm = extremo("BM", (a, b) => a < b), pm = extremo("PM", (a, b) => a > b);
   if (bm) partes.push(`água na baixa-mar mais baixa do dia (${hora(bm.instante)}, ${num(bm.alturaM, 1)} m): ${agua(bm)} m`);
@@ -219,18 +235,22 @@ function parcelas(esp, n) {
 // Fontes dos valores do cartão: fonte, tipo e hora de leitura (critério 10).
 export function fontesDoCartao(pq, contexto, fundo = null) {
   const linhas = [];
-  const ponto = (tipo, k, nomeFonte) => {
+  const ponto = (tipo, k, nomeFonte, nota = "") => {
     if (!k) return;
     const r = contexto.pontos[tipo]?.[k];
     const loc = contexto.config.locais[k];
     const onde = loc ? `${loc.latitude}, ${loc.longitude}` : k;
-    linhas.push(r?.ok ? `${nomeFonte} (${onde}) · previsto · lido às ${horaIso(r.readAt)}`
+    linhas.push(r?.ok ? `${nomeFonte} (${onde}) · previsto${nota} · lido às ${horaIso(r.readAt)}`
       : `${nomeFonte} (${onde}) · não obtido${r?.error ? `: ${r.error}` : ""}`);
   };
-  ponto("mar", pq.mar, "Open-Meteo Marine");
+  // Revisão do ChatGPT (20/11/2026): o histórico (past_days) são previsões arquivadas, não medições.
+  const arquivo = " (os 7 dias anteriores, usados na comparação da água, são previsões arquivadas, não medições)";
+  ponto("mar", pq.mar, "Open-Meteo Marine", arquivo);
   ponto("terra", pq.terra, "Open-Meteo Forecast");
-  if (pq.agua && pq.agua !== pq.mar) ponto("mar", pq.agua, "Open-Meteo Marine (água)");
-  linhas.push(contexto.mares?.ok ? "Marés: Instituto Hidrográfico, Faro-Olhão 2026 (tabela oficial, horas TU)" : `Marés: não obtidas${contexto.mares?.error ? ` (${contexto.mares.error})` : ""}`);
+  if (pq.agua && pq.agua !== pq.mar) ponto("mar", pq.agua, "Open-Meteo Marine (água)", arquivo);
+  const anosMares = contexto.mares?.anos?.length ? ` ${contexto.mares.anos.join(" e ")}` : "";
+  linhas.push(contexto.mares?.ok ? `Marés: Instituto Hidrográfico, Faro-Olhão${anosMares} (tabela oficial, horas TU)${contexto.mares.aviso ? ` · ${contexto.mares.aviso}` : ""}`
+    : `Marés: não obtidas${contexto.mares?.error ? ` (${contexto.mares.error})` : ""}`);
   if (fundo) linhas.push(fundo.fonte ?? `Fundo: ${fundo.erro}`);
   linhas.push("Sol: SunCalc · calculado no aparelho");
   linhas.push("Notas: calculadas pelas regras da app · provisórias");

@@ -80,5 +80,6 @@ export async function loadTidesForWindow({ inicio, fim, urlFor = ano => `./mares
   if (!bons.length) return sourceResult({ source, readAt, error: falhas.join("; ") });
   const juntos = validateTides({ schemaVersion: 1, events: bons.flatMap(r => r.data) }, { minIntervalMinutes, maxIntervalMinutes });
   if (!juntos.ok) return sourceResult({ source, readAt, error: `passagem de ano inconsistente: ${juntos.errors.slice(0, 2).join(" ")}` });
-  return { ...sourceResult({ source, readAt, data: juntos.events }), aviso: falhas.length ? falhas.join("; ") : null };
+  const anosObtidos = anos.filter((_, i) => res[i].ok);
+  return { ...sourceResult({ source, readAt, data: juntos.events }), anos: anosObtidos, aviso: falhas.length ? falhas.join("; ") : null };
 }

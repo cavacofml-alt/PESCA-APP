@@ -78,7 +78,7 @@ test("fundo típico no cartão: a descoberto, molhes e Ria sem linha, falha de l
   assert.match(fundoDoCartao("falesia", d, { config, fundoTipico: { ok: true, data: seco } }).longo, /: a descoberto \/ 1,7–1,9 \/ 2,9–3,1 m/);
   // Só o limite de cima acima de zero: pode estar a descoberto.
   const raso = structuredClone(T); raso.praias.falesia.cotas["100"] = 0.1;
-  assert.match(fundoDoCartao("falesia", d, { config, fundoTipico: { ok: true, data: raso } }).longo, /: 0–0,2 \/ 1,7–1,9 \/ 2,9–3,1 m/);
+  assert.match(fundoDoCartao("falesia", d, { config, fundoTipico: { ok: true, data: raso } }).longo, /: 0–0,2 \(pode secar\) \/ 1,7–1,9 \/ 2,9–3,1 m/);
   assert.equal(fundoDoCartao("molhe_quarteira", d, { config, fundoTipico: ok }), null);
   assert.equal(fundoDoCartao("ria", d, { config, fundoTipico: ok }), null);
   assert.equal(fundoDoCartao("ancao", d, { config }), null);
