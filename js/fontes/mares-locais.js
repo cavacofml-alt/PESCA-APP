@@ -54,3 +54,31 @@ export async function loadLocalTides({ url = "../../mares/2026.json", fetchImpl 
     return sourceResult({ source, readAt, error });
   }
 }
+
+// Anos (UTC) que a janela [inicio, fim] toca. As tabelas do IH vêm em TU, um ficheiro por ano
+// (mares/<ano>.json): uma janela de 7 dias perto do fim do ano precisa de dois.
+export function anosDaJanela(inicio, fim) {
+  const a = new Date(inicio).getUTCFullYear();
+  const b = new Date(fim).getUTCFullYear();
+  if (!Number.isFinite(a) || !Number.isFinite(b) || b < a) return [];
+  return Array.from({ length: b - a + 1 }, (_, i) => a + i);
+}
+
+// Carrega a tabela de cada ano da janela e junta-as. Na passagem de ano confere-se a continuidade
+// (ordem, alternância PM/BM e intervalo, com validateTides sobre a junção): se falhar, nada se
+// junta às escondidas, dá erro. Um ano que não se obtém (ainda não convertido, rede) não apaga os
+// outros: os dias que dele dependem ficam «tabela incompleta» no motor, e o motivo vai em «aviso».
+export async function loadTidesForWindow({ inicio, fim, urlFor = ano => `./mares/${ano}.json`, fetchImpl = fetch,
+  now = new Date(), minIntervalMinutes = 30, maxIntervalMinutes = 480 } = {}) {
+  const anos = anosDaJanela(inicio, fim);
+  const source = `Instituto Hidrográfico — tabela local (${anos.join(", ") || "sem anos"})`;
+  const readAt = now.toISOString();
+  if (!anos.length) return sourceResult({ source, readAt, error: "janela de datas inválida" });
+  const res = await Promise.all(anos.map(ano => loadLocalTides({ url: urlFor(ano), fetchImpl, now, minIntervalMinutes, maxIntervalMinutes })));
+  const falhas = anos.map((ano, i) => (res[i].ok ? null : `tabela de ${ano} não obtida (${res[i].error})`)).filter(Boolean);
+  const bons = res.filter(r => r.ok);
+  if (!bons.length) return sourceResult({ source, readAt, error: falhas.join("; ") });
+  const juntos = validateTides({ schemaVersion: 1, events: bons.flatMap(r => r.data) }, { minIntervalMinutes, maxIntervalMinutes });
+  if (!juntos.ok) return sourceResult({ source, readAt, error: `passagem de ano inconsistente: ${juntos.errors.slice(0, 2).join(" ")}` });
+  return { ...sourceResult({ source, readAt, data: juntos.events }), aviso: falhas.length ? falhas.join("; ") : null };
+}

@@ -13,7 +13,7 @@ test("publicar: pasta com a app e sem recolha/, testes nem documentos de trabalh
   const destino = publicar(raiz, fs.mkdtempSync(path.join(os.tmpdir(), "publicar-")));
   try {
     for (const f of ["index.html", "sw.js", "config.json", "_headers", "manifest.webmanifest",
-      "js/app.js", "js/regras/analise.js", "vendor/suncalc.js", "vendor/LICENSE-suncalc", "mares/2026.json",
+      "js/app.js", "js/regras/analise.js", "vendor/suncalc.js", "vendor/LICENSE-suncalc", "mares/2026.json", "mares/2027.json",
       "mapa.html", "js/mapa.js", "fundos/praia_faro.json", "vendor/leaflet/leaflet.js", "vendor/leaflet/LICENSE",
       "assets/fotos/ria.jpg", "assets/icones/icone-512.png"]) {
       assert.ok(fs.existsSync(path.join(destino, f)), `${f} em falta`);

@@ -1,7 +1,7 @@
 import { getMarine } from "./fontes/open-meteo-marine.js";
 import { getForecast } from "./fontes/open-meteo-forecast.js";
 import { getSeaForecastDay } from "./fontes/ipma-mar.js";
-import { loadLocalTides } from "./fontes/mares-locais.js";
+import { loadTidesForWindow } from "./fontes/mares-locais.js";
 import { getSunAndMoon } from "./fontes/suncalc.js";
 import { getBoia } from "./fontes/ih-boias.js";
 import { pontosNecessarios } from "./pontos.js";
@@ -14,7 +14,7 @@ const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({
 }[c]));
 const showStatus = result => `<span class="status ${result.ok ? "ok" : "fail"}">${result.ok ? "Obtido" : "Não obtido"}</span>`;
 function card(title, result, details = "") {
-  return `<article class="card"><h2>${esc(title)}</h2>${showStatus(result)}<p>${esc(result.error ?? "Pedido concluído.")}</p>${details}</article>`;
+  return `<article class="card"><h2>${esc(title)}</h2>${showStatus(result)}<p>${esc(result.error ?? (result.aviso ? `Obtido em parte: ${result.aviso}.` : "Pedido concluído."))}</p>${details}</article>`;
 }
 // Créditos das fotografias dos cartões (exigidos pelas licenças CC BY e CC BY-SA).
 function creditosFotos(config) {
@@ -38,7 +38,8 @@ async function run() {
     ...pontos.mar.map(k => [`Open-Meteo Marine — ${k}`, getMarine({ ...locais[k], baseUrl: fontes.marineBase })]),
     ...pontos.terra.map(k => [`Open-Meteo Forecast — ${k}`, getForecast({ ...locais[k], baseUrl: fontes.forecastBase })]),
     ...[0, 1, 2].map(d => [`IPMA — estado do mar dia ${d}`, getSeaForecastDay(d, { baseUrl: fontes.ipmaSeaForecastBase })]),
-    ["Marés locais — Faro-Olhão", loadLocalTides({ url: "./mares/2026.json",
+    ["Marés locais — Faro-Olhão", loadTidesForWindow({ inicio: Date.now() - 2 * 86400000,
+      fim: Date.now() + 9 * 86400000,
       minIntervalMinutes: config.mares.intervaloEventoMinutos.minimo,
       maxIntervalMinutes: config.mares.intervaloEventoMinutos.maximo })]
   ];

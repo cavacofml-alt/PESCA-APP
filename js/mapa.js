@@ -1,7 +1,7 @@
 // Ecrã «Mapa»: pesqueiros e fundo do mar (isóbatas, fundões e cabeços) sobre o mapa do
 // OpenStreetMap ou a ortoimagem de satélite da DGT. O Leaflet vem de vendor/leaflet (window.L).
 // Os URL dos fundos de mapa estão no config.json (fonte única).
-import { loadLocalTides } from "./fontes/mares-locais.js";
+import { loadTidesForWindow } from "./fontes/mares-locais.js";
 import { validarFundos, corIsobata, descricaoForma, descricaoIsobata, periodoLevantamento, idadeLevantamento, mesAno,
   estimado } from "./fundos.js";
 import { esc } from "./ui/formato.js";
@@ -92,7 +92,7 @@ function legenda() {
     div.innerHTML = "<b>Fundo (m ao zero hidrográfico)</b><div class=\"escala\">" +
       cotas.map(z => `<span style="--c:${corIsobata(z)}">${z === 0 ? "0" : `−${-z}`}</span>`).join("") +
       "</div><span class=\"f\">■</span> fundão · <span class=\"c\">■</span> cabeço · " +
-      "ZH = 2 m abaixo do nível médio. LiDAR 2011: m à LAT (0 a 0,34 m acima do ZH)";
+      "ZH = 2 m abaixo do nível médio. LiDAR 2011: m à LAT (0 a 0,22 m acima do ZH)";
     L.DomEvent.disableClickPropagation(div);
     return div;
   };
@@ -134,7 +134,9 @@ async function iniciar() {
   legenda().addTo(mapa);
 
   const m = config.mares.intervaloEventoMinutos;
-  const mares = loadLocalTides({ url: "./mares/2026.json", minIntervalMinutes: m.minimo, maxIntervalMinutes: m.maximo });
+  // Próxima preia-mar e baixa-mar: chega a tabela de agora a 3 dias (dois anos na passagem de ano).
+  const mares = loadTidesForWindow({ inicio: Date.now() - 86400000, fim: Date.now() + 3 * 86400000,
+    minIntervalMinutes: m.minimo, maxIntervalMinutes: m.maximo });
   // Cada levantamento só é pedido quando a sua zona (config: limites) entra no ecrã: os ficheiros
   // somam vários MB e o telemóvel não precisa de todos.
   const situacao = new Map(config.mapa.fundos.map(f => [f.id, "por carregar"]));
