@@ -6,13 +6,16 @@
 // 19/11/2026: o código antigo não aceitava a data «2011» da camada LiDAR nova e não a desenhava.
 // Por isso, quando o service worker muda, a página recarrega uma vez e fica toda da mesma versão.
 // Na primeira instalação (ainda não havia service worker) não se recarrega: a página já é a actual.
+// Mas a partir daí passa a haver um, e uma versão nova publicada com a app aberta (sem a fechar)
+// recarrega como as outras (revisão do ChatGPT, 19/11/2026).
 export function registarServiceWorker(nav = globalThis.navigator, loc = globalThis.location) {
   if (!nav?.serviceWorker || !loc || loc.protocol === "file:") return false;
   const sw = nav.serviceWorker;
-  const havia = Boolean(sw.controller);
+  let havia = Boolean(sw.controller);
   let recarregou = false;
   sw.addEventListener("controllerchange", () => {
-    if (!havia || recarregou) return;
+    if (!havia) { havia = true; return; }
+    if (recarregou) return;
     recarregou = true;
     loc.reload();
   });

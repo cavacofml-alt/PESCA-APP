@@ -101,6 +101,19 @@ test("componentes: vaga de vento da fonte é sempre vaga; swell sem período fic
   assert.equal(c.fundo.length, 0);
 });
 
+test("componentes: altura em falta ≠ altura 0 (revisão de 19/11/2026)", () => {
+  // Altura 0 = componente ausente; altura em falta ou inválida = não se sabe se existe.
+  const zero = classificarComponentes({ wind_wave_height: 0, swell_wave_height: 0 });
+  assert.deepEqual([zero.fundo.length, zero.vaga.length, zero.semAltura.length], [0, 0, 0]);
+  const falta = classificarComponentes({ wind_wave_height: null, swell_wave_height: undefined, swell_wave_direction: 120 });
+  assert.deepEqual(falta.semAltura.map(c => c.origem), ["wind_wave", "swell"]);
+  assert.deepEqual([falta.fundo.length, falta.vaga.length, falta.porClassificar.length], [0, 0, 0]);
+  assert.match(falta.semAltura[1].nota, /altura do swell não obtida/);
+  for (const mau of [NaN, Infinity, -0.5, "0,8"]) {
+    assert.equal(classificarComponentes({ wind_wave_height: 0, swell_wave_height: mau }).semAltura.length, 1, String(mau));
+  }
+});
+
 test("energia Hs² × T", () => {
   assert.equal(energia({ hs: 2, periodo: 10 }), 40);
   assert.equal(energia({ hs: 2, periodo: null }), null);

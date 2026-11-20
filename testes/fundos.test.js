@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { validarFundos, corIsobata, proximasMares, aguaPorCima, descricaoForma, descricaoIsobata, dataCurta,
-  periodoLevantamento, idadeLevantamento, mesAno } from "../js/fundos.js";
+  periodoLevantamento, idadeLevantamento, mesAno, intervaloLat } from "../js/fundos.js";
 import { validateTides } from "../js/fontes/mares-locais.js";
 
 const ler = rel => readFileSync(new URL(`../${rel}`, import.meta.url), "utf8");
@@ -293,4 +293,34 @@ test("satélite: balões dizem «estimado», a data da imagem, a confirmação, 
   assert.doesNotMatch(html, /Medido: levantamento/);
   const outro = structuredClone(S); outro.fonte.tipo = "outro";
   assert.ok(validarFundos(outro).erros.some(e => /fonte.tipo/.test(e)));
+});
+
+test("referência vertical (revisão de 19/11/2026): LiDAR à LAT com o limite do IH, COSMO ao ZH", () => {
+  for (const id of ["ria_lidar2011", "falesia_lidar2011"]) {
+    const D = JSON.parse(ler(`fundos/${id}.json`));
+    assert.equal(D.fonte.datum, "LAT", id);
+    assert.deepEqual(intervaloLat(D.fonte), [0, 0.34], id);
+    assert.match(D.fonte.referenciaVertical, /0 a 0,34 m acima do zero hidrográfico \(IH, Tabela de Marés 2026/);
+  }
+  for (const id of ["praia_faro", "quarteira_garrao", "barreta_farol", "culatra_armona", "satelite"]) {
+    assert.equal(intervaloLat(JSON.parse(ler(`fundos/${id}.json`)).fonte), null, id);
+  }
+  // Validação: datum desconhecido ou limite incoerente.
+  const D = JSON.parse(ler("fundos/ria_lidar2011.json"));
+  for (const [campo, valor, erro] of [["datum", "NMM", /datum desconhecido/], ["latAcimaZhM", [0.34, 0], /latAcimaZhM/],
+    ["latAcimaZhM", [0, 5], /latAcimaZhM/], ["latAcimaZhM", null, /latAcimaZhM/]]) {
+    const x = structuredClone(D); x.fonte[campo] = valor;
+    assert.ok(validarFundos(x).erros.some(e => erro.test(e)), `${campo}=${JSON.stringify(valor)}`);
+  }
+});
+
+test("balão de uma linha LiDAR: «à LAT» e o intervalo ao zero hidrográfico; COSMO igual", () => {
+  const D = JSON.parse(ler("fundos/ria_lidar2011.json"));
+  const html = descricaoIsobata(-2, D, new Date("2026-11-19T12:00:00Z"));
+  assert.match(html, /<h3>−2,0 m à LAT<\/h3>/);
+  assert.match(html, /Ao zero hidrográfico da tabela de marés fica entre −2,0 e −1,7 m/);
+  assert.doesNotMatch(html, /ao zero hidrográfico<\/h3>/);
+  assert.doesNotMatch(html, /Costa = linha de 2 m ZH/, "o LiDAR não usa a linha de costa");
+  assert.match(descricaoIsobata(-3, FARO), /<h3>−3,0 m ao zero hidrográfico<\/h3>/);
+  assert.match(descricaoIsobata(-3, FARO), /Costa = linha de 2 m ZH/);
 });

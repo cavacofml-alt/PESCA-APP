@@ -46,8 +46,13 @@ function curvaMare(esperados, eventos) {
 const classeVento = v => (v === null ? "" : v < 10 ? "v1" : v < 15 ? "v2" : v < 20 ? "v3" : v < 25 ? "v4" : "v5");
 const classePotencia = (p, cfgMar) => (p === null ? "" : p < cfgMar.potenciaRobaloMinimaKWm ? "p1" : p < cfgMar.potenciaRobaloIntermediaKWm ? "p2" : "p3");
 // Sem componente nessa hora → «nenhum» (o «—» fica reservado para «não obtido»).
-const textoComp = lista => (lista.length
-  ? lista.map(c => `${num(c.hs, 1)} m<br>${num(c.periodo, 0)} s ${rumo(c.direcao)}`).join("<hr>") : "nenhum");
+// semAltura: componentes com a altura em falta; origens: as que podiam cair nesta linha (um swell
+// sem altura tanto podia ser fundo como vaga). Nesse caso aparece «n.d.», nunca «nenhum».
+const textoComp = (lista, semAltura = [], origens = []) => {
+  const partes = lista.map(c => `${num(c.hs, 1)} m<br>${num(c.periodo, 0)} s ${rumo(c.direcao)}`);
+  if ((semAltura ?? []).some(c => origens.includes(c.origem))) partes.push("n.d.");
+  return partes.length ? partes.join("<hr>") : "nenhum";
+};
 const simNaoInd = v => (v === true ? ["sim", "sim"] : v === false ? ["não", "nao"] : ["?", "ind"]);
 
 // Grupos de horas seguidas do mesmo período (para juntar as células da nota).
@@ -103,8 +108,8 @@ export function renderHorario(contexto, id) {
     linha("Ondulação (m)", horas.map(h => `<td>${num(h.mar?.hs ?? null, 1)}</td>`).join(""));
     linha("Período (s)", horas.map(h => `<td>${num(h.mar?.periodo ?? null, 1)}</td>`).join(""));
     linha("Ondulação de", horas.map(h => `<td>${rumo(h.mar?.direcao)}</td>`).join(""));
-    linha("Fundo", horas.map(h => `<td class="comp">${h.mar ? textoComp(h.mar.fundo) : "—"}</td>`).join(""));
-    linha("Vaga", horas.map(h => `<td class="comp">${h.mar ? textoComp(h.mar.vaga) : "—"}</td>`).join(""));
+    linha("Fundo", horas.map(h => `<td class="comp">${h.mar ? textoComp(h.mar.fundo, h.mar.semAltura, ["swell"]) : "—"}</td>`).join(""));
+    linha("Vaga", horas.map(h => `<td class="comp">${h.mar ? textoComp(h.mar.vaga, h.mar.semAltura, ["wind_wave", "swell"]) : "—"}</td>`).join(""));
     linha("Potência (kW/m)", horas.map(h => {
       const v = h.mar?.potencia.valor ?? null;
       return `<td class="${classePotencia(v, cfgMar)}">${num(v, 2)}</td>`;

@@ -15,6 +15,23 @@ const linhaValida = (l, min) => Array.isArray(l) && l.length >= min && l.every(p
 // Estimativa por satélite (ferramentas/batimetria_satelite.py) e não levantamento medido.
 export const estimado = fundos => fundos?.fonte?.tipo === "estimado";
 
+// Referência vertical de uma fonte. Sem «datum», ou «ZH»: zero hidrográfico (COSMO, satélite
+// calibrado no COSMO). «LAT» (LiDAR 2011 do EMODnet): devolve [mín, máx] da altura da LAT acima do
+// ZH (em Faro-Olhão 0 a 0,34 m, Tabela de Marés do IH). A cota ao ZH fica entre cota + mín e
+// cota + máx; não se aplica uma correcção constante (revisão de 19/11/2026).
+export function intervaloLat(fonte) {
+  return fonte?.datum === "LAT" ? fonte.latAcimaZhM : null;
+}
+
+// Erros dos campos de referência vertical (comum a fundos/<id>.json e a fundos/tipico.json).
+export function errosDatum(f, onde = "fonte") {
+  if (f?.datum === undefined || f.datum === "ZH") return [];
+  if (f.datum !== "LAT") return [`${onde}.datum desconhecido`];
+  const v = f.latAcimaZhM;
+  const ok = Array.isArray(v) && v.length === 2 && v.every(x => finito(x) && x >= 0 && x <= 1) && v[0] <= v[1];
+  return ok ? [] : [`${onde}.latAcimaZhM inválido`];
+}
+
 // Confere a estrutura de fundos/<id>.json. Devolve { ok, erros }.
 export function validarFundos(d) {
   const erros = [];
@@ -31,6 +48,7 @@ export function validarFundos(d) {
   }
   if (!/^[0-9a-f]{64}$/.test(f.sha256 ?? "")) erros.push("fonte.sha256 inválido");
   if (f.tipo !== undefined && f.tipo !== "estimado") erros.push("fonte.tipo desconhecido");
+  erros.push(...errosDatum(f));
   if (!d.tratamento?.criterios) erros.push("tratamento.criterios em falta");
   if (!linhaValida(d.cobertura, 4)) erros.push("cobertura inválida");
   if (!Array.isArray(d.formas)) erros.push("formas em falta");
@@ -150,6 +168,14 @@ export function descricaoForma(forma, fundos, mares, agora = new Date()) {
 
 // Balão de uma isóbata.
 export function descricaoIsobata(cota, fundos, agora = new Date()) {
+  const lat = intervaloLat(fundos.fonte);
+  if (lat) {
+    return `<h3>${num(cota, 1)} m à LAT</h3>` +
+      "<p>Linha de igual cota do fundo, à baixa-mar astronómica mais baixa (LAT). " +
+      `Ao zero hidrográfico da tabela de marés fica entre ${num(cota + lat[0], 1)} e ${num(cota + lat[1], 1)} m ` +
+      `(em Faro-Olhão a LAT está ${num(lat[0], 2)} a ${num(lat[1], 2)} m acima do ZH).</p>` +
+      `<p class="fonte-mapa">${rodapeFundos(fundos, agora)}</p>`;
+  }
   return `<h3>${num(cota, 1)} m ao zero hidrográfico</h3>` +
     `<p>Linha de igual cota do fundo (${num(2 - cota, 1)} m abaixo do nível médio).</p>` +
     `<p class="fonte-mapa">${rodapeFundos(fundos, agora)}</p>`;
@@ -170,6 +196,6 @@ export function rodapeFundos(fundos, agora = new Date()) {
   const quem = /COSMO/.test(f.nome ?? "") ? "levantamento do Programa COSMO (APA) de" : `${esc(f.nome)}, levantamento de`;
   return `Medido: ${quem} ${periodoLevantamento(f)}` +
     `${idade ? ` (${idade})` : ""}, produto ${esc(f.produto)}; tratado nesta app (critérios provisórios). ` +
-    "Costa = linha de 2 m ZH (nível médio). Os bancos mudam com os temporais." +
+    (intervaloLat(f) ? "" : "Costa = linha de 2 m ZH (nível médio). ") + "Os bancos mudam com os temporais." +
     (fundos.aviso ? ` <b>${esc(fundos.aviso)}</b>` : "");
 }
