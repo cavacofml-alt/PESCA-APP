@@ -42,7 +42,7 @@ test("ecrã: um cartão por pesqueiro, com nota, períodos, fontes e créditos d
   assert.equal((html.match(/<h4>Fontes<\/h4>/g) ?? []).length, Object.keys(config.pesqueiros).length);
   assert.match(html, /Open-Meteo Marine \(37\.0133, -8\.00567\) · previsto \(os 7 dias anteriores, usados na comparação da água, são previsões arquivadas, não medições\) · lido às 10:46/);
   assert.ok(!/Wikimedia Commons/.test(html), "créditos das fotos fora dos cartões (página Fontes)");
-  assert.match(html, /Créditos das fotografias na página <a href="\.\/diagnostico\.html">Fontes<\/a>/);
+  assert.match(html, /Créditos das fotografias na página <a href="\.\/fontes\.html">Fontes<\/a>/);
   assert.match(html, /Vento agora \(Windguru\): <a href="https:\/\/www\.windguru\.cz\/station\/3324"/);
   assert.match(html, /notas provisórias/);
 });
