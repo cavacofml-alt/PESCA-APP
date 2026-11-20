@@ -111,9 +111,10 @@
   "potenciaOndas": {
     "coeficiente": 0.49,
     "formula": "0.49 * Hs * Hs * T",
-    "periodoPreferido": "periodo_medio_total",
-    "alternativa": "periodo_pico",
-    "mostrarAvisoAlternativa": true
+    "periodo": "wave_period (Open-Meteo)",
+    "periodoNota": "Período disponibilizado pelo Open-Meteo; definição espectral não confirmada (não identificado como Tm02 nem Tm−1,0). Indicador provisório.",
+    "alternativa": null,
+    "decisao": "Sem wave_period → não obtido; o período de pico não o substitui (decisão do utilizador, 20/11/2026)"
   },
   "anomalias": {
     "rajadaSobreVentoMedioMaximo": 3,
