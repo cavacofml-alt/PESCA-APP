@@ -50,7 +50,7 @@ Tema marítimo (azuis profundos, turquesa, fundos neutros), com as cores das not
 - as marés do dia (preia-mar e baixa-mar, alturas e amplitude);
 - as **condições do dia**: potência e ondulação máximas, vento e rajada, pressão, água, chuva das 48 h anteriores e Sol, cada uma com o tipo (previsto, calculado) e «não obtido» quando falta;
 - o fundo típico (praias);
-- os pontos de dados (vento, ondulação, água) num **mini-mapa** (Leaflet, fundo do OpenStreetMap, um marcador por ponto) e em lista, com as coordenadas e a origem de cada um, o aviso de que os valores são de modelos com células de vários quilómetros, a ligação ao mapa (`mapa.html?pesqueiro=<id>` centra-se nele e abre o balão), as câmaras e as estações de vento;
+- os pontos de dados (vento, ondulação, água) num **mini-mapa** só ilustrativo (Leaflet, fundo do OpenStreetMap, marcadores numerados como a lista; sem zoom nem foco do teclado e escondido dos leitores de ecrã, que lêem a legenda e a lista; a atribuição do fundo vai na legenda, com ligações) e em lista, com as coordenadas e a origem de cada um, o aviso de que os valores são de modelos com células de vários quilómetros, a ligação ao mapa (`mapa.html?pesqueiro=<id>` centra-se nele e abre o balão), as câmaras e as estações de vento;
 - os factos do dia, as parcelas, as fontes com a hora de leitura e os avisos.
 
 Sem Leaflet ou sem rede para os mosaicos, a lista de coordenadas continua lá.

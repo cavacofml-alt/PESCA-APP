@@ -11,7 +11,7 @@ import { validateTides } from "../js/fontes/mares-locais.js";
 import { pontosNecessarios } from "../js/pontos.js";
 import { limitesDiaLisboa, lisbonDate } from "../js/normalizacao.js";
 import { renderInicio, destaqueDoDia, notasDoCartao } from "../js/ui/inicio.js";
-import { renderPesqueiro, janelasDoPesqueiro, condicoesDoDia } from "../js/ui/pesqueiro.js";
+import { renderPesqueiro, janelasDoPesqueiro, condicoesDoDia, pontosDoPesqueiro, numerarPontos, atribuicaoSegura } from "../js/ui/pesqueiro.js";
 import { conteudoHorario } from "../js/ui/horario.js";
 import { porque, estadoDaNota } from "../js/ui/explicacao.js";
 import { textoNota, NOME_ESPECIE } from "../js/ui/formato.js";
@@ -171,6 +171,29 @@ test("página do pesqueiro: secções pela ordem (janela, notas, hora a hora, ma
       assert.doesNotMatch(html, /undefined|NaN|\[object/);
     }
   }
+});
+
+test("mini-mapa: só ilustrativo, fora dos leitores de ecrã, numerado como a lista; a atribuição vai na legenda com ligações", () => {
+  for (const id of IDS) {
+    const html = renderPesqueiro({ ...base, id });
+    const pontos = numerarPontos(pontosDoPesqueiro(base.config.pesqueiros[id], base.config));
+    const n = pontos.filter(x => x.local).length;
+    assert.ok(html.includes('<div id="mini-mapa" class="mini-mapa" aria-hidden="true"></div>'), id);
+    assert.doesNotMatch(html, /id="mini-mapa"[^>]*role=/, `${id}: sem role no mapa (os controlos não ficam dentro de uma «imagem»)`);
+    const fig = /<figure class="mini-mapa-fig"[\s\S]*?<\/figure>/.exec(html)?.[0] ?? "";
+    assert.match(fig, /<figcaption>Mapa ilustrativo/);
+    assert.match(fig, /<a href="https:\/\/www\.openstreetmap\.org\/copyright">colaboradores do OpenStreetMap<\/a>/, `${id}: atribuição OSM`);
+    assert.equal((html.match(/<span class="num-ponto">/g) ?? []).length, n, `${id}: um número por ponto com coordenadas`);
+    assert.deepEqual(pontos.filter(x => x.local).map(x => x.n), Array.from({ length: n }, (_, k) => k + 1));
+  }
+  // Atribuição vinda do config: só ligações https, o resto como texto.
+  const a = atribuicaoSegura('© <a href="https://osm.org/c">OSM</a> <script>alert(1)</script><a href="javascript:alert(1)">x</a> <b>y</b>');
+  assert.equal(a, '© <a href="https://osm.org/c">OSM</a> alert(1)x y');
+  assert.equal(atribuicaoSegura(undefined), "");
+  // Sem configuração do mapa: figura sem atribuição, sem erro.
+  const cfg = structuredClone(base.config);
+  delete cfg.mapa;
+  assert.doesNotMatch(renderPesqueiro({ ...base, config: cfg, id: "ancao" }), /class="atrib-mapa"/);
 });
 
 test("condições do dia: valores lidos com o tipo; o que falta diz-se («não obtido»), nunca zero", () => {

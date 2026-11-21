@@ -2,7 +2,7 @@
 // A impressão abaixo (SHA-256 dos ficheiros da SHELL) é conferida por um teste; para actualizar
 // a impressão e a versão de uma vez: node ferramentas/versao-sw.mjs
 const CACHE = "surfcasting-shell-v35";
-// impressão da shell: 05f4f7a1a074
+// impressão da shell: 2001a796e40e
 const SHELL = [
   "./", "./index.html", "./diagnostico.html", "./mapa.html", "./fontes.html", "./comparador.html", "./pesqueiro.html", "./diario.html", "./estatisticas.html", "./historico.html", "./guia.html", "./manifest.webmanifest", "./css/app.css",
   "./js/app.js", "./js/diagnostico.js", "./js/dados.js", "./js/normalizacao.js", "./js/pontos.js",

@@ -1,6 +1,7 @@
 // PR 9 do plano de evolução (21/11/2026) no browser: «melhor oportunidade» no primeiro ecrã, cartões
 // com as notas das duas espécies, página do pesqueiro com mini-mapa, melhor janela e «hora a hora» na
-// hora actual; estados incompleto, indisponível e arquivado; barra com ícones; contraste calculado nos
+// hora actual; mini-mapa ilustrativo fora do teclado e dos leitores de ecrã; estados incompleto,
+// indisponível e arquivado; barra com ícones; contraste calculado nos
 // estilos reais; teclado; sem deslocamento horizontal (Pixel 7 e 360 px). Correr: npm run test:browser.
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -93,7 +94,10 @@ for (const dispositivo of ["Pixel 7", { width: 360, height: 780 }]) {
         await pagina.goto(`${srv.url}/pesqueiro.html?id=${id}`);
         await pagina.waitForSelector(".janela-pq");
         const pontos = new Set(["terra", "mar", "agua"].map(k => pq[k]).filter(k => k && config.locais[k])).size;
-        await pagina.waitForFunction(n => document.querySelectorAll("#mini-mapa .leaflet-interactive").length === n, pontos);
+        await pagina.waitForFunction(n => document.querySelectorAll("#mini-mapa .marca-ponto").length === n, pontos);
+        // Mini-mapa só ilustrativo: nada lá dentro recebe o foco (nem o próprio contentor).
+        assert.equal(await pagina.evaluate(() => [...document.querySelectorAll("#mini-mapa, #mini-mapa *")]
+          .filter(e => e.tabIndex >= 0 && (e.matches("a[href],button,input,select,textarea,[tabindex]"))).length), 0, `${id}: nada focável no mini-mapa`);
         assert.equal(await pagina.locator(".janela-esp").count(), pq.especies.length, id);
         assert.ok(await pagina.locator(".condicoes-pq .tile").count() >= 5, id);
         // Hoje (15/11 às 10:40): a coluna «agora» existe e está à vista na tabela.
@@ -149,6 +153,45 @@ test("navegação: a melhor oportunidade leva ao pesqueiro e ao comparador; barr
     await pagina.waitForURL(/comparador\.html\?dia=0$/);
     await pagina.waitForSelector(".linha-comp");
     assert.equal(await pagina.getAttribute(".barra a.activo", "aria-current"), "page");
+    assert.deepEqual(registo.erros, []);
+  } finally { await contexto.close(); }
+});
+
+test("mini-mapa e teclado: o Tab passa pela legenda e por «Ver no mapa» sem entrar no mapa; leitores de ecrã lêem a legenda e a lista", async () => {
+  const { contexto, pagina, registo } = await abrir(browser);
+  try {
+    await pagina.goto(`${srv.url}/pesqueiro.html?id=falesia`);
+    await pagina.waitForSelector("#mini-mapa .marca-ponto");
+    // Começa no elemento focável que vem antes da secção «Localização» e anda com Tab até sair dela.
+    await pagina.evaluate(() => {
+      const sec = document.querySelector(".onde-pq");
+      const antes = [...document.querySelectorAll("a[href],button")].filter(e => sec.compareDocumentPosition(e) & Node.DOCUMENT_POSITION_PRECEDING).at(-1);
+      antes.focus();
+    });
+    const visitados = [];
+    for (let k = 0; k < 12; k++) {
+      await pagina.keyboard.press("Tab");
+      const f = await pagina.evaluate(() => {
+        const e = document.activeElement;
+        return { dentroSec: Boolean(e.closest(".onde-pq")), noMapa: Boolean(e.closest("#mini-mapa")), texto: e.textContent.trim(),
+          contorno: getComputedStyle(e).outlineStyle };
+      });
+      if (!f.dentroSec && visitados.length) break;
+      if (f.dentroSec) visitados.push(f);
+    }
+    assert.ok(visitados.length >= 3, `Tab dentro da secção: ${visitados.map(v => v.texto).join(" | ")}`);
+    assert.ok(visitados.every(v => !v.noMapa), "o foco nunca entra no mapa");
+    assert.ok(visitados.every(v => v.contorno !== "none"), "foco visível");
+    const textos = visitados.map(v => v.texto);
+    assert.ok(textos.includes("colaboradores do OpenStreetMap"), "atribuição alcançável pelo teclado");
+    assert.ok(textos.some(x => x.startsWith("Ver no mapa")), "«Ver no mapa» alcançável pelo teclado");
+    // Árvore de acessibilidade: a figura com a legenda e as ligações; nada do mapa (sem imagem nem botões de zoom).
+    const arvore = await pagina.locator(".onde-pq").ariaSnapshot();
+    assert.match(arvore, /figure "Mapa ilustrativo/);
+    assert.match(arvore, /link "colaboradores do OpenStreetMap"/);
+    assert.match(arvore, /term: 1 vento, pressão e chuva/);
+    assert.doesNotMatch(arvore, /Zoom|button|- img/);
+    await captura(pagina, "interface-mini-mapa");
     assert.deepEqual(registo.erros, []);
   } finally { await contexto.close(); }
 });

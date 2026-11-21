@@ -26,6 +26,42 @@ export function pontosDoPesqueiro(pq, config) {
   return [...porPonto.values()];
 }
 
+// Os pontos com coordenadas recebem um número (1, 2, …), o mesmo no mini-mapa e na lista.
+export const numerarPontos = pontos => {
+  let n = 0;
+  return pontos.map(x => ({ ...x, n: x.local ? ++n : null }));
+};
+
+// Atribuição do config (HTML com ligações) → HTML seguro: só ligações https (endereço e texto escapados); o resto é texto escapado.
+export function atribuicaoSegura(html) {
+  const txt = String(html ?? "");
+  const re = /<a\s+href="(https:\/\/[^"]+)"[^>]*>([^<]*)<\/a>/gi;
+  const partes = [];
+  let i = 0;
+  for (let m; (m = re.exec(txt));) {
+    partes.push(esc(txt.slice(i, m.index).replace(/<[^>]*>/g, "")), `<a href="${esc(m[1])}">${esc(m[2])}</a>`);
+    i = re.lastIndex;
+  }
+  partes.push(esc(txt.slice(i).replace(/<[^>]*>/g, "")));
+  return partes.join("");
+}
+
+// Mini-mapa (revisão do PR 9, 22/11/2026): só ilustrativo. O mapa para explorar é o ecrã «Mapa»
+// («Ver no mapa»). Por isso não tem controlos nem recebe o foco, fica fora da árvore de
+// acessibilidade (aria-hidden; a lista numerada por baixo tem tudo o que ele mostra) e a atribuição
+// do fundo vai na legenda, fora do mapa, com ligações acessíveis. Sem Leaflet, a figura esconde-se.
+function miniMapa(pontos, config, { comLigacao = true } = {}) {
+  const n = pontos.filter(x => x.local).length;
+  if (!n) return "";
+  const osm = config.mapa?.fundosBase?.osm?.atribuicao;
+  const leaflet = config.mapa?.leaflet;
+  return `<figure class="mini-mapa-fig" id="fig-mini-mapa">
+        <div id="mini-mapa" class="mini-mapa" aria-hidden="true"></div>
+        <figcaption>Mapa ilustrativo, sem zoom: ${n === 1 ? "o número é o ponto" : "os números são os pontos"} da lista abaixo.${comLigacao ? " Para explorar o mapa e o fundo do mar, use «Ver no mapa»." : ""}
+          ${osm || leaflet ? `<span class="atrib-mapa">Fundo: ${[osm, leaflet].filter(Boolean).map(atribuicaoSegura).join(" · ")}</span>` : ""}</figcaption>
+      </figure>`;
+}
+
 function lista(config, indice) {
   return `<ul class="lista-pq">${Object.entries(config.pesqueiros).map(([id, pq]) =>
     `<li><a href="${esc(urlPesqueiro(id, indice))}">${esc(pq.nome)}</a></li>`).join("")}</ul>`;
@@ -207,8 +243,8 @@ export function renderPesqueiro(contexto) {
     </section>` : ""}
     <section class="bloco-pq onde-pq" aria-label="Localização">
       <h2><span class="ic ic-local" aria-hidden="true"></span>Onde <small>· pontos de dados</small></h2>
-      ${pontos.some(x => x.local) ? `<div id="mini-mapa" class="mini-mapa" role="img" aria-label="Mapa com ${pontos.filter(x => x.local).length} ponto(s) de dados do pesqueiro"></div>` : ""}
-      <dl class="factos">${pontos.map(x => `<dt>${esc(x.papeis.join("; "))}</dt><dd>${x.local
+      ${miniMapa(pontos, config, { comLigacao: Boolean(principal) })}
+      <dl class="factos">${numerarPontos(pontos).map(x => `<dt>${x.n ? `<span class="num-ponto">${x.n}</span>` : ""}${esc(x.papeis.join("; "))}</dt><dd>${x.local
         ? `lat. ${esc(num(x.local.latitude, 5))} · long. ${esc(num(x.local.longitude, 5))}${x.local.origem ? ` <small>· ${esc(x.local.origem)}</small>` : " <small>· ponto aproximado (sem ponto de pesca do utilizador)</small>"}`
         : "ponto em falta na configuração"}</dd>`).join("")}</dl>
       <p class="rodape">Os valores do mar e do vento são de modelos com células de vários quilómetros: não são medições no pesqueiro.</p>
