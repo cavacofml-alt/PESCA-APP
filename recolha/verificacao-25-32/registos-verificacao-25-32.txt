@@ -1,0 +1,323 @@
+REGISTOS DA VERIFICAÇÃO FINAL DOS PR #25–#32 (só leitura) — gerado a 2026-11-21T23:48Z
+Ambiente: Claude Code (contentor), git 2.43.0, Node v22.23.4, Chromium do Playwright 1.63.0. Cópias de trabalho desligadas por SHA (git worktree add --detach), sem ramos, sem commits.
+
+== 1. SHA dos heads (iguais no GitHub e no git local)
+   b322db30c158f1a2f5b76e84762fa29ec0040b3b  main
+   bcb5421d7ad751b002cda57e5ae63276ef78ce88  claude/evolucao-1-documentacao
+   3a69f3c59094662bc938f63b6c50c85b6376f75d  claude/evolucao-2-comparador
+   ec2da4166ddf39e81167a3d94ed8004fd45d5601  claude/evolucao-3-armazenamento
+   c80d3db56fd1470255875642c85621b9591f8a18  claude/evolucao-4-pesqueiros
+   ed418c62dbb7a79688c20bfd33efb6640c411e4a  claude/evolucao-5-diario
+   8b314449c7ddd150531c4e13229e9702abf9eaf2  claude/evolucao-6-estatisticas
+   a9c49a3005c9639aa005bdf29659227727f8d083  claude/evolucao-7-historico
+   b0794027744623c623cdf7c29b8f41a94e4edf93  claude/evolucao-8-guia
+
+== 2. CI do GitHub por SHA (execuções 'Testes' e 'Testes no browser', evento pull_request / push, todas conclusion=success)
+   #25 bcb5421  Testes 44841596046 / 44841540331   browser 44841596083 / 44841541176
+   #26 3a69f3c  Testes 44843307930 / 44843273301   browser 44843307948 / 44843273397
+   #27 ec2da41  Testes 44935880408 / 44935874882   browser 44935880391 / 44935874896
+   #28 c80d3db  Testes 44936475224 / 44936471203   browser 44936475265 / 44936471198
+   #29 ed418c6  Testes 44936477948 / 44936473669   browser 44936477997 / 44936473667
+   #30 8b31444  Testes 44936480834 / 44936476634   browser 44936480837 / 44936476661
+   #31 a9c49a3  Testes 44936483156 / 44936478838   browser 44936483176 / 44936478840
+   #32 b079402  Testes 44936485211 / 44936481486   browser 44936485229 / 44936481594
+   (https://github.com/cavacofml-alt/PESCA-APP/actions/runs/<id>)
+
+== 3. Testes locais por SHA
+   PR 25 SHA bcb5421d7ad751b002cda57e5ae63276ef78ce88
+   node TZ=UTC: # pass 262 # fail 0 
+   browser: # pass 9 # fail 0 
+   PR 26 SHA 3a69f3c59094662bc938f63b6c50c85b6376f75d
+   node TZ=UTC: # pass 276 # fail 0 
+   browser: # pass 14 # fail 0 
+   PR 27 SHA ec2da4166ddf39e81167a3d94ed8004fd45d5601
+   node TZ=UTC: # pass 297 # fail 0 
+   browser: # pass 21 # fail 0 
+   PR 28 SHA c80d3db56fd1470255875642c85621b9591f8a18
+   node TZ=UTC: # pass 305 # fail 0 
+   browser: # pass 25 # fail 0 
+   PR 29 SHA ed418c62dbb7a79688c20bfd33efb6640c411e4a
+   node TZ=UTC: # pass 319 # fail 0 
+   browser: # pass 31 # fail 0 
+   PR 30 SHA 8b314449c7ddd150531c4e13229e9702abf9eaf2
+   node TZ=UTC: # pass 327 # fail 0 
+   browser: # pass 34 # fail 0 
+   PR 31 SHA a9c49a3005c9639aa005bdf29659227727f8d083
+   node TZ=UTC: # pass 335 # fail 0 
+   browser: # pass 38 # fail 0 
+   PR 32 SHA b0794027744623c623cdf7c29b8f41a94e4edf93
+   node TZ=UTC: # pass 340 # fail 0 
+   browser: # pass 40 # fail 0 
+   PR 25 (bcb5421) node TZ=Europe/Lisbon: # pass 262 # fail 0 
+   PR 26 (3a69f3c) node TZ=Europe/Lisbon: # pass 276 # fail 0 
+   PR 27 (ec2da41) node TZ=Europe/Lisbon: # pass 297 # fail 0 
+   PR 28 (c80d3db) node TZ=Europe/Lisbon: # pass 305 # fail 0 
+   PR 29 (ed418c6) node TZ=Europe/Lisbon: # pass 319 # fail 0 
+   PR 30 (8b31444) node TZ=Europe/Lisbon: # pass 327 # fail 0 
+   PR 31 (a9c49a3) node TZ=Europe/Lisbon: # pass 335 # fail 0 
+   PR 32 (b079402) node TZ=Europe/Lisbon: # pass 340 # fail 0 
+   PR 32 node TZ=America/New_York: # pass 340 # fail 0 
+   PR 32 node TZ=Asia/Tokyo: # pass 340 # fail 0 
+   PR 32 Node v20.20.2 (UTC): # pass 340 # fail 0 
+
+== 4. Diffs por PR (git diff --name-status base...head), ficheiros do motor e versão da cache
+ === PR #25  base main (b322db3)  head claude/evolucao-1-documentacao (bcb5421)  base é antepassado do head: sim  merge-base: b322db3  commits: 3
+    M CLAUDE.md
+    M README.md
+    M ferramentas/publicar.mjs
+    A ferramentas/referencia-motor.mjs
+    A testes/motor-referencia.test.js
+    A testes/referencia/motor-20261014.json
+    motor (js/regras, config.json, mares, fundos): 
+    sw.js CACHE: surfcasting-shell-v27 -> surfcasting-shell-v27
+ === PR #26  base claude/evolucao-1-documentacao (bcb5421)  head claude/evolucao-2-comparador (3a69f3c)  base é antepassado do head: sim  merge-base: bcb5421  commits: 1
+    M CLAUDE.md
+    M README.md
+    A comparador.html
+    M css/app.css
+    M diagnostico.html
+    M ferramentas/publicar.mjs
+    M fontes.html
+    M index.html
+    M js/app.js
+    A js/carregar.js
+    A js/comparador.js
+    A js/ui/comparador.js
+    M js/ui/formato.js
+    M js/ui/inicio.js
+    M mapa.html
+    M sw.js
+    M testes-browser/apoio.mjs
+    A testes-browser/comparador.e2e.mjs
+    M testes-browser/navegacao.e2e.mjs
+    A testes/comparador.test.js
+    M testes/estrutura.test.js
+    M testes/fontes-pagina.test.js
+    motor (js/regras, config.json, mares, fundos): 
+    sw.js CACHE: surfcasting-shell-v27 -> surfcasting-shell-v28
+ === PR #27  base claude/evolucao-2-comparador (3a69f3c)  head claude/evolucao-3-armazenamento (ec2da41)  base é antepassado do head: sim  merge-base: 3a69f3c  commits: 2
+    M CLAUDE.md
+    M README.md
+    M config.json
+    M css/app.css
+    M js/app.js
+    A js/armazenamento/armazem-memoria.js
+    A js/armazenamento/esquema.js
+    A js/armazenamento/indexeddb.js
+    A js/armazenamento/leituras.js
+    M js/carregar.js
+    M js/comparador.js
+    M js/diagnostico.js
+    M js/ui/comparador.js
+    M js/ui/formato.js
+    M js/ui/inicio.js
+    M sw.js
+    M testes-browser/apoio.mjs
+    A testes-browser/armazenamento.e2e.mjs
+    A testes/armazenamento.test.js
+    motor (js/regras, config.json, mares, fundos): config.json 
+    sw.js CACHE: surfcasting-shell-v28 -> surfcasting-shell-v29
+ === PR #28  base claude/evolucao-3-armazenamento (ec2da41)  head claude/evolucao-4-pesqueiros (c80d3db)  base é antepassado do head: sim  merge-base: ec2da41  commits: 2
+    M CLAUDE.md
+    M README.md
+    M css/app.css
+    M ferramentas/publicar.mjs
+    M js/mapa.js
+    A js/pesqueiro.js
+    M js/ui/comparador.js
+    M js/ui/horario.js
+    M js/ui/inicio.js
+    A js/ui/pesqueiro.js
+    A pesqueiro.html
+    M sw.js
+    A testes-browser/pesqueiro.e2e.mjs
+    M testes/fontes-pagina.test.js
+    A testes/pesqueiro.test.js
+    motor (js/regras, config.json, mares, fundos): 
+    sw.js CACHE: surfcasting-shell-v29 -> surfcasting-shell-v30
+ === PR #29  base claude/evolucao-4-pesqueiros (c80d3db)  head claude/evolucao-5-diario (ed418c6)  base é antepassado do head: sim  merge-base: c80d3db  commits: 2
+    M CLAUDE.md
+    M README.md
+    M comparador.html
+    M css/app.css
+    M diagnostico.html
+    A diario.html
+    M ferramentas/publicar.mjs
+    M fontes.html
+    M index.html
+    A js/diario.js
+    A js/diario/condicoes.js
+    A js/diario/copia.js
+    A js/diario/saidas.js
+    A js/ui/diario.js
+    M mapa.html
+    M pesqueiro.html
+    M sw.js
+    A testes-browser/diario.e2e.mjs
+    A testes/diario.test.js
+    M testes/fontes-pagina.test.js
+    motor (js/regras, config.json, mares, fundos): 
+    sw.js CACHE: surfcasting-shell-v30 -> surfcasting-shell-v31
+ === PR #30  base claude/evolucao-5-diario (ed418c6)  head claude/evolucao-6-estatisticas (8b31444)  base é antepassado do head: sim  merge-base: ed418c6  commits: 2
+    M CLAUDE.md
+    M README.md
+    M css/app.css
+    A estatisticas.html
+    M ferramentas/publicar.mjs
+    A js/diario/estatisticas.js
+    A js/estatisticas.js
+    M js/ui/diario.js
+    A js/ui/estatisticas.js
+    M sw.js
+    A testes-browser/estatisticas.e2e.mjs
+    A testes/estatisticas.test.js
+    M testes/fontes-pagina.test.js
+    motor (js/regras, config.json, mares, fundos): 
+    sw.js CACHE: surfcasting-shell-v31 -> surfcasting-shell-v32
+ === PR #31  base claude/evolucao-6-estatisticas (8b31444)  head claude/evolucao-7-historico (a9c49a3)  base é antepassado do head: sim  merge-base: 8b31444  commits: 2
+    M CLAUDE.md
+    M README.md
+    M css/app.css
+    M ferramentas/publicar.mjs
+    A historico.html
+    A js/historico.js
+    A js/historico/validacao.js
+    M js/ui/fontes.js
+    A js/ui/historico.js
+    M sw.js
+    A testes-browser/historico.e2e.mjs
+    M testes/fontes-pagina.test.js
+    A testes/historico.test.js
+    motor (js/regras, config.json, mares, fundos): 
+    sw.js CACHE: surfcasting-shell-v32 -> surfcasting-shell-v33
+ === PR #32  base claude/evolucao-7-historico (a9c49a3)  head claude/evolucao-8-guia (b079402)  base é antepassado do head: sim  merge-base: a9c49a3  commits: 2
+    M CLAUDE.md
+    M README.md
+    M css/app.css
+    M ferramentas/publicar.mjs
+    A guia.html
+    A js/guia.js
+    M js/ui/fontes.js
+    A js/ui/guia.js
+    M sw.js
+    A testes-browser/guia.e2e.mjs
+    M testes/fontes-pagina.test.js
+    A testes/guia.test.js
+    motor (js/regras, config.json, mares, fundos): 
+    sw.js CACHE: surfcasting-shell-v33 -> surfcasting-shell-v34
+
+== 5. config.json (comparação por chave)
+   #27 acrescenta: persistencia.leituras.{todasHoras=48, umaPorDiaDias=30, maximo=60, substituirMinutos=30, arquivoMaxIdadeHoras=168, nota}
+   chaves retiradas: nenhuma; chaves com valor alterado: nenhuma (main → #32 idem)
+   árvores Git iguais no main e no #32: js/regras 6b4da3d92b9ef6c609f3fce5f5ba8b8552e2df7d · mares 865abfe68111e2b6c664a106dea78acdaa8449aa · fundos 89ca5aeb57e36ded7459e315a1c0b41dd2e9d0f0
+
+== 6. Empilhamento (git merge-tree, sem criar commits)
+   cadeia linear main → #25 → … → #32: sim; cada passo de baixo para cima dá a árvore do head do PR (sem conflitos)
+   squash sem rebase automático: conflitos em #26 (2 ficheiros), #27 (9), #28 (8), #29 (8), #30 (7), #31 (6), #32 (7); sw.js em conflito de #27 a #32
+
+== 7. Arranque offline com o service worker activo (offline2.mjs)
+ === PR 27 (ec2da4166ddf39e81167a3d94ed8004fd45d5601)
+ A) uma só visita com rede (a primeira, quando o service worker se instala)
+    cache «surfcasting-shell-v29»: 63 entradas; config.json: NÃO; marés: NÃO; com query: nenhuma
+    FALHA  / → NÃO ABRE (TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.) · ecrã: «Surfcasting AlgarveErro: Failed to fetch Início Comparar Mapa Fontes»
+    FALHA  /comparador.html → NÃO ABRE (TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.) · ecrã: «Comparar pesqueirosErro: Failed to fetch Início Comparar Mapa Fontes»
+    FALHA  /comparador.html?dia=1 → NÃO ABRE (Error: page.goto: net::ERR_FAILED at http://127.0.0.1:45157/comparador.html?dia=1) · ecrã: «»
+    —      /pesqueiro.html?id=ancao (não existe neste SHA)
+    —      /pesqueiro.html?id=falesia (não existe neste SHA)
+    —      /diario.html (não existe neste SHA)
+    —      /estatisticas.html (não existe neste SHA)
+    —      /historico.html (não existe neste SHA)
+    —      /guia.html (não existe neste SHA)
+    FALHA  /fontes.html → NÃO ABRE (TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.) · ecrã: «FontesDados, licenças e créditos Erro: Failed to fetch Início Comparar Mapa Fontes»
+    ok     /mapa.html → ABRE
+    FALHA  /mapa.html?pesqueiro=falesia → NÃO ABRE (Error: page.goto: net::ERR_FAILED at http://127.0.0.1:45157/mapa.html?pesqueiro=falesia) · ecrã: «»
+ B) duas visitas com rede (a segunda já controlada pelo service worker) e visita a comparador, pesqueiro=ancao e diário
+    cache «surfcasting-shell-v29»: 66 entradas; config.json: sim; marés: /mares/2026.json; com query: nenhuma
+    ok     / → ABRE · com «Previsão arquivada»
+    ok     /comparador.html → ABRE · com «Previsão arquivada»
+    FALHA  /comparador.html?dia=1 → NÃO ABRE (Error: page.goto: net::ERR_FAILED at http://127.0.0.1:34015/comparador.html?dia=1) · ecrã: «»
+    —      /pesqueiro.html?id=ancao (não existe neste SHA)
+    —      /pesqueiro.html?id=falesia (não existe neste SHA)
+    —      /diario.html (não existe neste SHA)
+    —      /estatisticas.html (não existe neste SHA)
+    —      /historico.html (não existe neste SHA)
+    —      /guia.html (não existe neste SHA)
+    ok     /fontes.html → ABRE
+    ok     /mapa.html → ABRE
+    FALHA  /mapa.html?pesqueiro=falesia → NÃO ABRE (Error: page.goto: net::ERR_FAILED at http://127.0.0.1:34015/mapa.html?pesqueiro=falesia) · ecrã: «»
+ === PR 32 (b0794027744623c623cdf7c29b8f41a94e4edf93)
+ A) uma só visita com rede (a primeira, quando o service worker se instala)
+    cache «surfcasting-shell-v34»: 83 entradas; config.json: NÃO; marés: NÃO; com query: nenhuma
+    FALHA  / → NÃO ABRE (TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.) · ecrã: «Surfcasting AlgarveErro: Failed to fetch Início Comparar Mapa Diário Fontes»
+    FALHA  /comparador.html → NÃO ABRE (TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.) · ecrã: «Comparar pesqueirosErro: Failed to fetch Início Comparar Mapa Diário Fontes»
+    FALHA  /comparador.html?dia=1 → NÃO ABRE (Error: page.goto: net::ERR_FAILED at http://127.0.0.1:35811/comparador.html?dia=1) · ecrã: «»
+    FALHA  /pesqueiro.html?id=ancao → NÃO ABRE (Error: page.goto: net::ERR_FAILED at http://127.0.0.1:35811/pesqueiro.html?id=ancao) · ecrã: «»
+    FALHA  /pesqueiro.html?id=falesia → NÃO ABRE (Error: page.goto: net::ERR_FAILED at http://127.0.0.1:35811/pesqueiro.html?id=falesia) · ecrã: «»
+    FALHA  /diario.html → NÃO ABRE (TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.) · ecrã: «DiárioErro: Failed to fetch Início Comparar Mapa Diário Fontes»
+    ok     /estatisticas.html → ABRE
+    ok     /historico.html → ABRE
+    ok     /guia.html → ABRE
+    FALHA  /fontes.html → NÃO ABRE (TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.) · ecrã: «FontesDados, licenças e créditos Erro: Failed to fetch Início Comparar Mapa Diário Fontes»
+    ok     /mapa.html → ABRE
+    FALHA  /mapa.html?pesqueiro=falesia → NÃO ABRE (Error: page.goto: net::ERR_FAILED at http://127.0.0.1:35811/mapa.html?pesqueiro=falesia) · ecrã: «»
+ B) duas visitas com rede (a segunda já controlada pelo service worker) e visita a comparador, pesqueiro=ancao e diário
+    cache «surfcasting-shell-v34»: 87 entradas; config.json: sim; marés: /mares/2026.json; com query: /pesqueiro.html?id=ancao
+    ok     / → ABRE · com «Previsão arquivada»
+    ok     /comparador.html → ABRE · com «Previsão arquivada»
+    FALHA  /comparador.html?dia=1 → NÃO ABRE (Error: page.goto: net::ERR_FAILED at http://127.0.0.1:37221/comparador.html?dia=1) · ecrã: «»
+    ok     /pesqueiro.html?id=ancao → ABRE · com «Previsão arquivada»
+    FALHA  /pesqueiro.html?id=falesia → NÃO ABRE (Error: page.goto: net::ERR_FAILED at http://127.0.0.1:37221/pesqueiro.html?id=falesia) · ecrã: «»
+    ok     /diario.html → ABRE
+    ok     /estatisticas.html → ABRE
+    ok     /historico.html → ABRE
+    ok     /guia.html → ABRE
+    ok     /fontes.html → ABRE
+    ok     /mapa.html → ABRE
+    FALHA  /mapa.html?pesqueiro=falesia → NÃO ABRE (Error: page.goto: net::ERR_FAILED at http://127.0.0.1:37221/mapa.html?pesqueiro=falesia) · ecrã: «»
+
+== 8. Largura real (largura-real.mjs; conteúdo vs largura do ecrã emulado)
+ --- largura real, PR 32 (b0794027744623c623cdf7c29b8f41a94e4edf93)
+ == Pixel 7
+ ok     início: conteúdo 412 px, janela 412 px, ecrã 412 px
+ ok     comparador: conteúdo 412 px, janela 412 px, ecrã 412 px
+ ok     pesqueiro ria: conteúdo 412 px, janela 412 px, ecrã 412 px
+ ok     pesqueiro praia_faro: conteúdo 412 px, janela 412 px, ecrã 412 px
+ ok     pesqueiro ancao: conteúdo 412 px, janela 412 px, ecrã 412 px
+ ok     pesqueiro almargem: conteúdo 412 px, janela 412 px, ecrã 412 px
+ ok     pesqueiro molhe_quarteira: conteúdo 412 px, janela 412 px, ecrã 412 px
+ ok     pesqueiro vilamoura: conteúdo 412 px, janela 412 px, ecrã 412 px
+ ok     pesqueiro molhe_vilamoura: conteúdo 412 px, janela 412 px, ecrã 412 px
+ ok     pesqueiro falesia: conteúdo 412 px, janela 412 px, ecrã 412 px
+ ok     mapa: conteúdo 412 px, janela 412 px, ecrã 412 px
+ ok     fontes: conteúdo 412 px, janela 412 px, ecrã 412 px
+ ok     diagnóstico: conteúdo 412 px, janela 412 px, ecrã 412 px
+ ok     histórico: conteúdo 412 px, janela 412 px, ecrã 412 px
+ ok     guia: conteúdo 412 px, janela 412 px, ecrã 412 px
+ ok     estatísticas: conteúdo 412 px, janela 412 px, ecrã 412 px
+ ok     diário (vazio): conteúdo 412 px, janela 412 px, ecrã 412 px
+ ALARGA diário (saída aberta): conteúdo 570 px, janela 570 px, ecrã 412 px
+ == 360 px
+ ok     início: conteúdo 360 px, janela 360 px, ecrã 360 px
+ ok     comparador: conteúdo 360 px, janela 360 px, ecrã 360 px
+ ok     pesqueiro ria: conteúdo 360 px, janela 360 px, ecrã 360 px
+ ok     pesqueiro praia_faro: conteúdo 360 px, janela 360 px, ecrã 360 px
+ ok     pesqueiro ancao: conteúdo 360 px, janela 360 px, ecrã 360 px
+ ok     pesqueiro almargem: conteúdo 360 px, janela 360 px, ecrã 360 px
+ ok     pesqueiro molhe_quarteira: conteúdo 360 px, janela 360 px, ecrã 360 px
+ ok     pesqueiro vilamoura: conteúdo 360 px, janela 360 px, ecrã 360 px
+ ok     pesqueiro molhe_vilamoura: conteúdo 360 px, janela 360 px, ecrã 360 px
+ ok     pesqueiro falesia: conteúdo 360 px, janela 360 px, ecrã 360 px
+ ok     mapa: conteúdo 360 px, janela 360 px, ecrã 360 px
+ ok     fontes: conteúdo 360 px, janela 360 px, ecrã 360 px
+ ok     diagnóstico: conteúdo 360 px, janela 360 px, ecrã 360 px
+ ok     histórico: conteúdo 360 px, janela 360 px, ecrã 360 px
+ ok     guia: conteúdo 360 px, janela 360 px, ecrã 360 px
+ ok     estatísticas: conteúdo 360 px, janela 360 px, ecrã 360 px
+ ok     diário (vazio): conteúdo 360 px, janela 360 px, ecrã 360 px
+ ALARGA diário (saída aberta): conteúdo 570 px, janela 570 px, ecrã 360 px
+ FIM
+   PR 29 (diario-largura.mjs): diário (Pixel 7): saída fechada 412/412 px; saída aberta 570/570 px → sem deslocamento
+
+== 9. Quota real do IndexedDB (quota2.mjs)
+   Storage.overrideQuotaForOrigin: aceite na sessão da página mas sem efeito (quota continua ~3,2 GB); recusado na sessão do browser (Internal error).
+   Esgotar ~3,2 GB não é possível neste ambiente → quota real NÃO testada (limitação).
