@@ -36,6 +36,25 @@ function armazemIDB(db, esquema) {
     chaves: loja => op(loja, "readonly", s => s.getAllKeys()),
     listar: loja => op(loja, "readonly", s => s.getAll()),
     limpar: loja => op(loja, "readwrite", s => s.clear()),
+    // Várias lojas numa só transacção: um erro (chave em falta, quota) desfaz tudo.
+    escrever({ guardar = {}, apagar = {} } = {}) {
+      try {
+        const nomes = [...new Set([...Object.keys(guardar), ...Object.keys(apagar)])];
+        if (!nomes.length) return Promise.resolve();
+        const tx = db.transaction(nomes, "readwrite");
+        const fim = fimTransacao(tx);
+        try {
+          for (const [nome, chaves] of Object.entries(apagar)) for (const c of chaves) tx.objectStore(nome).delete(c);
+          for (const [nome, valores] of Object.entries(guardar)) for (const v of valores) tx.objectStore(nome).put(v);
+        } catch (e) {
+          tx.abort();
+          return fim.catch(() => {}).then(() => Promise.reject(e));
+        }
+        return fim;
+      } catch (e) {
+        return Promise.reject(e);
+      }
+    },
     fechar: async () => db.close()
   };
 }
