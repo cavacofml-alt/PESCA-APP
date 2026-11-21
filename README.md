@@ -1,31 +1,51 @@
 # Surfcasting Algarve
 
-App pessoal (PWA, para Android) com as condições de surfcasting para dourada e robalo entre Faro e Quarteira. Sem build e sem dependências de runtime. O ecrã inicial (`index.html`) abre com «Onde e quando» (os melhores pesqueiros e períodos do dia escolhido, a partir das notas) e mostra um cartão por pesqueiro com as notas por período; `mapa.html` mostra os pesqueiros e o fundo do mar; `fontes.html` diz de onde vem cada dado, de que tipo é e com que licença (e os créditos das fotografias); `diagnostico.html`, aberto a partir das «Fontes», mostra o estado técnico de cada pedido. Os quatro ecrãs têm a mesma barra de navegação (Início, Mapa, Fontes).
+App pessoal (PWA, para Android) com as condições de surfcasting para dourada e robalo em oito pesqueiros, da Ria Formosa (Faro) à Falésia. Sem build e sem dependências de runtime. O ecrã inicial (`index.html`) abre com «Onde e quando» (os melhores pesqueiros e períodos do dia escolhido, a partir das notas) e mostra um cartão por pesqueiro com as notas por período; `mapa.html` mostra os pesqueiros e o fundo do mar; `fontes.html` diz de onde vem cada dado, de que tipo é e com que licença (e os créditos das fotografias); `diagnostico.html`, aberto a partir das «Fontes», mostra o estado técnico de cada pedido. Os quatro ecrãs têm a mesma barra de navegação (Início, Mapa, Fontes).
 
 ## Executar localmente
 
 Os módulos ES e `fetch()` não funcionam a partir de `file://`. Servir a pasta por HTTP, por exemplo `python3 -m http.server` na raiz, e abrir `http://localhost:8000/`.
 
-## Publicar (Cloudflare Pages)
+## Publicar (Cloudflare Workers)
 
-O repositório é privado, por isso o GitHub Pages grátis não serve. O Cloudflare Pages é grátis e lê repositórios privados.
+O site está no Cloudflare Workers, como site estático (sem código no servidor), no plano gratuito. O repositório no GitHub é **público** e continua público (decisão do utilizador); o alojamento no Cloudflare vem do tempo em que era privado e mantém-se.
 
 1. Criar conta em <https://dash.cloudflare.com/sign-up>.
 2. **Workers e Pages → Criar → importar um repositório**, autorizar o GitHub e escolher este repositório (nome do projecto: `pesca-app`, ramo de produção `main`).
 3. Não é preciso configurar mais nada: o `wrangler.jsonc` na raiz diz ao Cloudflare para correr `node ferramentas/publicar.mjs` e servir só a pasta `publicar/`. O comando de deploy fica o predefinido (`npx wrangler deploy`).
 4. O endereço fica `https://pesca-app.<subdomínio>.workers.dev` (o desta app: <https://pesca-app.cavacofml.workers.dev/>). Cada merge para `main` volta a publicar sozinho; os outros ramos geram uma versão de pré-visualização com endereço próprio.
 
-`ferramentas/publicar.mjs` copia só os ficheiros da app. **A pasta `recolha/` (material de trabalho) nunca é publicada**, nem os testes e os documentos de trabalho: o site publicado é público, ao contrário do repositório. Um teste confirma-o.
+`ferramentas/publicar.mjs` copia só os ficheiros da app (lista explícita). **A pasta `recolha/` (material de trabalho) nunca é publicada no site**, nem os testes, as ferramentas, o Playwright e os documentos de trabalho. Um teste confirma-o.
+
+**Atenção: o site não é o único sítio público.** Com o repositório público, tudo o que está no repositório se vê no GitHub, incluindo a pasta `recolha/` (respostas de APIs guardadas, relatórios de trabalho, a Tabela de Marés do IH de 2026 em PDF e um PDF de outra ferramenta) e o histórico dos commits. O que fazer com esse material é decisão do utilizador (ver «Tabela de marés → Licenças e autorizações»).
 
 ## Instalar no telemóvel (Android)
 
-Abrir o endereço no Chrome → menu ⋮ → **Instalar app** (ou «Adicionar ao ecrã principal»). A app abre em ecrã inteiro. Sem rede, abre na mesma, mas as previsões ainda não ficam guardadas: as fontes aparecem como «não obtidas».
+Abrir o endereço no Chrome → menu ⋮ → **Instalar app** (ou «Adicionar ao ecrã principal»). A app abre em ecrã inteiro.
+
+**Sem rede (o que está implementado hoje):** a app abre, porque o service worker guarda a shell (HTML, CSS, JS, bibliotecas, fotografias) e a última cópia já descarregada da `config.json`, das tabelas de marés e dos fundos do mar. Os mosaicos do mapa (OpenStreetMap, DGT) não ficam guardados. As previsões do Open-Meteo, a boia e as notas **não ficam guardadas**: sem rede, essas fontes aparecem como «não obtido» e não há notas. Só ficam no aparelho, em `localStorage`, a espécie escolhida e a camada escolhida no mapa. Não há ainda diário, histórico de previsões nem armazenamento em IndexedDB.
 
 ## Estado das fontes
 
+Cada dado tem um tipo, e a app di-lo: **medido** (observação de um instrumento), **previsto** (modelo ou previsão oficial), **estimado** (deduzido por um método indirecto, com erro conhecido mas não medido no local) ou **calculado** (feito pela app ou no aparelho a partir de outros dados).
+
+| Fonte | Tipo | Onde aparece | Entra nas notas |
+|---|---|---|---|
+| Open-Meteo Marine e Forecast | previsto (os `past_days` são previsões arquivadas, não medições) | notas, cartões, «hora a hora», «Mar agora» (ao lado da boia) | sim (é a base das notas) |
+| Tabela de Marés do IH, Faro-Olhão | previsto (previsão oficial) | notas, cartões, «hora a hora», mapa | sim (amplitude, repontos, alinhamento) |
+| Boia ondógrafo de Faro (IH) | medido | «Mar agora» | não |
+| SunCalc | calculado no aparelho | alinhamento, cartões | sim (nascer e pôr do Sol) |
+| Potência das ondas, amplitude, notas | calculado pela app (a partir de dados previstos) | notas, cartões | são o resultado |
+| COSMO (APA), 2025 e 2020 | medido (data do levantamento em cada balão) | mapa, fundo típico das praias | não |
+| LiDAR 2011 do IH (EMODnet) | medido em 2011 | mapa, fundo típico das praias | não |
+| Sentinel-2 (fundões e cabeços) | estimado | mapa (contorno tracejado, «sat.») | não |
+| OpenStreetMap, DGT OrtoSat 2023 | mapa base | mapa | não |
+
+Pormenores:
+
 - Open-Meteo Marine: consulta horária marinha.
 - Open-Meteo Forecast: vento, rajadas, pressão e precipitação. **Não pede nascer/pôr do Sol.**
-- Open-Meteo (Marine e Forecast): pedidos com `timeformat=unixtime` (instantes absolutos; a hora local repete-se a 25/10/2026). Consulta Faro e Quarteira.
+- Open-Meteo (Marine e Forecast): pedidos com `timeformat=unixtime` (instantes absolutos; a hora local repete-se a 25/10/2026). Consulta os pontos de mar e de terra de cada pesqueiro (`config.locais`; hoje 8 de mar e 8 de terra).
 - IPMA estado do mar: **deixou de ser consultado** (decisão do utilizador, 20/11/2026): só aparecia no diagnóstico e não dava informação útil. Só volta como funcionalidade explícita, com atribuição e validação.
 - Boia de Faro (Instituto Hidrográfico, OGC API): última medição da onda e da água, com o indicador de qualidade de cada valor (1 e 2 aceites; 9 → `não obtido`; outros ou fora dos limites físicos → `inválido`). Mostrada em «Mar agora»; não entra nas notas.
 - Marés locais: valida formato, ordem, alternância PM/BM e intervalos de 30 a 480 minutos. `mares/2026.json` tem a tabela oficial do IH de 2026 (ver «Tabela de marés»).
@@ -33,7 +53,9 @@ Abrir o endereço no Chrome → menu ⋮ → **Instalar app** (ou «Adicionar ao
 
 ## Modelo de valor
 
-A função `leitura()` em `js/normalizacao.js` cria o envelope comum com `value`, `unit`, `source`, `readAt`, `validAt`, `tipo`, `status`, `provisional` e `note`. Valores ausentes ficam `null` e estado `não obtido`.
+Cada fonte devolve um resultado (`sourceResult` em `js/normalizacao.js`) com `ok`, `data`, `source`, `readAt` e o erro, quando há. O motor e a interface trabalham sobre esses resultados: um valor em falta fica `null` e aparece como «não obtido» ou `n.d.`, nunca como zero; um valor fora dos limites físicos fica «inválido». A interface mostra a fonte, o tipo e a hora de leitura por bloco (cartão, «Mar agora», página «Fontes»).
+
+A função `leitura()` (no mesmo ficheiro) cria o envelope por valor previsto na arquitectura (`value`, `unit`, `source`, `readAt`, `validAt`, `tipo`, `status`, `provisional`, `note`) e tem testes, mas **a app ainda não a usa**.
 
 Os URL das APIs estão só em `config.json` (`fontes`); os módulos em `js/` recebem-nos por parâmetro.
 
@@ -45,7 +67,7 @@ Com Node ≥ 20, na raiz do projecto:
 node --test
 ```
 
-Não há dependências a instalar para estes testes. Os testes não usam a Internet: as respostas das APIs são simuladas com as fixtures de `testes/dados-teste.js` e com respostas reais guardadas em `testes/reais/`, que não são previsões actuais. O GitHub Actions corre os testes em cada push e PR, com Node 20 e 22 e quatro fusos horários (UTC, Europe/Lisbon, America/New_York, Asia/Tokyo).
+Não há dependências a instalar para estes testes. `testes/motor-referencia.test.js` compara as notas do motor com uma referência guardada (`testes/referencia/motor-20261014.json`: respostas reais de 14/10/2026, 7 dias × 8 pesqueiros × 4 períodos × 2 espécies): falha se alguma nota mudar. Só se regenera (`node ferramentas/referencia-motor.mjs`) quando o utilizador aprovar uma mudança de regras ou limiares. Os testes não usam a Internet: as respostas das APIs são simuladas com as fixtures de `testes/dados-teste.js` e com respostas reais guardadas em `testes/reais/`, que não são previsões actuais. O GitHub Actions corre os testes em cada push e PR, com Node 20 e 22 e quatro fusos horários (UTC, Europe/Lisbon, America/New_York, Asia/Tokyo).
 
 ### Testes no browser (Playwright)
 
@@ -61,6 +83,7 @@ O GitHub Actions corre-os em cada push e PR (workflow «Testes no browser») e g
 
 ## Limitações desta entrega
 
+- Ainda não existem: comparador de pesqueiros, páginas por pesqueiro, diário de saídas, estatísticas, histórico de previsões e armazenamento das previsões em IndexedDB. Estão no plano de evolução, um PR cada; nada disto está publicado.
 - Os avisos do IPMA não são consultados: a regra de segurança foi retirada por decisão do utilizador (13/10/2026).
 - O `sw.js` serve a shell a partir da cache; `config.json` e marés (`*.json`) vão sempre primeiro à rede e só usam a cópia em cache sem ligação. Ao alterar um ficheiro da shell, correr `node ferramentas/versao-sw.mjs` (actualiza a impressão e sobe a versão da cache em `sw.js`); um teste falha se for esquecido.
 - Quando há uma versão nova publicada, a página aberta recarrega sozinha uma vez, assim que o service worker novo toma conta dela (`js/registo-sw.js`). Sem isso ficava o código antigo com a `config.json` nova, que vem sempre da rede. Na primeira instalação não recarrega.
@@ -71,7 +94,15 @@ O GitHub Actions corre-os em cada push e PR (workflow «Testes no browser») e g
 
 **Um ficheiro por ano.** A app lê os anos que a janela de 7 dias toca (`loadTidesForWindow` em `js/fontes/mares-locais.js`): perto do fim do ano lê os dois e confere a passagem de ano (ordem, alternância, intervalo). Se faltar o ano seguinte, os dias que dependem dele ficam «tabela incompleta» (nunca «sem repontos») e a página «Fontes» diz «obtido em parte».
 
-**Licenças.** A de 2026 diz «© Copyright Instituto Hidrográfico». A de 2027 está sob CC BY-NC-ND 4.0: permite copiar e redistribuir sem adaptações e sem fins comerciais, e o IH pede autorização para outros usos (formulário em hidrografico.pt). O ficheiro JSON é uma transcrição dos valores; a licença fica registada no campo `licence`.
+**Licenças e autorizações (situação a 20/11/2026).**
+
+- 2026: o PDF diz «© Copyright Instituto Hidrográfico», sem licença aberta. O `mares/2026.json` não tem campo `licence` (só a fonte e o SHA-256 do PDF).
+- 2027: CC BY-NC-ND 4.0 (campo `licence` no `mares/2027.json`). Permite copiar e redistribuir **sem adaptações** e sem fins comerciais; o IH pede autorização para outros usos (formulário em hidrografico.pt). Não está esclarecido se uma transcrição para JSON conta como adaptação.
+- **Os dois ficheiros estão publicados no site**: a app lê-os de `mares/` no próprio endereço, e o `publicar.mjs` inclui a pasta inteira. Uso pessoal e sem fins comerciais, com a fonte indicada na página «Fontes».
+- **Autorização do IH: não pedida.** Há um rascunho de e-mail ao IH, ainda não enviado (cabe ao utilizador).
+- O PDF de 2026 está em `recolha/2026-10-13/` e, com o repositório público, vê-se no GitHub (não no site).
+
+Nenhum destes pontos muda os ficheiros de marés: retirar ou manter qualquer um deles é decisão do utilizador.
 
 Para gerar o ano seguinte, com o PDF do IH (loja.hidrografico.pt, «Publicações digitais», gratuito) e o `pdftotext` (poppler) instalado:
 
@@ -215,6 +246,6 @@ Os limiares provisórios estão no `config.json` (`mar`, `pressao`, `temperatura
 Para ver o resultado sem interface:
 
 ```
-node ferramentas/analisar.mjs --rede            # vai buscar os dados agora (guarda em recolha/<dia>/apis/)
+node ferramentas/analisar.mjs --rede            # vai buscar os dados agora (guarda em recolha/<dia>/apis/; o repositório é público: não fazer commit sem rever)
 node ferramentas/analisar.mjs recolha/2026-10-14/apis 2026-10-14 7   # com ficheiros guardados
 ```
