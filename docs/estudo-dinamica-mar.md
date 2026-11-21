@@ -14,9 +14,20 @@ Convenções deste documento:
 - **Nenhuma fonte de correntes ou de temperatura chega aos pesqueiros.** Em todos os modelos, os pontos de pesca caem em células de terra; a primeira célula de mar fica a **2,3–8,2 km** (Open-Meteo), **2,4–7,0 km** (IBI, Copernicus) ou **3,8–7,0 km** (HYCOM, IH), com **24–37 m de fundo** no modelo IBI. A zona de rebentação, as correntes junto à praia e a **Ria Formosa** não estão representadas em nenhuma.
 - **Correntes**: o melhor candidato é o **IBI físico do Copernicus** (1/36°, ~3 km, horário e de 15 em 15 min, com maré, 10 dias de previsão, mosaicos de mapa com setas desenhadas no servidor, CORS aberto, sem conta). Ao largo de Quarteira dá correntes de **0,02–0,15 m/s** dominadas pela maré. Serve como **contexto do largo**, não como valor do pesqueiro.
 - **Correntes observadas**: a rede de radares HF **HFR-South** (IH e Puertos del Estado) existe e publica vectores horários, mas o radar de **VRSA está inoperacional** (lista do próprio IH) e a cobertura real entre Faro e Quarteira **não foi possível verificar** daqui. **Testar mais.**
-- **Temperatura da superfície**: a análise de satélite **ODYSSEA L4 (0,02°, diária)** tem valores a **0,4–2,6 km** dos pontos e um erro estimado de **±0,55–0,59 K**. É observação (satélite, com interpolação), não previsão, e chega com **um dia de atraso**. Boa candidata a **camada de mapa**.
-- **Open-Meteo** (o que a app já usa para as ondas): também tem correntes e temperatura (indício forte de que vêm do SMOC/modelo global de 1/12°, ver §2.6), mas numa grelha de ~9 km em que **cinco pesqueiros partilham a mesma célula**. Não acrescenta resolução.
+- **Temperatura da superfície**: a análise de satélite **ODYSSEA L4 (0,02°, diária)** tem um píxel com valor a **0,4–2,6 km** dos pontos, com um erro estimado de **±0,55–0,59 K**. É uma **estimativa de satélite para um quadrado de ~2 km** (interpolada quando há nuvens), não previsão e **não é medição no pesqueiro**; chega com **um dia de atraso**. Boa candidata a **camada de mapa**.
+- **Open-Meteo** (o que a app já usa para as ondas): também tem correntes e temperatura (indício forte de que vêm do SMOC/modelo global de 1/12°, ver §2.4 e §4.2), mas numa grelha de ~9 km em que **cinco pesqueiros partilham a mesma célula**. Não acrescenta resolução.
 - **Recomendação** (§8): **não integrar já.** Primeiro, um **ensaio curto** (comparar IBI, ODYSSEA e Open-Meteo com a boia de Faro durante alguns dias, como no ensaio da validação) e **verificar a cobertura dos radares HF**. Se o utilizador quiser avançar depois, a proposta é uma camada **«Dinâmica do Mar»** no mapa, **só informativa**, que não entra nas notas.
+
+### 1.1 Duas correntes diferentes
+
+| | **Corrente ao largo** | **Corrente junto à praia** |
+|---|---|---|
+| O que é | Circulação da plataforma e corrente de maré, a 2–10 km da costa | Corrente longilitoral, agueiros (correntes de retorno), refluxo da rebentação, corrente de maré nos bicos das barras |
+| O que a move | Maré, vento, circulação regional | Sobretudo a rebentação das ondas e a forma do fundo, numa escala de dezenas a centenas de metros |
+| Quem a dá | Os produtos deste estudo (IBI, SMOC/Open-Meteo, HYCOM; os radares HF, se cobrirem a zona) | **Nenhum** dos produtos avaliados |
+| Uso possível na app | Contexto do largo, sempre identificado como tal | — |
+
+A corrente junto à praia **não se deduz** da corrente ao largo: podem ter sentidos e intensidades diferentes. Em todo o documento, «corrente» sem mais é a corrente **ao largo** que os produtos dão.
 
 ---
 
@@ -107,7 +118,7 @@ Na OGC API do IH (verificado):
 
 Distância do ponto de dados de cada pesqueiro (config) à primeira célula com valor, a 21–22/11/2026. «Partilhada» = a mesma célula serve outros pesqueiros. No IBI e no HYCOM, a procura foi feita **só para sul** (o mar fica a sul em toda esta costa), de 0,01° em 0,01° (IBI) e de 0,005° em 0,005° (HYCOM): as distâncias são **máximos**; outra direcção podia dar uma célula um pouco mais perto.
 
-| Pesqueiro (ponto) | Open-Meteo (correntes e temperatura) | IBI físico (correntes e temperatura) | HYCOM IH | ODYSSEA L4 (temperatura) |
+| Pesqueiro (ponto) | Open-Meteo (correntes e temperatura) | IBI físico (correntes e temperatura) | HYCOM IH | ODYSSEA L4 (temperatura; píxel mais próximo) |
 |---|---|---|---|---|
 | 1 Ria Formosa (água: `faroMar` 36,97 / −7,98) | 2,3 km, célula do mar de fora | 3,1 km, mar de fora | não testado | não testado |
 | 2 Praia de Faro (`faroMarPoente`) | 6,9 km (partilhada com 3) | 4,7 km | 5,5 km | 0,5 km |
@@ -117,6 +128,8 @@ Distância do ponto de dados de cada pesqueiro (config) à primeira célula com 
 | 6 Praia de Vilamoura | 3,4 km (partilhada) | 5,1 km (partilhada) | 6,2 km (partilhada) | 1,0 km |
 | 7 Molhe de Vilamoura | 3,1 km (partilhada) | 4,9 km (partilhada) | não testado | não testado |
 | 8 Falésia (`falesiaMar`) | 4,8 km (partilhada) | 2,4 km | 4,5 km | 1,0 km |
+
+As distâncias do ODYSSEA são do **píxel de satélite mais próximo** (~2 km de lado): um valor desse píxel é uma estimativa de satélite para essa área, não uma medição no pesqueiro.
 
 O que isto quer dizer:
 - **Resolução:**
@@ -141,7 +154,7 @@ O que isto quer dizer:
 
 ### 4.1 Correntes do IBI ao largo de Quarteira (22/11/2026, previsão de 21/11)
 
-Célula 37,027 / −8,110 (a mesma do molhe de Quarteira e de Vilamoura), média horária de superfície. «Para» = direcção para onde vai a água.
+Célula 37,027 / −8,110: a célula de mar mais próxima do molhe de Quarteira e dos dois pontos de Vilamoura, a 4,4–5,1 km deles (corrente **ao largo**, não junto à praia). Média horária de superfície. «Para» = direcção para onde vai a água.
 
 | Hora (UTC) | Velocidade (m/s) | Para | Temperatura (°C) |
 |---|---|---|---|
@@ -160,7 +173,7 @@ Célula 37,027 / −8,110 (a mesma do molhe de Quarteira e de Vilamoura), média
 
 Média diária **sem maré** (`uo_detided`/`vo_detided`, 22/11): 0,043 m/s para 171°. A corrente desta célula é fraca (até ~0,15 m/s ≈ 0,5 km/h) e roda com a maré.
 
-### 4.2 Open-Meteo e SMOC no mesmo sítio (célula da boia de Faro, 22/11/2026)
+### 4.2 Open-Meteo e SMOC no mesmo sítio (célula da boia de Faro, 22/11/2026; amostra de um dia)
 
 | Hora (UTC) | Open-Meteo km/h | Open-Meteo direcção | SMOC total km/h | SMOC total «para» | SMOC só euleriana km/h | Open-Meteo °C | Global 1/12° °C |
 |---|---|---|---|---|---|---|---|
@@ -175,7 +188,7 @@ Interpretação:
 
 É um indício de que ambos vêm do sistema global de 1/12°, **não** é prova. Junto a Quarteira a comparação não foi conclusiva: a célula do Copernicus devolvida não coincidiu com a do Open-Meteo.
 
-### 4.3 Temperatura da superfície junto à boia de Faro
+### 4.3 Temperatura da superfície junto à boia de Faro (amostra, não validação)
 
 A boia (IH, CC BY-NC 4.0) mede a ~6 km do Cabo de Santa Maria; os produtos usam a célula mais próxima.
 
@@ -201,7 +214,13 @@ Temperatura da superfície ODYSSEA L4 de 20/11/2026 (estilo `cmap:thermal`). A g
 
 ![Temperatura da superfície ODYSSEA ao largo de Faro e Quarteira](estudo-dinamica-mar/temperatura-odyssea-20261120.png)
 
-Créditos: Generated using E.U. Copernicus Marine Service Information (`IBI_ANALYSISFORECAST_PHY_005_001`; `SST_ATL_SST_L4_NRT_OBSERVATIONS_010_025`, DOI 10.48670/moi-00152 pela pesquisa). Fundo © colaboradores do OpenStreetMap. Seis mosaicos de cada, só para este documento.
+Créditos:
+- Generated using E.U. Copernicus Marine Service Information:
+  - `IBI_ANALYSISFORECAST_PHY_005_001`, conjunto `cmems_mod_ibi_phy_anfc_0.027deg-2D_PT1H-m_202411`, variável `sea_water_velocity`, média horária das 02:00 UTC de 22/11/2026 (previsão disponível a 21/11). DOI do produto: **por confirmar** (a página do produto está bloqueada neste ambiente; a pesquisa só encontrou o DOI da reanálise, que é outro produto).
+  - `SST_ATL_SST_L4_NRT_OBSERVATIONS_010_025`, conjunto `IFREMER-ATL-SST-L4-NRT-OBS_FULL_TIME_SERIE_201904`, variável `analysed_sst`, dia 20/11/2026. DOI 10.48670/moi-00152 (pela pesquisa).
+- Fundo: © OpenStreetMap; dados sob a licença ODbL, https://www.openstreetmap.org/copyright.
+- Composição: seis mosaicos de cada fonte (nível 11, EPSG:3857), com as camadas do Copernicus sobrepostas com transparência (75 % e 70 %) e o crédito gravado no canto de cada imagem. Feita só para este documento.
+- As cores são as do serviço, sem legenda: as imagens mostram formas e cobertura, **não servem para ler valores**.
 
 ---
 
@@ -284,8 +303,8 @@ Estes padrões são **regionais**. Uma camada de temperatura pode mostrar «águ
 
 | Fonte | Recomendação | Porquê |
 |---|---|---|
-| IBI físico (correntes, temperatura do modelo) | **Testar mais** → candidata a camada de mapa | Melhor resolução (~3 km), maré incluída, mosaicos com setas, sem conta. Mas a primeira célula fica a 2–7 km da praia e a temperatura deu +1,4 °C face à boia na única comparação feita. |
-| ODYSSEA L4 (temperatura, satélite) | **Testar mais** → candidata a camada de mapa | Observação de satélite a 0,02°, erro estimado ±0,55 K, junto à costa. Chega com um dia de atraso e é interpolada com nuvens. |
+| IBI físico (correntes, temperatura do modelo) | **Testar mais** → candidata a camada de mapa | Melhor resolução (~3 km), maré incluída, mosaicos com setas, sem conta. Mas a primeira célula fica a 2–7 km da praia e a temperatura deu +1,4 °C face à boia na única comparação feita (uma amostra, não validação). |
+| ODYSSEA L4 (temperatura, satélite) | **Testar mais** → candidata a camada de mapa | Estimativa de satélite (análise L4) a 0,02°, erro estimado ±0,55 K, com píxeis junto à costa. Não é medição no pesqueiro; chega com um dia de atraso e é interpolada com nuvens. |
 | Radares HF (HFR-South) | **Testar mais** (prioritário) | Única **observação** de correntes. É preciso confirmar se há vectores entre Faro e Quarteira com VRSA inoperacional (ERDDAP bloqueado aqui). |
 | Open-Meteo (correntes e temperatura) | **Rejeitar** para valores por pesqueiro | Grelha de ~9 km, cinco pesqueiros numa célula, direcção por confirmar e um troço de 10 h (12:00–22:00 UTC) com 90° fixos. Não acrescenta nada ao IBI. |
 | SMOC / GLOBAL 1/12° | **Rejeitar** (o IBI é mais fino na mesma região) | — |
