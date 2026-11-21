@@ -4,7 +4,7 @@
 // Requisitos das revisões da Fase 3: nunca mostrar uma nota incompleta como definitiva —
 // intervalo, períodos sem nota, parcelas por avaliar, n.d. e «por confirmar» sempre visíveis.
 // Função pura: devolve HTML (texto escapado).
-import { esc, hora, horaIso, dataHora, num, rotuloDia, classeNota, textoNota, NOME_ESPECIE, PERIODO_CURTO, NOME_MARE, rumo } from "./formato.js";
+import { esc, hora, horaIso, dataHora, num, rotuloDia, classeNota, textoNota, ESPECIES, NOME_ESPECIE, PERIODO_CURTO, NOME_MARE, rumo } from "./formato.js";
 import { ordenarMelhoresDias } from "../regras/notas.js";
 import { resumoBoia } from "../fontes/ih-boias.js";
 import { DISTANCIAS_FUNDO } from "../fontes/fundo-tipico.js";
@@ -12,7 +12,7 @@ import { intervaloLat } from "../fundos.js";
 import { utcToLisbon, lisbonDate } from "../normalizacao.js";
 import { PERIODOS_PADRAO } from "../regras/periodos.js";
 
-export const ESPECIES = ["robalo", "dourada"];
+export { ESPECIES };
 
 // Melhor nota do dia para a espécie escolhida.
 const melhorNotaDoDia = (d, esp) => {
@@ -44,7 +44,7 @@ const textoAlinhamento = a =>
   `${a.tipo === "PM" ? "Preia-mar" : "Baixa-mar"} às ${hora(a.reponto)}, a ${a.minutos} min do ${a.evento}`;
 
 // Horas de início e fim de cada período (config.periodos, hora de Lisboa).
-function horasDosPeriodos(config) {
+export function horasDosPeriodos(config) {
   const cfg = config.periodos ?? PERIODOS_PADRAO;
   return Object.fromEntries(cfg.map((p, k) => [p.nome, [p.inicioHora, k + 1 < cfg.length ? cfg[k + 1].inicioHora : 24]]));
 }
@@ -117,6 +117,7 @@ export function ondeQuando(analise, indice, contexto, especie) {
     <p><span class="rot">Maré</span><span>${d.amplitude.amplitude === null ? `não obtida${d.amplitude.motivo ? ` (${esc(d.amplitude.motivo)})` : ""}`
       : `${num(d.amplitude.amplitude, 1)} m · ${esc(d.amplitude.classe)}`}${d.repontos ? `<br>${esc(maresPorTipo(d.repontos))}` : ""}</span></p>
     ${ali.length ? `<div class="alinhamento"><b>Alinhamento</b> ${ali.map(esc).join("; ")}</div>` : ""}
+    <p class="ligacao-comp"><a href="./comparador.html?dia=${indice}">Comparar os ${Object.keys(d.pesqueiros).length} pesqueiros ›</a></p>
   </section>`;
 }
 
@@ -182,7 +183,7 @@ function marAgora(contexto) {
   </section>`;
 }
 
-function faixaDias(analise, indice, especie) {
+export function faixaDias(analise, indice, especie) {
   return `<nav class="dias" aria-label="Dias">${analise.dias.map((d, i) => {
     const m = melhorNotaDoDia(d, especie);
     return `<button type="button" class="dia${i === indice ? " sel" : ""}" data-dia="${i}" aria-pressed="${i === indice}">
@@ -282,7 +283,7 @@ function factos(p, pq, fundo) {
 
 const ESTADO_PARCELA_TXT = { "aplicada": "aplicada", "não aplicada": "não aplicada", "não avaliada": "não avaliada" };
 
-function parcelas(esp, n) {
+export function parcelas(esp, n) {
   if (!n?.parcelas?.length) return "";
   return `<h4>Parcelas — ${esc(NOME_ESPECIE[esp])} (${esc(n.periodo ?? "")})</h4><table class="parcelas"><tbody>${n.parcelas.map(x =>
     `<tr class="${x.estado === "aplicada" ? "ap" : x.estado === "não avaliada" ? "na" : ""}"><td>${esc(x.descricao)}</td><td>${x.descricao.startsWith("base") ? esc(x.peso) : x.peso > 0 ? `+${x.peso}` : `−${Math.abs(x.peso)}`}</td><td>${esc(ESTADO_PARCELA_TXT[x.estado] ?? x.estado)}${x.motivo ? ` — ${esc(x.motivo)}` : ""}</td></tr>`).join("")}</tbody></table>`;
@@ -334,8 +335,8 @@ function detalhes(p, pq, d, contexto, fundo) {
   </details>`;
 }
 
-// Fontes em falta primeiro (o utilizador tem de saber o que não foi lido), depois os avisos do motor.
-function avisosDoCartao(p, pq, contexto) {
+// Fontes de um pesqueiro que não foram lidas (também no comparador).
+export function fontesEmFalta(pq, contexto) {
   const falhas = [];
   const ver = (tipo, k, o) => {
     const r = k ? contexto.pontos[tipo]?.[k] : null;
@@ -345,6 +346,12 @@ function avisosDoCartao(p, pq, contexto) {
   ver("terra", pq.terra, "Vento, pressão e chuva (Open-Meteo Forecast)");
   if (pq.agua && pq.agua !== pq.mar) ver("mar", pq.agua, "Temperatura da água (Open-Meteo Marine)");
   if (!contexto.mares?.ok) falhas.push(`Marés não obtidas${contexto.mares?.error ? ` — ${contexto.mares.error}` : ""}`);
+  return falhas;
+}
+
+// Fontes em falta primeiro (o utilizador tem de saber o que não foi lido), depois os avisos do motor.
+function avisosDoCartao(p, pq, contexto) {
+  const falhas = fontesEmFalta(pq, contexto);
   if (!falhas.length && !p.avisos.length) return "";
   return `<ul class="avisos">${falhas.map(a => `<li class="falha">${esc(a)}</li>`).join("")}${p.avisos.map(a => `<li>${esc(a)}</li>`).join("")}</ul>`;
 }
@@ -400,7 +407,7 @@ export function ordemDosCartoes(d, especie) {
 
 // contexto: { analise, config, pontos, mares, sol, lidoEm, indice }
 // Escolha da espécie: as notas, a faixa de dias e o resumo seguem-na.
-function escolhaEspecie(especie) {
+export function escolhaEspecie(especie) {
   return `<nav class="especies" aria-label="Espécie">${ESPECIES.map(e =>
     `<button type="button" class="especie-btn${e === especie ? " sel" : ""}" data-especie="${e}" aria-pressed="${e === especie}">${esc(NOME_ESPECIE[e])}</button>`).join("")}</nav>`;
 }

@@ -107,7 +107,7 @@ a { color: var(--azul2); }
 .legenda { margin: 1rem .25rem; color: var(--suave); font-size: .78rem; line-height: 1.5; }
 
 /* Barra inferior */
-.barra { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; gap: 2.5rem;
+.barra { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; gap: clamp(1rem, 7vw, 2.5rem);
   padding: .7rem 0 calc(.7rem + env(safe-area-inset-bottom)); background: white; box-shadow: 0 -2px 10px rgb(11 59 83 / .1); }
 .barra a { color: var(--suave); text-decoration: none; font-weight: 600; font-size: .9rem; }
 .barra a.activo { color: var(--azul); }
@@ -198,3 +198,38 @@ a { color: var(--azul2); }
 .legenda-mapa .escala span { flex: 1; padding-top: .55rem; border-top: .35rem solid var(--c); text-align: center; font-size: .65rem; }
 .legenda-mapa .f { color: #1d4ed8; }
 .legenda-mapa .c { color: #a16207; }
+
+/* Comparador (plano de evolução, PR 2, 20/11/2026) */
+.opcoes { display: flex; gap: .3rem; padding: 0 .1rem .5rem; }
+.opcoes button { flex: 1; min-width: 0; padding: .4rem .2rem; border: 0; border-radius: 999px; background: white; color: var(--azul);
+  font: inherit; font-size: .8rem; font-weight: 650; box-shadow: 0 1px 4px rgb(11 59 83 / .1); }
+.opcoes button.sel { background: var(--azul2); color: white; }
+.resumo-comp { background: white; border-radius: 1rem; padding: .7rem .9rem; box-shadow: 0 1px 4px rgb(11 59 83 / .1); font-size: .9rem; }
+.resumo-comp h2 { margin: 0 0 .35rem; font-size: 1.02rem; color: var(--azul); }
+.resumo-comp h2 small { color: var(--suave); font-weight: normal; font-size: .8rem; }
+.resumo-comp p { margin: .3rem 0; }
+.resumo-comp .mare .rot { margin-right: .35rem; }
+.resumo-lista { margin: .35rem 0 0; padding-left: 1.1rem; font-size: .84rem; color: var(--suave); }
+.comparacao { list-style: none; margin: .8rem 0 0; padding: 0; display: grid; gap: .55rem; }
+.linha-comp { background: white; border-radius: .9rem; padding: .6rem .75rem; box-shadow: 0 1px 4px rgb(11 59 83 / .1); }
+.lc-topo { display: flex; align-items: center; gap: .6rem; }
+.lc-topo .nota { flex: none; min-width: 2.9rem; text-align: center; }
+.nota.inc { outline: 2px dashed var(--c); outline-offset: 2px; }
+.lc-nome { font-weight: 700; line-height: 1.2; }
+.lc-nome small { display: block; font-weight: normal; color: var(--suave); font-size: .78rem; }
+.linha-comp[data-estado="incompleta"] .lc-nome small { color: #6b4e00; }
+.linha-comp .periodos li.sel { outline: 2px solid var(--azul); outline-offset: -2px; }
+.periodos li.passou { opacity: .5; }
+.porque { margin: .45rem 0 0; font-size: .8rem; color: var(--texto); line-height: 1.4; }
+.factores { margin-top: .9rem; background: white; border-radius: 1rem; padding: .7rem .75rem; box-shadow: 0 1px 4px rgb(11 59 83 / .1); }
+.factores h2 { margin: 0 0 .4rem; font-size: 1rem; color: var(--azul); }
+.factores h2 small { color: var(--suave); font-weight: normal; font-size: .78rem; }
+.rolar { overflow-x: auto; }
+.factores table { border-collapse: collapse; font-size: .76rem; width: 100%; }
+.factores th, .factores td { padding: .3rem .25rem; border-bottom: 1px solid #edf1f4; text-align: center; white-space: nowrap; }
+.factores thead th { color: var(--suave); font-weight: 600; }
+.factores tbody th { text-align: left; font-weight: 600; white-space: normal; min-width: 5.5rem; }
+.factores tbody th small { display: block; color: var(--suave); font-weight: normal; }
+.factores td.falta { color: #6b4e00; font-weight: 650; }
+.factores .legenda { margin: .5rem 0 0; }
+.onde-quando p.ligacao-comp { display: block; margin: .45rem 0 0; font-size: .88rem; }

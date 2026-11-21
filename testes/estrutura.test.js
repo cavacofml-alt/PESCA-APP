@@ -36,7 +36,9 @@ test("a app e o diagnóstico consultam os pontos de todos os pesqueiros (via pon
     assert.match(src, /\.mar\.map/, f);
     assert.match(src, /\.terra\.map/, f);
   }
-  assert.match(ler("js/app.js"), /carregarDados\(/);
+  // Ecrã inicial e comparador lêem as fontes pelo mesmo carregador (js/carregar.js, PR 2 da evolução).
+  assert.match(ler("js/carregar.js"), /carregarDados\(/);
+  for (const f of ["js/app.js", "js/comparador.js"]) assert.match(ler(f), /lerEAnalisar\(/, f);
 });
 
 // ---------- Service worker, executado num contexto falso ----------
