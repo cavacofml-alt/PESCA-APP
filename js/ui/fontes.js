@@ -42,5 +42,6 @@ export function renderFontes(config) {
     </section>
     <p class="motivo">${esc(p.ligacoesExternas)}</p>
     ${creditosFotos(config)}
+    <p class="ir-diagnostico"><a href="./historico.html">Histórico de previsões (guardadas neste aparelho) ›</a></p>
     <p class="ir-diagnostico"><a href="./diagnostico.html">Diagnóstico técnico das fontes ›</a></p>`;
 }
