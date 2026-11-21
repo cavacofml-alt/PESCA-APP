@@ -8,7 +8,7 @@ import { renderFontes, creditosFotos } from "../js/ui/fontes.js";
 const ler = rel => readFileSync(new URL(`../${rel}`, import.meta.url), "utf8");
 const config = JSON.parse(ler("config.json"));
 const PAGINAS = { "index.html": "./", "mapa.html": "./mapa.html", "fontes.html": "./fontes.html", "diagnostico.html": "./fontes.html",
-  "comparador.html": "./comparador.html" };
+  "comparador.html": "./comparador.html", "pesqueiro.html": "./" };
 
 test("Fontes: cada fonte com o que dá na app, o tipo, a licença e a ligação; créditos de todas as fotografias", () => {
   const html = renderFontes(config);

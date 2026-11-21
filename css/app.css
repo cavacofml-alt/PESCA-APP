@@ -240,3 +240,17 @@ a { color: var(--azul2); }
 .aviso-origem.arquivo { background: #fff4d6; color: #5c4300; border: 1px solid #f0d58a; }
 .aviso-origem.indisponivel { background: #fdecea; color: #7a2418; border: 1px solid #f3c2bb; }
 .aviso-origem.leve { padding: 0 .25rem; color: var(--suave); font-size: .8rem; }
+
+/* Página do pesqueiro (PR 4) */
+.foto-pq { border-radius: 1rem; height: 8.5rem; }
+.bloco-pq { margin-top: .8rem; background: white; border-radius: 1rem; padding: .7rem .85rem; box-shadow: 0 1px 4px rgb(11 59 83 / .1); }
+.bloco-pq h2 { margin: 0 0 .4rem; font-size: 1.02rem; color: var(--azul); }
+.bloco-pq h2 small { color: var(--suave); font-weight: normal; font-size: .8rem; }
+.bloco-pq .factos small { color: var(--suave); }
+.onde-pq .factos { grid-template-columns: 8.5rem 1fr; }
+.notas-dia { display: flex; gap: .2rem; }
+.horas-pq .tabela-horas { margin: 0 -.85rem; padding: 0 .85rem; }
+.lista-pq { margin: 0; padding-left: 1.1rem; line-height: 1.8; }
+.accoes-cartao { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .9rem; }
+.ligacao-pq { font-weight: 650; font-size: .88rem; text-decoration: none; }
+.lc-nome a { color: inherit; text-decoration: none; }

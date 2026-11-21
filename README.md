@@ -1,6 +1,6 @@
 # Surfcasting Algarve
 
-App pessoal (PWA, para Android) com as condições de surfcasting para dourada e robalo em oito pesqueiros, da Ria Formosa (Faro) à Falésia. Sem build e sem dependências de runtime. O ecrã inicial (`index.html`) abre com «Onde e quando» (os melhores pesqueiros e períodos do dia escolhido, a partir das notas) e mostra um cartão por pesqueiro com as notas por período; `comparador.html` põe os oito pesqueiros lado a lado (ver «Comparador»); `mapa.html` mostra os pesqueiros e o fundo do mar; `fontes.html` diz de onde vem cada dado, de que tipo é e com que licença (e os créditos das fotografias); `diagnostico.html`, aberto a partir das «Fontes», mostra o estado técnico de cada pedido. Todos os ecrãs têm a mesma barra de navegação (Início, Comparar, Mapa, Fontes).
+App pessoal (PWA, para Android) com as condições de surfcasting para dourada e robalo em oito pesqueiros, da Ria Formosa (Faro) à Falésia. Sem build e sem dependências de runtime. O ecrã inicial (`index.html`) abre com «Onde e quando» (os melhores pesqueiros e períodos do dia escolhido, a partir das notas) e mostra um cartão por pesqueiro com as notas por período; `comparador.html` põe os oito pesqueiros lado a lado (ver «Comparador»); `pesqueiro.html?id=<id>` mostra tudo sobre um pesqueiro (ver «Página do pesqueiro»); `mapa.html` mostra os pesqueiros e o fundo do mar; `fontes.html` diz de onde vem cada dado, de que tipo é e com que licença (e os créditos das fotografias); `diagnostico.html`, aberto a partir das «Fontes», mostra o estado técnico de cada pedido. Todos os ecrãs têm a mesma barra de navegação (Início, Comparar, Mapa, Fontes).
 
 ## Executar localmente
 
@@ -29,6 +29,20 @@ O site está no Cloudflare Workers, como site estático (sem código no servidor
 - Ordem: por omissão, nascente → poente (a do motor), com os pesqueiros sem regra para a espécie no fim, como no início. «Por nota» usa os critérios de «Onde e quando»: nota; em empate, alinhamento no período, nota da outra espécie, período mais cedo, ordem dos pesqueiros. As notas em falta ficam sempre depois das que existem.
 - Hoje, os períodos que já acabaram ficam a cinzento, e a nota do dia diz «(já passou)» quando o seu período já acabou.
 - O início liga ao comparador no dia escolhido («Comparar os 8 pesqueiros ›»).
+
+## Página do pesqueiro
+
+`pesqueiro.html?id=<id>[&dia=<0–6>]` (`js/pesqueiro.js`, `js/ui/pesqueiro.js`) é gerada a partir do `config.json`: um pesqueiro novo em `pesqueiros` (com os seus pontos em `locais`) tem página sem mudar código. Mostra:
+
+- nome, fotografia, tipo e espécies;
+- os pontos de dados (vento, ondulação, água), com as coordenadas e a origem de cada um; a ligação ao mapa (`mapa.html?pesqueiro=<id>` centra-se nele e abre o balão);
+- os dias com as notas do pesqueiro;
+- as notas por espécie e período, com incompletude, limites e motivos, e o alinhamento;
+- o «hora a hora» completo, com as marés da tabela;
+- os factos do dia (potência, limo, água, fundo típico nas praias), as parcelas, as fontes com a hora de leitura e os avisos;
+- as câmaras e as estações de vento.
+
+Reutiliza os componentes do ecrã inicial e do «hora a hora» (não há outra cópia do motor nem das regras). Chega-se a ela pelos cartões do início («Página do pesqueiro ›»), pelos nomes no comparador e pelos balões do mapa.
 
 ## Instalar no telemóvel (Android)
 
@@ -112,7 +126,7 @@ O GitHub Actions corre-os em cada push e PR (workflow «Testes no browser») e g
 
 ## Limitações desta entrega
 
-- Ainda não existem: páginas por pesqueiro, diário de saídas (a base já tem as lojas), estatísticas e o ecrã do histórico de previsões (as leituras já ficam guardadas). Estão no plano de evolução, um PR cada.
+- Ainda não existem: diário de saídas (a base já tem as lojas), estatísticas e o ecrã do histórico de previsões (as leituras já ficam guardadas). Estão no plano de evolução, um PR cada.
 - Os avisos do IPMA não são consultados: a regra de segurança foi retirada por decisão do utilizador (13/10/2026).
 - O `sw.js` serve a shell a partir da cache; `config.json` e marés (`*.json`) vão sempre primeiro à rede e só usam a cópia em cache sem ligação. Ao alterar um ficheiro da shell, correr `node ferramentas/versao-sw.mjs` (actualiza a impressão e sobe a versão da cache em `sw.js`); um teste falha se for esquecido.
 - Quando há uma versão nova publicada, a página aberta recarrega sozinha uma vez, assim que o service worker novo toma conta dela (`js/registo-sw.js`). Sem isso ficava o código antigo com a `config.json` nova, que vem sempre da rede. Na primeira instalação não recarrega.

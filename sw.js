@@ -2,13 +2,13 @@
 // A impressão abaixo (SHA-256 dos ficheiros da SHELL) é conferida por um teste; para actualizar
 // a impressão e a versão de uma vez: node ferramentas/versao-sw.mjs
 const CACHE = "surfcasting-shell-v28";
-// impressão da shell: 9c450b2e4590
+// impressão da shell: deb9a634a99a
 const SHELL = [
-  "./", "./index.html", "./diagnostico.html", "./mapa.html", "./fontes.html", "./comparador.html", "./manifest.webmanifest", "./css/app.css",
+  "./", "./index.html", "./diagnostico.html", "./mapa.html", "./fontes.html", "./comparador.html", "./pesqueiro.html", "./manifest.webmanifest", "./css/app.css",
   "./js/app.js", "./js/diagnostico.js", "./js/dados.js", "./js/normalizacao.js", "./js/pontos.js",
-  "./js/mapa.js", "./js/fundos.js", "./js/registo-sw.js", "./js/pagina-fontes.js", "./js/carregar.js", "./js/comparador.js",
+  "./js/mapa.js", "./js/fundos.js", "./js/registo-sw.js", "./js/pagina-fontes.js", "./js/carregar.js", "./js/comparador.js", "./js/pesqueiro.js",
   "./js/armazenamento/esquema.js", "./js/armazenamento/armazem-memoria.js", "./js/armazenamento/indexeddb.js", "./js/armazenamento/leituras.js",
-  "./js/ui/formato.js", "./js/ui/inicio.js", "./js/ui/horario.js", "./js/ui/fontes.js", "./js/ui/comparador.js",
+  "./js/ui/formato.js", "./js/ui/inicio.js", "./js/ui/horario.js", "./js/ui/fontes.js", "./js/ui/comparador.js", "./js/ui/pesqueiro.js",
   "./assets/fotos/ria.jpg", "./assets/fotos/praia_faro.jpg", "./assets/fotos/ancao.jpg",
   "./assets/fotos/almargem.jpg", "./assets/fotos/molhe_quarteira.jpg",
   "./js/fontes/http.js", "./js/fontes/open-meteo-tempo.js",

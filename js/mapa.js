@@ -33,14 +33,16 @@ function fundosDeMapa(config) {
 
 function camadaPesqueiros(config) {
   const grupo = L.layerGroup();
-  for (const pq of Object.values(config.pesqueiros)) {
+  for (const [id, pq] of Object.entries(config.pesqueiros)) {
     const p = config.locais[pq.mar];
     if (!p) continue; // a Ria não tem ponto próprio (ver CLAUDE.md §4)
-    L.circleMarker([p.latitude, p.longitude], { radius: 7, color: "#fff", weight: 2, fillColor: "#ef6c00", fillOpacity: 1 })
+    const marcador = L.circleMarker([p.latitude, p.longitude], { radius: 7, color: "#fff", weight: 2, fillColor: "#ef6c00", fillOpacity: 1 })
       .bindTooltip(esc(pq.nomeCurto ?? pq.nome), { direction: "top", offset: [0, -6] })
       .bindPopup(`<h3>${esc(pq.nome)}</h3><p>Ponto usado para a previsão do mar (Open-Meteo): ` +
-        `${p.latitude.toFixed(5)}, ${p.longitude.toFixed(5)}.</p><p class="fonte-mapa">${esc(p.origem ?? "")}</p>`)
+        `${p.latitude.toFixed(5)}, ${p.longitude.toFixed(5)}.</p><p class="fonte-mapa">${esc(p.origem ?? "")}</p>` +
+        `<p><a href="./pesqueiro.html?id=${encodeURIComponent(id)}">Página do pesqueiro ›</a></p>`)
       .addTo(grupo);
+    marcador.pesqueiro = id;
   }
   return grupo;
 }
@@ -129,6 +131,16 @@ async function iniciar() {
   const limites = L.latLngBounds([]);
   pesqueiros.eachLayer(m => limites.extend(m.getLatLng()));
   mapa.fitBounds(limites.pad(0.15));
+  // mapa.html?pesqueiro=<id> (a partir da página do pesqueiro): centra nele e abre o balão. A Ria não
+  // tem marcador: centra no ponto de terra.
+  const pedido = new URLSearchParams(location.search).get("pesqueiro");
+  const pqPedido = pedido ? config.pesqueiros[pedido] : null;
+  if (pqPedido) {
+    const marcador = pesqueiros.getLayers().find(m => m.pesqueiro === pedido);
+    const local = config.locais[pqPedido.mar ?? pqPedido.terra];
+    if (marcador) { mapa.setView(marcador.getLatLng(), 15); marcador.openPopup(); }
+    else if (local) mapa.setView([local.latitude, local.longitude], 14);
+  }
   const controlo = L.control.layers(bases, sobreposicoes, { collapsed: true }).addTo(mapa);
   L.control.scale({ imperial: false }).addTo(mapa);
   legenda().addTo(mapa);
