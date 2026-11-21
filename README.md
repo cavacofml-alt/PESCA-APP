@@ -1,6 +1,6 @@
 # Surfcasting Algarve
 
-App pessoal (PWA, para Android) com as condições de surfcasting para dourada e robalo em oito pesqueiros, da Ria Formosa (Faro) à Falésia. Sem build e sem dependências de runtime. O ecrã inicial (`index.html`) abre com «Onde e quando» (os melhores pesqueiros e períodos do dia escolhido, a partir das notas) e mostra um cartão por pesqueiro com as notas por período; `comparador.html` põe os oito pesqueiros lado a lado (ver «Comparador»); `pesqueiro.html?id=<id>` mostra tudo sobre um pesqueiro (ver «Página do pesqueiro»); `diario.html` é o diário de saídas (ver «Diário») e `estatisticas.html` as estatísticas pessoais; `historico.html` (a partir das «Fontes») é o histórico de previsões; `mapa.html` mostra os pesqueiros e o fundo do mar; `fontes.html` diz de onde vem cada dado, de que tipo é e com que licença (e os créditos das fotografias); `diagnostico.html`, aberto a partir das «Fontes», mostra o estado técnico de cada pedido. Todos os ecrãs têm a mesma barra de navegação (Início, Comparar, Mapa, Diário, Fontes).
+App pessoal (PWA, para Android) com as condições de surfcasting para dourada e robalo em oito pesqueiros, da Ria Formosa (Faro) à Falésia. Sem build e sem dependências de runtime. O ecrã inicial (`index.html`) abre com «Onde e quando» (os melhores pesqueiros e períodos do dia escolhido, a partir das notas) e mostra um cartão por pesqueiro com as notas por período; `comparador.html` põe os oito pesqueiros lado a lado (ver «Comparador»); `pesqueiro.html?id=<id>` mostra tudo sobre um pesqueiro (ver «Página do pesqueiro»); `diario.html` é o diário de saídas (ver «Diário») e `estatisticas.html` as estatísticas pessoais; `historico.html` (a partir das «Fontes») é o histórico de previsões e `guia.html` o guia; `mapa.html` mostra os pesqueiros e o fundo do mar; `fontes.html` diz de onde vem cada dado, de que tipo é e com que licença (e os créditos das fotografias); `diagnostico.html`, aberto a partir das «Fontes», mostra o estado técnico de cada pedido. Todos os ecrãs têm a mesma barra de navegação (Início, Comparar, Mapa, Diário, Fontes).
 
 ## Executar localmente
 
@@ -75,6 +75,15 @@ Reutiliza os componentes do ecrã inicial e do «hora a hora» (não há outra c
 - Resumo por antecedência (até 24 h, 24–48 h, 48–72 h, 3–7 dias): n, diferença média e diferença absoluta média (previsto − medido).
 - As saídas do diário aparecem com a previsão da onda guardada e a medição da boia, só para consulta.
 - Não muda o motor, as notas, os limiares nem as regras, e não cria limiares novos.
+
+## Guia
+
+`guia.html` (`js/ui/guia.js`), a partir das «Fontes»: estático, guardado na app (funciona sem rede), sem IA nem serviços externos. Seis temas: ler as marés, interpretar a ondulação, vento e orientação da costa, ler os fundos e as estruturas, usar as informações da app, preparar e registar uma saída. Em cada tema:
+
+- **Em geral:** conceitos gerais, escritos com prudência (sem espécies, notas nem limiares: um teste confirma-o);
+- **Nesta app:** as decisões do utilizador que a app usa, com os valores lidos do `config.json` (mudam com ele; nenhum número escrito à mão), todas provisórias.
+
+Não é um manual de pesca nem traz regras novas; diz que a app não avalia a segurança.
 
 ## Instalar no telemóvel (Android)
 
