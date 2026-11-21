@@ -1,6 +1,6 @@
 # Surfcasting Algarve
 
-App pessoal (PWA, para Android) com as condições de surfcasting para dourada e robalo em oito pesqueiros, da Ria Formosa (Faro) à Falésia. Sem build e sem dependências de runtime. O ecrã inicial (`index.html`) abre com «Onde e quando» (os melhores pesqueiros e períodos do dia escolhido, a partir das notas) e mostra um cartão por pesqueiro com as notas por período; `comparador.html` põe os oito pesqueiros lado a lado (ver «Comparador»); `pesqueiro.html?id=<id>` mostra tudo sobre um pesqueiro (ver «Página do pesqueiro»); `diario.html` é o diário de saídas (ver «Diário») e `estatisticas.html` as estatísticas pessoais; `mapa.html` mostra os pesqueiros e o fundo do mar; `fontes.html` diz de onde vem cada dado, de que tipo é e com que licença (e os créditos das fotografias); `diagnostico.html`, aberto a partir das «Fontes», mostra o estado técnico de cada pedido. Todos os ecrãs têm a mesma barra de navegação (Início, Comparar, Mapa, Diário, Fontes).
+App pessoal (PWA, para Android) com as condições de surfcasting para dourada e robalo em oito pesqueiros, da Ria Formosa (Faro) à Falésia. Sem build e sem dependências de runtime. O ecrã inicial (`index.html`) abre com «Onde e quando» (os melhores pesqueiros e períodos do dia escolhido, a partir das notas) e mostra um cartão por pesqueiro com as notas por período; `comparador.html` põe os oito pesqueiros lado a lado (ver «Comparador»); `pesqueiro.html?id=<id>` mostra tudo sobre um pesqueiro (ver «Página do pesqueiro»); `diario.html` é o diário de saídas (ver «Diário») e `estatisticas.html` as estatísticas pessoais; `historico.html` (a partir das «Fontes») é o histórico de previsões; `mapa.html` mostra os pesqueiros e o fundo do mar; `fontes.html` diz de onde vem cada dado, de que tipo é e com que licença (e os créditos das fotografias); `diagnostico.html`, aberto a partir das «Fontes», mostra o estado técnico de cada pedido. Todos os ecrãs têm a mesma barra de navegação (Início, Comparar, Mapa, Diário, Fontes).
 
 ## Executar localmente
 
@@ -63,6 +63,18 @@ Reutiliza os componentes do ecrã inicial e do «hora a hora» (não há outra c
 - filtros de período (tudo, 30 dias, 90 dias, 12 meses, este ano, intervalo), espécie e pesqueiro;
 - cada valor tem o número de saídas que o sustenta (n); com menos de 10, «amostra pequena» (ou «*» nas tabelas);
 - a falta de registos nunca aparece como zero capturas; não há previsões, «melhores» pesqueiros nem explicações de causa; não muda as notas nem as regras.
+
+## Histórico de previsões e validação pessoal
+
+`historico.html` (`js/historico/validacao.js`, `js/ui/historico.js`), a partir das «Fontes»: as leituras guardadas neste aparelho e, na zona da boia de Faro, a previsão do Open-Meteo que a app tinha ao lado do que a boia mediu.
+
+- **Previsão arquivada ≠ observação:** a previsão vem com a hora da leitura e a antecedência; a observação é a da boia (ao largo, a 90 m de fundo).
+- **Só horas que eram previsão:** de cada leitura só contam as horas depois da hora da leitura e que já chegaram (os 7 dias para trás de cada leitura não contam). A medição da boia tem de estar a 15 min da hora certa; sem medição (ou com QC mau), fica «sem medição», nunca zero.
+- **Só o que é comparável:** altura da onda (`wave_height` ↔ Hm0) e água (°C). O período (`wave_period` ↔ Tm02) e a direcção (média ↔ no pico) mostram-se lado a lado, sem diferença.
+- **Localização:** a previsão é a da célula do ponto `config.boias.faro.previsaoPonto`, e a distância à boia aparece sempre. Vale para a zona da boia, não para cada pesqueiro.
+- Resumo por antecedência (até 24 h, 24–48 h, 48–72 h, 3–7 dias): n, diferença média e diferença absoluta média (previsto − medido).
+- As saídas do diário aparecem com a previsão da onda guardada e a medição da boia, só para consulta.
+- Não muda o motor, as notas, os limiares nem as regras, e não cria limiares novos.
 
 ## Instalar no telemóvel (Android)
 
@@ -146,7 +158,6 @@ O GitHub Actions corre-os em cada push e PR (workflow «Testes no browser») e g
 
 ## Limitações desta entrega
 
-- Ainda não existe o ecrã do histórico de previsões (as leituras já ficam guardadas). Está no plano de evolução.
 - Os avisos do IPMA não são consultados: a regra de segurança foi retirada por decisão do utilizador (13/10/2026).
 - O `sw.js` serve a shell a partir da cache; `config.json` e marés (`*.json`) vão sempre primeiro à rede e só usam a cópia em cache sem ligação. Ao alterar um ficheiro da shell, correr `node ferramentas/versao-sw.mjs` (actualiza a impressão e sobe a versão da cache em `sw.js`); um teste falha se for esquecido.
 - Quando há uma versão nova publicada, a página aberta recarrega sozinha uma vez, assim que o service worker novo toma conta dela (`js/registo-sw.js`). Sem isso ficava o código antigo com a `config.json` nova, que vem sempre da rede. Na primeira instalação não recarrega.
