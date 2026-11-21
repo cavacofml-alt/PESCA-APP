@@ -295,3 +295,16 @@ a { color: var(--azul2); }
 .avisos-form { margin: 0; padding-left: 1.2rem; color: #6b4e00; font-size: .82rem; }
 .botoes-form { display: flex; gap: .5rem; }
 [hidden] { display: none !important; }
+
+/* Estatísticas (PR 6) */
+.filtros { display: grid; grid-template-columns: 1fr 1fr; gap: .45rem .6rem; margin-bottom: .6rem; font-size: .88rem; }
+.filtros label { display: grid; gap: .15rem; }
+.filtros select, .filtros input { width: 100%; min-width: 0; padding: .4rem .45rem; border: 1px solid #c9d8e2; border-radius: .5rem; font: inherit; background: white; }
+.tabela-stats { width: 100%; border-collapse: collapse; font-size: .8rem; }
+.tabela-stats th, .tabela-stats td { padding: .3rem .3rem; border-bottom: 1px solid #edf1f4; text-align: right; vertical-align: top; }
+.tabela-stats th:first-child { text-align: left; font-weight: 600; }
+.tabela-stats thead th { color: var(--suave); font-weight: 600; font-size: .74rem; text-align: right; }
+.tabela-stats thead th:first-child { text-align: left; }
+.tabela-stats tr.sem td { color: var(--suave); text-align: left; font-style: italic; }
+.amostra { display: inline-block; margin-left: .25rem; padding: 0 .35rem; border-radius: .4rem; background: #fff4d6; color: #6b4e00; font-size: .68rem; font-weight: 600; white-space: nowrap; }
+.accoes-diario a.botao { text-decoration: none; }

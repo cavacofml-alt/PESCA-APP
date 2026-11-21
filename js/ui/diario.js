@@ -171,6 +171,7 @@ export function renderDiario(estado) {
       <button type="button" id="nova-saida" class="principal"${semBase ? " disabled" : ""}>Nova saída</button>
       <button type="button" id="exportar"${semBase || !saidas.length ? " disabled" : ""}>Exportar cópia</button>
       <label class="botao${semBase ? " desactivado" : ""}">Importar cópia<input type="file" id="importar" accept="application/json,.json" hidden${semBase ? " disabled" : ""}></label>
+      <a class="botao" href="./estatisticas.html">Estatísticas ›</a>
     </div>
     ${invalidas ? `<p class="falha">${invalidas} registo(s) com formato inválido não aparecem.</p>` : ""}
     ${saidas.length ? `<ol class="saidas">${saidas.map(s => itemSaida(s, config, condicoes.get(s.id))).join("")}</ol>`

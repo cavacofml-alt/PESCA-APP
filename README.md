@@ -1,6 +1,6 @@
 # Surfcasting Algarve
 
-App pessoal (PWA, para Android) com as condições de surfcasting para dourada e robalo em oito pesqueiros, da Ria Formosa (Faro) à Falésia. Sem build e sem dependências de runtime. O ecrã inicial (`index.html`) abre com «Onde e quando» (os melhores pesqueiros e períodos do dia escolhido, a partir das notas) e mostra um cartão por pesqueiro com as notas por período; `comparador.html` põe os oito pesqueiros lado a lado (ver «Comparador»); `pesqueiro.html?id=<id>` mostra tudo sobre um pesqueiro (ver «Página do pesqueiro»); `diario.html` é o diário de saídas (ver «Diário»); `mapa.html` mostra os pesqueiros e o fundo do mar; `fontes.html` diz de onde vem cada dado, de que tipo é e com que licença (e os créditos das fotografias); `diagnostico.html`, aberto a partir das «Fontes», mostra o estado técnico de cada pedido. Todos os ecrãs têm a mesma barra de navegação (Início, Comparar, Mapa, Diário, Fontes).
+App pessoal (PWA, para Android) com as condições de surfcasting para dourada e robalo em oito pesqueiros, da Ria Formosa (Faro) à Falésia. Sem build e sem dependências de runtime. O ecrã inicial (`index.html`) abre com «Onde e quando» (os melhores pesqueiros e períodos do dia escolhido, a partir das notas) e mostra um cartão por pesqueiro com as notas por período; `comparador.html` põe os oito pesqueiros lado a lado (ver «Comparador»); `pesqueiro.html?id=<id>` mostra tudo sobre um pesqueiro (ver «Página do pesqueiro»); `diario.html` é o diário de saídas (ver «Diário») e `estatisticas.html` as estatísticas pessoais; `mapa.html` mostra os pesqueiros e o fundo do mar; `fontes.html` diz de onde vem cada dado, de que tipo é e com que licença (e os créditos das fotografias); `diagnostico.html`, aberto a partir das «Fontes», mostra o estado técnico de cada pedido. Todos os ecrãs têm a mesma barra de navegação (Início, Comparar, Mapa, Diário, Fontes).
 
 ## Executar localmente
 
@@ -53,6 +53,16 @@ Reutiliza os componentes do ecrã inicial e do «hora a hora» (não há outra c
 - **Editar, apagar** (a saída e as suas condições, juntas) e **consultar** (a mais recente primeiro).
 - **Cópia de segurança:** «Exportar cópia» descarrega um JSON versionado (`formato: surfcasting-algarve-diario`, `versao: 1`). «Importar cópia» valida o ficheiro inteiro antes de escrever: um ficheiro inválido não escreve nada; um válido escreve numa só transacção; um registo que já existe igual é ignorado e um diferente com o mesmo id fica como conflito (fica o do aparelho). Lembrete quando há saídas e nunca se fez cópia, ou a última tem mais de 30 dias (`config.persistencia.lembreteCopiaSegurancaDias`).
 - Os registos não mudam as regras, os limiares nem as notas.
+
+## Estatísticas pessoais
+
+`estatisticas.html` (`js/diario/estatisticas.js`, `js/ui/estatisticas.js`), a partir de «Estatísticas ›» no diário: calculadas **só a partir do diário deste aparelho**, sem rede. São descritivas:
+
+- resumo (saídas, com e sem capturas, capturas, capturas por saída, horas de pesca das saídas com hora de fim);
+- por pesqueiro (os oito aparecem; sem saídas = «sem registos»), por espécie (saídas com ela como alvo, saídas em que foi apanhada, quantidade, tamanhos com o seu n), por período do dia (pela hora de início, em Lisboa) e por mês (do primeiro ao último mês com saídas; os meses do meio sem saídas dizem «sem saídas registadas (não é zero capturas)»);
+- filtros de período (tudo, 30 dias, 90 dias, 12 meses, este ano, intervalo), espécie e pesqueiro;
+- cada valor tem o número de saídas que o sustenta (n); com menos de 10, «amostra pequena» (ou «*» nas tabelas);
+- a falta de registos nunca aparece como zero capturas; não há previsões, «melhores» pesqueiros nem explicações de causa; não muda as notas nem as regras.
 
 ## Instalar no telemóvel (Android)
 
@@ -136,7 +146,7 @@ O GitHub Actions corre-os em cada push e PR (workflow «Testes no browser») e g
 
 ## Limitações desta entrega
 
-- Ainda não existem: estatísticas e o ecrã do histórico de previsões (as leituras já ficam guardadas). Estão no plano de evolução, um PR cada.
+- Ainda não existe o ecrã do histórico de previsões (as leituras já ficam guardadas). Está no plano de evolução.
 - Os avisos do IPMA não são consultados: a regra de segurança foi retirada por decisão do utilizador (13/10/2026).
 - O `sw.js` serve a shell a partir da cache; `config.json` e marés (`*.json`) vão sempre primeiro à rede e só usam a cópia em cache sem ligação. Ao alterar um ficheiro da shell, correr `node ferramentas/versao-sw.mjs` (actualiza a impressão e sobe a versão da cache em `sw.js`); um teste falha se for esquecido.
 - Quando há uma versão nova publicada, a página aberta recarrega sozinha uma vez, assim que o service worker novo toma conta dela (`js/registo-sw.js`). Sem isso ficava o código antigo com a `config.json` nova, que vem sempre da rede. Na primeira instalação não recarrega.
