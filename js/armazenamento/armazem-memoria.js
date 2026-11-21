@@ -5,6 +5,8 @@
 // Interface comum (todas as operações são assíncronas):
 //   guardar(loja, valor) · obter(loja, chave) · apagar(loja, chave) · chaves(loja) · listar(loja)
 //   limpar(loja) · fechar()      — e as propriedades tipo ("memória" | "IndexedDB") e lojas.
+//   escrever({ guardar: { loja: [valores] }, apagar: { loja: [chaves] } }) — tudo numa só transacção:
+//   ou fica tudo escrito, ou nada muda (importações, saída do diário com as suas condições).
 // Cada loja tem uma chave (keyPath) definida no esquema (js/armazenamento/esquema.js).
 import { ESQUEMA } from "./esquema.js";
 
@@ -40,6 +42,23 @@ export function armazemMemoria({ esquema = ESQUEMA, limiteBytes = Infinity } = {
     async chaves(nome) { return [...loja(nome).keys()].sort(); },
     async listar(nome) { return [...loja(nome).entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([, v]) => copia(v)); },
     async limpar(nome) { loja(nome).clear(); },
+    async escrever({ guardar = {}, apagar = {} } = {}) {
+      const antes = new Map([...lojas].map(([n, l]) => [n, new Map(l)]));
+      try {
+        for (const [nome, chaves] of Object.entries(apagar)) for (const c of chaves) loja(nome).delete(c);
+        for (const [nome, valores] of Object.entries(guardar)) {
+          for (const v of valores) {
+            const chave = v?.[chaveDe(nome)];
+            if (chave === undefined || chave === null) throw new Error(`${nome}: falta a chave «${chaveDe(nome)}»`);
+            loja(nome).set(chave, copia(v));
+          }
+        }
+        if (ocupado() > limiteBytes) { const e = new Error("sem espaço"); e.name = "QuotaExceededError"; throw e; }
+      } catch (e) {
+        for (const [n, l] of antes) lojas.set(n, l);
+        throw e;
+      }
+    },
     async fechar() {}
   };
 }
