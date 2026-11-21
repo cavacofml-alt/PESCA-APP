@@ -92,7 +92,7 @@ export function formularioSaida({ config, saida = null, erros = [], avisos = [],
       <label>Início <input name="horaInicio" type="time" value="${esc(ini?.hora ?? "")}" required></label>
       <label>Fim <input name="horaFim" type="time" value="${esc(fim?.hora ?? "")}"></label>
     </div>
-    <p class="ajuda">Hora de Portugal continental. Se o fim for antes do início, a saída acaba no dia seguinte.</p>
+    <p class="ajuda">Hora de Portugal continental. Se o fim for antes do início, a saída acaba no dia seguinte. Sem hora de fim, as condições guardadas são só as da hora em que a saída começou.</p>
     <fieldset class="alvo"><legend>Espécies</legend>
       ${ESPECIES_DIARIO.map(e => `<label class="opcao"><input type="checkbox" name="alvo-${e}"${alvo.has(e) || (!saida && e === "robalo") ? " checked" : ""}> ${esc(NOME[e])}</label>`).join("")}
       <label class="so-outra-alvo">Qual <input name="outraAlvo" value="${esc(saida?.outraAlvo ?? "")}" maxlength="60" autocomplete="off"></label>
@@ -127,7 +127,7 @@ export function resumoCondicoes(c, saida) {
   const mares = c.dias.map(d => `${d.amplitude === null ? "amplitude não obtida" : `${num(d.amplitude, 1)} m (${d.classe})`}${d.repontos.length ? ` · ${d.repontos.map(r => `${NOME_MARE[r.tipo]} ${hora(r.instante)}`).join(", ")}` : ""}`);
   const linhas = c.horas.map(h => `<tr><td>${hora(h.instante)}</td><td>${num(h.hs, 1)}</td><td>${num(h.periodo, 1)}</td><td>${num(h.potencia, 2)}</td><td>${num(h.vento, 0)}/${num(h.rajada, 0)} ${esc(rumo(h.direcaoVento))}</td><td>${num(h.pressao, 0)}</td><td>${num(h.agua, 1)}</td></tr>`).join("");
   return `<div class="condicoes">
-    <p><b>Condições guardadas</b> · previsão (Open-Meteo) ${quando}. Não são medições no pesqueiro. Notas das regras da app, provisórias.</p>
+    <p><b>Condições guardadas</b> · previsão (Open-Meteo) ${quando}. Não são medições no pesqueiro. Notas das regras da app, provisórias.${saida.fim ? "" : " Sem hora de fim: só a hora em que a saída começou."}</p>
     <p><span class="rot">Notas</span> ${esc(notas.join(" · ") || "sem períodos")}</p>
     <p><span class="rot">Maré</span> ${esc(mares.join(" | "))}</p>
     ${c.boia ? `<p><span class="rot">Boia de Faro</span> ${esc(`observado ao largo às ${hora(c.boia.instante)}: onda ${num(c.boia.hm0, 2)} m · período médio ${num(c.boia.tm02, 1)} s · água ${num(c.boia.agua, 1)} °C`)}</p>` : ""}
