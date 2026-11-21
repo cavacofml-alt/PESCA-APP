@@ -104,6 +104,7 @@ test("formulário: lê os campos (Lisboa, vírgula decimal, várias capturas, «
   const ed = lerFormulario(campos, { id: "s-1", agora: "2026-10-20T08:00:00.000Z", anterior: { criadoEm: "2026-10-15T08:00:00.000Z" } }).saida;
   assert.deepEqual([ed.criadoEm, ed.alteradoEm], ["2026-10-15T08:00:00.000Z", "2026-10-20T08:00:00.000Z"]);
   assert.match(formularioSaida({ config, saida: saidaBase(), hoje: "2026-10-14" }), /Editar saída/);
+  assert.match(formularioSaida({ config, hoje: "2026-10-14" }), /Sem hora de fim, as condições guardadas são só as da hora em que a saída começou/);
   assert.match(novoId("s", 1000, () => 0.5), /^s-rs-[0-9a-z]{6}$/);
 });
 
@@ -180,6 +181,15 @@ test("condições: a previsão hora a hora no pesqueiro, as notas do motor nos p
   const html = resumoCondicoes(c, saidaBase());
   assert.match(html, /previsão \(Open-Meteo\) lida 14\/10 às 06:00, 1,0 h antes do início/);
   assert.match(html, /Não são medições no pesqueiro/);
+  // Sem hora de fim: só a hora certa em que começou (07:20 em Lisboa → só a hora das 07:00) e o período dela.
+  const semFim = condicoesDaSaida(saidaBase({ inicio: "2026-10-14T06:20:00.000Z", fim: null }), leitura, { config, mares, sol });
+  assert.deepEqual(semFim.horas.map(h => new Date(h.instante).toISOString().slice(11, 16)), ["06:00"]);
+  assert.deepEqual(semFim.periodos.map(p => p.nome), ["manhã"]);
+  assert.match(resumoCondicoes(semFim, saidaBase({ fim: null })), /Sem hora de fim: só a hora em que a saída começou/);
+  assert.doesNotMatch(resumoCondicoes(c, saidaBase()), /Sem hora de fim/);
+  // A última hora antes das 06:00 de Lisboa fica na madrugada.
+  const madr = condicoesDaSaida(saidaBase({ inicio: "2026-10-14T04:59:00.000Z", fim: null }), leitura, { config, mares, sol });
+  assert.deepEqual(madr.periodos.map(p => p.nome), ["madrugada"]);
   // Saída a passar a meia-noite: períodos de dois dias.
   const noite = condicoesDaSaida(saidaBase({ inicio: "2026-10-14T20:00:00.000Z", fim: "2026-10-15T02:00:00.000Z" }), leitura, { config, mares, sol });
   assert.deepEqual(noite.periodos.map(p => `${p.dia} ${p.nome}`), ["2026-10-14 noite", "2026-10-15 madrugada"]);

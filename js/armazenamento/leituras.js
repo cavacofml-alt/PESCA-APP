@@ -18,6 +18,7 @@ const LOJA = "leituras";
 // - arquivoMaxIdadeHoras: sem rede, só se usa a última leitura se tiver no máximo N horas (depois
 //   disso a previsão guardada já não cobre os dias mostrados).
 // A leitura mais recente nunca é apagada pela limpeza. O diário nunca é apagado automaticamente.
+// Sem espaço, ver guardarSemEspaco: nunca se fica sem nenhuma leitura.
 export const POLITICA_PADRAO = Object.freeze({ todasHoras: 48, umaPorDiaDias: 30, maximo: 60, substituirMinutos: 30, arquivoMaxIdadeHoras: 168 });
 export const politicaDe = config => ({ ...POLITICA_PADRAO, ...(config?.persistencia?.leituras ?? {}) });
 
@@ -64,8 +65,36 @@ export function aApagar(chaves, politica = POLITICA_PADRAO, agora = Date.now()) 
 
 const mensagem = e => (e?.name === "QuotaExceededError" ? "sem espaço no aparelho" : e?.message ?? String(e));
 
+// Sem espaço (quota), por esta ordem, e só até a nova leitura caber (revisão de 21/11/2026):
+// 1. apagam-se os registos com chave inválida e as leituras mais antigas, uma de cada vez, tentando
+//    guardar depois de cada uma;
+// 2. a leitura válida mais recente nunca se apaga sozinha: no fim, só é trocada pela nova numa única
+//    transacção (apagar + guardar), que, se a nova não couber, se desfaz e a deixa como estava.
+// Assim nunca se fica sem nenhuma leitura por falta de espaço.
+async function guardarSemEspaco(armazem, leitura, anteriores) {
+  const protegida = (await ultimaLeitura(armazem))?.id ?? null;
+  const invalidas = anteriores.filter(id => !Number.isFinite(instante(id)));
+  const antigas = anteriores.filter(id => Number.isFinite(instante(id)) && id !== protegida).sort((a, b) => instante(a) - instante(b));
+  let apagadas = 0;
+  for (const id of [...invalidas, ...antigas]) {
+    try { await armazem.apagar(LOJA, id); apagadas++; } catch { continue; }
+    try {
+      await armazem.guardar(LOJA, leitura);
+      return { ok: true, apagadas, aviso: `faltava espaço: apagada(s) ${apagadas} leitura(s) mais antiga(s)` };
+    } catch (e) {
+      if (e?.name !== "QuotaExceededError") return { ok: false, erro: mensagem(e), apagadas };
+    }
+  }
+  if (!protegida) return { ok: false, erro: "sem espaço no aparelho", apagadas };
+  try {
+    await armazem.escrever({ apagar: { [LOJA]: [protegida] }, guardar: { [LOJA]: [leitura] } });
+    return { ok: true, apagadas: apagadas + 1, aviso: `faltava espaço: a leitura anterior (${protegida}) foi trocada pela nova` };
+  } catch (e) {
+    return { ok: false, erro: `${mensagem(e)}: ficou guardada a leitura anterior (${protegida})`, apagadas };
+  }
+}
+
 // Guarda a leitura e aplica a política. Nunca lança: devolve { ok, erro?, apagadas, aviso? }.
-// Sem espaço (quota): apagam-se as leituras anteriores e tenta-se mais uma vez.
 export async function guardarLeitura(armazem, leitura, politica = POLITICA_PADRAO, agora = Date.parse(leitura.lidoEm)) {
   const p = { ...POLITICA_PADRAO, ...politica };
   let chaves;
@@ -76,12 +105,7 @@ export async function guardarLeitura(armazem, leitura, politica = POLITICA_PADRA
     await armazem.guardar(LOJA, leitura);
   } catch (e) {
     if (e?.name !== "QuotaExceededError") return { ok: false, erro: mensagem(e), apagadas: 0 };
-    let apagadas = 0;
-    for (const id of anteriores) { try { await armazem.apagar(LOJA, id); apagadas++; } catch { /* segue */ } }
-    try {
-      await armazem.guardar(LOJA, leitura);
-    } catch (e2) { return { ok: false, erro: mensagem(e2), apagadas }; }
-    return { ok: true, apagadas, aviso: "faltava espaço: as leituras anteriores foram apagadas" };
+    return guardarSemEspaco(armazem, leitura, anteriores);
   }
   const novo = instante(leitura.id);
   const substituir = anteriores.filter(id => Number.isFinite(instante(id)) && instante(id) < novo && novo - instante(id) < p.substituirMinutos * 60000);

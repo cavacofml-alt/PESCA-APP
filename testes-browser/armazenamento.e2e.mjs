@@ -54,6 +54,29 @@ test("IndexedDB: o armazém cumpre a mesma interface do de memória (lojas, índ
   } finally { await contexto.close(); }
 });
 
+test("IndexedDB: escrever várias operações é tudo ou nada (um erro desfaz o apagar)", async () => {
+  const { contexto, pagina, registo } = await abrir(browser);
+  try {
+    await pagina.goto(`${srv.url}/fontes.html`);
+    const r = await pagina.evaluate(async () => {
+      const { abrirIndexedDB } = await import("./js/armazenamento/indexeddb.js");
+      const a = await abrirIndexedDB({ nome: "teste-transaccao" });
+      await a.guardar("leituras", { id: "2026-11-20T08:00:00.000Z", x: 1 });
+      const erro = await a.escrever({ apagar: { leituras: ["2026-11-20T08:00:00.000Z"] },
+        guardar: { leituras: [{ id: "2026-11-20T10:00:00.000Z" }, { semId: true }] } }).then(() => "escreveu", e => e.name);
+      const depoisErro = await a.chaves("leituras");
+      await a.escrever({ apagar: { leituras: ["2026-11-20T08:00:00.000Z"] }, guardar: { leituras: [{ id: "2026-11-20T10:00:00.000Z" }] } });
+      const depoisOk = await a.chaves("leituras");
+      await a.fechar();
+      return { erro, depoisErro, depoisOk };
+    });
+    assert.equal(r.erro, "DataError");
+    assert.deepEqual(r.depoisErro, ["2026-11-20T08:00:00.000Z"], "nada mudou");
+    assert.deepEqual(r.depoisOk, ["2026-11-20T10:00:00.000Z"]);
+    assert.deepEqual(registo.erros, []);
+  } finally { await contexto.close(); }
+});
+
 test("IndexedDB: migração de esquema conserva e transforma os registos; versão mais antiga é recusada sem bloquear", async () => {
   const { contexto, pagina } = await abrir(browser);
   try {
