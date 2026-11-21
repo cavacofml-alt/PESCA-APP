@@ -1,6 +1,6 @@
 # Surfcasting Algarve
 
-App pessoal (PWA, para Android) com as condições de surfcasting para dourada e robalo em oito pesqueiros, da Ria Formosa (Faro) à Falésia. Sem build e sem dependências de runtime. O ecrã inicial (`index.html`) abre com «Onde e quando» (os melhores pesqueiros e períodos do dia escolhido, a partir das notas) e mostra um cartão por pesqueiro com as notas por período; `comparador.html` põe os oito pesqueiros lado a lado (ver «Comparador»); `pesqueiro.html?id=<id>` mostra tudo sobre um pesqueiro (ver «Página do pesqueiro»); `diario.html` é o diário de saídas (ver «Diário») e `estatisticas.html` as estatísticas pessoais; `historico.html` (a partir das «Fontes») é o histórico de previsões e `guia.html` o guia; `mapa.html` mostra os pesqueiros e o fundo do mar; `fontes.html` diz de onde vem cada dado, de que tipo é e com que licença (e os créditos das fotografias); `diagnostico.html`, aberto a partir das «Fontes», mostra o estado técnico de cada pedido. Todos os ecrãs têm a mesma barra de navegação (Início, Comparar, Mapa, Diário, Fontes).
+App pessoal (PWA, para Android) com as condições de surfcasting para dourada e robalo em oito pesqueiros, da Ria Formosa (Faro) à Falésia. Sem build e sem dependências de runtime. O ecrã inicial (`index.html`) abre com a «Melhor oportunidade» do dia escolhido e «Onde e quando» (os melhores pesqueiros e períodos, a partir das notas) e mostra um cartão por pesqueiro com as notas das duas espécies e as notas por período (ver «Interface»); `comparador.html` põe os oito pesqueiros lado a lado (ver «Comparador»); `pesqueiro.html?id=<id>` mostra tudo sobre um pesqueiro (ver «Página do pesqueiro»); `diario.html` é o diário de saídas (ver «Diário») e `estatisticas.html` as estatísticas pessoais; `historico.html` (a partir das «Fontes») é o histórico de previsões e `guia.html` o guia; `mapa.html` mostra os pesqueiros e o fundo do mar; `fontes.html` diz de onde vem cada dado, de que tipo é e com que licença (e os créditos das fotografias); `diagnostico.html`, aberto a partir das «Fontes», mostra o estado técnico de cada pedido. Todos os ecrãs têm a mesma barra de navegação (Início, Comparar, Mapa, Diário, Fontes).
 
 ## Executar localmente
 
@@ -19,6 +19,14 @@ O site está no Cloudflare Workers, como site estático (sem código no servidor
 
 **Atenção: o site não é o único sítio público.** Com o repositório público, tudo o que está no repositório se vê no GitHub, incluindo a pasta `recolha/` (respostas de APIs guardadas, relatórios de trabalho, a Tabela de Marés do IH de 2026 em PDF e um PDF de outra ferramenta) e o histórico dos commits. O que fazer com esse material é decisão do utilizador (ver «Tabela de marés → Licenças e autorizações»).
 
+## Interface
+
+Tema marítimo (azuis profundos, turquesa, fundos neutros), com as cores das notas escolhidas para que o texto branco tenha contraste de pelo menos 4,5:1 (`testes/interface-pr9.test.js` calcula-o a partir de `css/app.css`; os testes no browser medem-no nos estilos reais). Ícones em SVG dentro do CSS (máscaras, sem pedidos externos). A barra de baixo (Início, Comparar, Mapa, Diário, Fontes) tem um ícone por secção e marca o ecrã actual também para leitores de ecrã (`aria-current`). Só muda a apresentação: as notas são as do motor, sem outra classificação.
+
+- **Melhor oportunidade** (topo do início, `destaqueDoDia` em `js/ui/inicio.js`): a primeira janela de «Onde e quando» (a nota mais alta do dia, com o mesmo desempate), com o pesqueiro, o período e as horas, a espécie, até três motivos da nota, a potência, o limo e a maré do dia, e ligações à página do pesqueiro e ao comparador. Diz sempre quando não é definitiva: **empate** (outra combinação com a mesma nota), **nota incompleta** (com o intervalo), **comparação parcial** (outras combinações incompletas, sem nota ou por confirmar podiam igualar) ou **sem notas** (nada a indicar). «A nota mais alta do dia, completa e sem empate» só aparece quando é mesmo assim.
+- **Cartões**: fotografia, nome e tipo; a nota de cada espécie do pesqueiro com o estado (completa, incompleta, sem nota, por confirmar) e o melhor período; as notas por período da espécie escolhida; até três motivos (`porque`, em `js/ui/explicacao.js`); «Página do pesqueiro ›» e «Hora a hora ›». Os dados, parcelas e fontes ficam em «Dados, parcelas e fontes».
+- **Hora a hora** (`js/ui/horario.js`): início de cada período marcado; a coluna da hora actual (hoje) destacada e posta à vista; o melhor (★) e o mais fraco (▽) período de cada espécie, pelas notas do motor (`janelasDoPesqueiro`; hoje sem os períodos que já acabaram); nota incompleta com contorno tracejado; valores em falta com «—» e fundo tracejado (nunca zero); linhas calculadas pela app («calc.») e da tabela de marés («tabela») assinaladas; previsão arquivada avisada no topo da tabela; legenda por baixo.
+
 ## Comparador
 
 `comparador.html` (`js/comparador.js`, `js/ui/comparador.js`) mostra, para a espécie, o dia e o período escolhidos (o dia inteiro, que é a nota do melhor período, ou madrugada, manhã, tarde, noite), a nota de cada pesqueiro **tal como o motor a calculou**: não calcula notas nem cria outra classificação.
@@ -35,12 +43,17 @@ O site está no Cloudflare Workers, como site estático (sem código no servidor
 `pesqueiro.html?id=<id>[&dia=<0–6>]` (`js/pesqueiro.js`, `js/ui/pesqueiro.js`) é gerada a partir do `config.json`: um pesqueiro novo em `pesqueiros` (com os seus pontos em `locais`) tem página sem mudar código. Mostra:
 
 - nome, fotografia, tipo e espécies;
-- os pontos de dados (vento, ondulação, água), com as coordenadas e a origem de cada um; a ligação ao mapa (`mapa.html?pesqueiro=<id>` centra-se nele e abre o balão);
 - os dias com as notas do pesqueiro;
+- a **melhor janela** de cada espécie (o período com a nota mais alta, as horas, o alinhamento, até três motivos, o período mais fraco e os períodos que já passaram), com o estado (definitiva, empate, incompleta, parcial ou sem notas);
 - as notas por espécie e período, com incompletude, limites e motivos, e o alinhamento;
 - o «hora a hora» completo, com as marés da tabela;
-- os factos do dia (potência, limo, água, fundo típico nas praias), as parcelas, as fontes com a hora de leitura e os avisos;
-- as câmaras e as estações de vento.
+- as marés do dia (preia-mar e baixa-mar, alturas e amplitude);
+- as **condições do dia**: potência e ondulação máximas, vento e rajada, pressão, água, chuva das 48 h anteriores e Sol, cada uma com o tipo (previsto, calculado) e «não obtido» quando falta;
+- o fundo típico (praias);
+- os pontos de dados (vento, ondulação, água) num **mini-mapa** (Leaflet, fundo do OpenStreetMap, um marcador por ponto) e em lista, com as coordenadas e a origem de cada um, o aviso de que os valores são de modelos com células de vários quilómetros, a ligação ao mapa (`mapa.html?pesqueiro=<id>` centra-se nele e abre o balão), as câmaras e as estações de vento;
+- os factos do dia, as parcelas, as fontes com a hora de leitura e os avisos.
+
+Sem Leaflet ou sem rede para os mosaicos, a lista de coordenadas continua lá.
 
 Reutiliza os componentes do ecrã inicial e do «hora a hora» (não há outra cópia do motor nem das regras). Chega-se a ela pelos cartões do início («Página do pesqueiro ›»), pelos nomes no comparador e pelos balões do mapa.
 
@@ -155,7 +168,7 @@ Não há dependências a instalar para estes testes. `testes/motor-referencia.te
 
 ### Testes no browser (Playwright)
 
-O Playwright é **só de desenvolvimento** (aprovado pelo utilizador a 20/11/2026): nunca entra na app publicada. Os testes em `testes-browser/*.e2e.mjs` abrem a app num Chromium, servida localmente a partir da mesma pasta que se publica, com as APIs a responder com `testes/reais/` (sem Internet) e o relógio fixo. Verificam a navegação, as páginas e que não há deslocamento horizontal num Pixel 7 emulado e a 360 px, e guardam capturas em `saida-browser/`.
+O Playwright é **só de desenvolvimento** (aprovado pelo utilizador a 20/11/2026): nunca entra na app publicada. Os testes em `testes-browser/*.e2e.mjs` abrem a app num Chromium, servida localmente a partir da mesma pasta que se publica, com as APIs a responder com `testes/reais/` (sem Internet) e o relógio fixo. Verificam a navegação (também com o teclado e o foco visível), as páginas, os estados incompleto, indisponível e arquivado, o contraste do texto calculado nos estilos reais e que não há deslocamento horizontal num Pixel 7 emulado e a 360 px, e guardam capturas em `saida-browser/`.
 
 ```
 npm ci
