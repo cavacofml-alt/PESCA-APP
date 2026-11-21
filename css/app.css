@@ -233,3 +233,10 @@ a { color: var(--azul2); }
 .factores td.falta { color: #6b4e00; font-weight: 650; }
 .factores .legenda { margin: .5rem 0 0; }
 .onde-quando p.ligacao-comp { display: block; margin: .45rem 0 0; font-size: .88rem; }
+
+/* Origem dos dados (PR 3): previsão arquivada, indisponível, ou não guardada */
+.aviso-origem { margin: 0 0 .7rem; padding: .6rem .75rem; border-radius: .8rem; font-size: .86rem; line-height: 1.4; }
+.aviso-origem b { display: block; margin-bottom: .15rem; }
+.aviso-origem.arquivo { background: #fff4d6; color: #5c4300; border: 1px solid #f0d58a; }
+.aviso-origem.indisponivel { background: #fdecea; color: #7a2418; border: 1px solid #f3c2bb; }
+.aviso-origem.leve { padding: 0 .25rem; color: var(--suave); font-size: .8rem; }

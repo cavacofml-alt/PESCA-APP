@@ -33,5 +33,8 @@ async function actualizar() {
   }
 }
 
+// Sem rede, mostra-se a previsão arquivada (ou nada): quando a rede volta, actualiza sozinha.
+window.addEventListener("online", () => { if (estado?.origem?.tipo !== "actual") actualizar(); });
+
 registarServiceWorker();
 actualizar();

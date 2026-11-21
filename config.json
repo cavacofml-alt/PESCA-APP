@@ -125,7 +125,15 @@
   },
   "persistencia": {
     "backend": "IndexedDB",
-    "lembreteCopiaSegurancaDias": 30
+    "lembreteCopiaSegurancaDias": 30,
+    "leituras": {
+      "nota": "Política das leituras guardadas no aparelho (js/armazenamento/leituras.js): todas as das últimas todasHoras; das mais antigas, a última de cada dia até umaPorDiaDias; no máximo maximo; uma leitura com menos de substituirMinutos é substituída pela nova; sem rede, só se usa a última se tiver até arquivoMaxIdadeHoras.",
+      "todasHoras": 48,
+      "umaPorDiaDias": 30,
+      "maximo": 60,
+      "substituirMinutos": 30,
+      "arquivoMaxIdadeHoras": 168
+    }
   },
   "fontes": {
     "marineBase": "https://marine-api.open-meteo.com/v1/marine",
