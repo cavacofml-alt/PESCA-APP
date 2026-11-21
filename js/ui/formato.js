@@ -49,6 +49,7 @@ export function textoNota(n) {
   return n.estado === "por confirmar" ? "?" : "n.d.";
 }
 
+export const ESPECIES = ["robalo", "dourada"];
 export const NOME_ESPECIE = { robalo: "Robalo", dourada: "Dourada" };
 export const PERIODO_CURTO = { madrugada: "madr.", "manhã": "manhã", tarde: "tarde", noite: "noite" };
 
