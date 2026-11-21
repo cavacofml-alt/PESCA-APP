@@ -92,6 +92,9 @@ test("diário: com uma leitura guardada, a saída fica com as condições da pre
     assert.match(cond, /previsão \(Open-Meteo\) lida 15\/11 às 10:40, depois do início/);
     assert.match(cond, /Não são medições no pesqueiro/);
     assert.equal(await pagina.locator(".horas-saida tbody tr").count(), 4, "07:00, 08:00, 09:00 e 10:00");
+    // Com a saída aberta, a tabela das condições desliza dentro do cartão: a página não passa a largura do ecrã.
+    const l = await larguras(pagina);
+    assert.ok(l.conteudo <= l.ecra, `saída aberta sem deslocamento horizontal (${l.conteudo} > ${l.ecra})`);
     // Editar: muda as observações; as condições ficam.
     await pagina.click(".editar");
     await pagina.fill("[name=observacoes]", "água limpa");

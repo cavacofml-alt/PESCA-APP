@@ -73,9 +73,12 @@ test("barra de navegação: a mesma em todos os ecrãs (Início, Comparar, Mapa,
   for (const [pagina, activo] of Object.entries(PAGINAS)) {
     const nav = /<nav class="barra" aria-label="Secções">([\s\S]*?)<\/nav>/.exec(ler(pagina))?.[1];
     assert.ok(nav, pagina);
-    const ligacoes = [...nav.matchAll(/<a href="([^"]+)"( class="activo")?>([^<]+)<\/a>/g)].map(m => [m[1], m[3], Boolean(m[2])]);
+    const ligacoes = [...nav.matchAll(/<a href="([^"]+)"( class="activo" aria-current="(page|true)")?>([^<]+)<\/a>/g)].map(m => [m[1], m[4], Boolean(m[2]), m[3]]);
     assert.deepEqual(ligacoes.map(([h, t]) => [h, t]), [["./", "Início"], ["./comparador.html", "Comparar"], ["./mapa.html", "Mapa"], ["./diario.html", "Diário"], ["./fontes.html", "Fontes"]], pagina);
     assert.deepEqual(ligacoes.filter(l => l[2]).map(l => l[0]), [activo], `${pagina}: marcado ${activo}`);
+    // Leitores de ecrã (PR 9): «page» no próprio ecrã; «true» nas subpáginas (pesqueiro, guia, …).
+    const proprio = activo === "./" ? pagina === "index.html" : activo === `./${pagina}`;
+    assert.equal(ligacoes.find(l => l[2])[3], proprio ? "page" : "true", `${pagina}: aria-current`);
   }
   for (const f of Object.keys(PAGINAS)) assert.doesNotMatch(ler(f), /href="\.\/diagnostico\.html">Fontes/, f);
   // Os créditos das fotografias estão nas Fontes: nenhuma ligação do início manda para o diagnóstico.

@@ -67,7 +67,9 @@ test("ecrã: nota incompleta mostra o intervalo e o que falta; n.d. e «por conf
   p.notas.dourada = { estado: "por confirmar", nota: null, motivo: "mar de Sul", parcelas: [], periodo: "manhã" };
   html = renderInicio(c);
   assert.match(html, /Por confirmar: mar de Sul/);
-  assert.match(html, /<span class="nota pc">\?<\/span>/);
+  // PR 9: no cartão, a nota da espécie está nas notas do cartão (o «?» de por confirmar, nunca um número).
+  assert.match(html, /<b class="mini pc">\?<\/b>/);
+  assert.doesNotMatch(html.split('id="pq-ria"')[1].split("</article>")[0], /class="(selo|mini) n\d/);
   assert.equal(classeNota({ estado: "n.d." }), "nd");
   assert.equal(textoNota({ estado: "n.d." }), "n.d.");
 });

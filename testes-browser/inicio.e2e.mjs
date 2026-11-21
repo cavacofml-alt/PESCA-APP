@@ -1,5 +1,5 @@
-// Fase 1B no browser: ecrã inicial reorganizado. «Onde e quando» visível no primeiro ecrã (Pixel 7 e
-// 360 px), ligações para os cartões, espécie e dia, «Mar agora» compacto, «hora a hora».
+// Fase 1B no browser: ecrã inicial reorganizado (PR 9: a melhor oportunidade no topo, «Onde e quando»
+// logo a seguir; Pixel 7 e 360 px), ligações para os cartões, espécie e dia, «Mar agora» compacto, «hora a hora».
 // Correr: npm run test:browser.
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -11,20 +11,23 @@ after(async () => { await browser?.close(); await srv?.fechar(); });
 
 for (const dispositivo of ["Pixel 7", { width: 360, height: 780 }]) {
   const nome = typeof dispositivo === "string" ? "pixel7" : "360px";
-  test(`início (${nome}): «Onde e quando» inteiro no primeiro ecrã, antes de «Mar agora» e dos cartões`, async () => {
+  // PR 9 (21/11/2026): a «melhor oportunidade» passou para o topo; «Onde e quando» começa ainda no
+  // primeiro ecrã, antes de «Mar agora» e dos cartões.
+  test(`início (${nome}): melhor oportunidade e o início de «Onde e quando» no primeiro ecrã, antes de «Mar agora» e dos cartões`, async () => {
     const { contexto, pagina, registo } = await abrir(browser, dispositivo);
     try {
       await pagina.goto(`${srv.url}/`);
       await pagina.waitForSelector(".cartoes");
       const m = await pagina.evaluate(() => {
         const r = s => document.querySelector(s)?.getBoundingClientRect();
-        return { ecra: innerHeight, oq: r(".onde-quando"), mar: r(".mar-agora"), cartao: r(".cartoes > *"),
+        return { ecra: innerHeight, dq: r(".destaque"), oq: r(".onde-quando"), mar: r(".mar-agora"), cartao: r(".cartoes > *"),
           janelas: document.querySelectorAll(".janelas li").length, alinhamentos: [...document.querySelectorAll(".alinhamento")].length,
           pagina: document.body.scrollHeight };
       });
       assert.ok(m.janelas >= 1, "há janelas para hoje com os dados de teste");
-      assert.ok(m.oq.top >= 0 && m.oq.bottom <= m.ecra, `«Onde e quando» cabe no primeiro ecrã (${Math.round(m.oq.bottom)} ≤ ${m.ecra})`);
-      assert.ok(m.oq.bottom <= m.mar.top && m.mar.bottom <= m.cartao.top, "ordem: «Onde e quando», «Mar agora», cartões");
+      assert.ok(m.dq.top >= 0 && m.dq.bottom <= m.ecra, `a melhor oportunidade cabe no primeiro ecrã (${Math.round(m.dq.bottom)} ≤ ${m.ecra})`);
+      assert.ok(m.oq.top < m.ecra, `«Onde e quando» começa no primeiro ecrã (${Math.round(m.oq.top)} < ${m.ecra})`);
+      assert.ok(m.dq.bottom <= m.oq.top && m.oq.bottom <= m.mar.top && m.mar.bottom <= m.cartao.top, "ordem: melhor oportunidade, «Onde e quando», «Mar agora», cartões");
       const l = await larguras(pagina);
       assert.ok(l.conteudo <= l.ecra, `sem deslocamento horizontal (${l.conteudo} > ${l.ecra})`);
       console.log(`# medição ${nome}: página ${m.pagina} px, 1.º cartão a ${Math.round(m.cartao.top)} px, ecrã ${m.ecra} px, blocos de alinhamento ${m.alinhamentos}`);

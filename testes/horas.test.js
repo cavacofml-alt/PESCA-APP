@@ -77,7 +77,7 @@ test("painel: uma coluna por hora, notas por período que somam o dia, maré ilu
   const c = contexto();
   const html = renderHorario(c, "molhe_quarteira");
   const n = c.analise.dias[0].pesqueiros.molhe_quarteira.horas.length;
-  assert.equal((html.match(/<td class="h">/g) ?? []).length, n);
+  assert.equal((html.match(/<td class="h[ "]/g) ?? []).length, n);
   for (const esp of ["robalo", "dourada"]) {
     const linha = html.split(`Nota ${esp}`)[1].split("</tr>")[0];
     const soma = [...linha.matchAll(/colspan="(\d+)"/g)].reduce((a, m) => a + Number(m[1]), 0);

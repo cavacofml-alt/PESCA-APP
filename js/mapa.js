@@ -120,6 +120,9 @@ async function iniciar() {
     return;
   }
   const mapa = L.map("mapa", { preferCanvas: true, zoomSnap: 0.5 });
+  // Com um balão aberto, a legenda (canto de baixo) esconde-se para não o tapar (PR 9, 21/11/2026).
+  mapa.on("popupopen", () => mapa.getContainer().classList.add("com-balao"));
+  mapa.on("popupclose", () => mapa.getContainer().classList.remove("com-balao"));
   mapa.attributionControl.setPrefix(config.mapa.leaflet);
   const bases = fundosDeMapa(config);
   const nomeBase = lerPreferencia("mapa-fundo");

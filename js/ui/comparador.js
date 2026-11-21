@@ -6,10 +6,11 @@
 // Valores em falta ficam «n.d.» ou «?», nunca zero; uma nota incompleta nunca aparece como definitiva.
 // Funções puras: devolvem dados ou HTML (texto escapado).
 import { esc, num, rotuloDia, classeNota, textoNota, ESPECIES, NOME_ESPECIE, PERIODO_CURTO } from "./formato.js";
-import { horasDosPeriodos, faixaDias, escolhaEspecie, parcelas, fontesEmFalta, agoraDe, linhaLeitura, avisoOrigem } from "./inicio.js";
+import { horasDosPeriodos, faixaDias, escolhaEspecie, parcelas, fontesEmFalta, linhaLeitura, avisoOrigem, periodosPassados } from "./inicio.js";
 import { ESTADO_NOTA } from "../regras/notas.js";
+import { porque, estadoDaNota } from "./explicacao.js";
+export { porque, estadoDaNota, periodosPassados };
 import { PERIODOS_PADRAO } from "../regras/periodos.js";
-import { utcToLisbon, lisbonDate } from "../normalizacao.js";
 
 export const ORDENS = { pesqueiros: "Nascente → poente", nota: "Por nota" };
 
@@ -17,42 +18,7 @@ const nomesPeriodos = config => (config.periodos ?? PERIODOS_PADRAO).map(p => p.
 // «dia» (a nota do dia, a do melhor período, como no motor) e os períodos do config.
 export const vistas = config => ["dia", ...nomesPeriodos(config)];
 
-// Períodos do dia escolhido que já acabaram à hora da leitura (só hoje; hora de Lisboa).
-export function periodosPassados(dia, contexto) {
-  const lido = agoraDe(contexto) ? new Date(Date.parse(agoraDe(contexto))) : null;
-  if (!lido || Number.isNaN(lido.getTime()) || dia !== lisbonDate(lido)) return [];
-  const agora = Number(utcToLisbon(lido).slice(11, 13));
-  return Object.entries(horasDosPeriodos(contexto.config)).filter(([, [, fim]]) => fim <= agora).map(([nome]) => nome);
-}
 
-export function estadoDaNota(n) {
-  if (!n) return "não se aplica";
-  if (n.estado === ESTADO_NOTA.ND) return "sem nota";
-  if (n.estado === ESTADO_NOTA.POR_CONFIRMAR) return "por confirmar";
-  return n.completa ? "completa" : "incompleta";
-}
-
-const sinal = p => (p > 0 ? `+${p}` : `−${Math.abs(p)}`);
-
-// O que explica a nota, a partir das parcelas e do limite que o motor devolve: as parcelas aplicadas,
-// as que ficaram por avaliar (com o motivo) e o limite obrigatório. As não aplicadas não se repetem.
-export function porque(n) {
-  if (!n) return [];
-  if (n.estado !== ESTADO_NOTA.OK) return [`${n.estado === ESTADO_NOTA.ND ? "sem nota" : "por confirmar"}: ${n.motivo ?? "dados em falta"}`];
-  const out = [];
-  for (const x of n.parcelas ?? []) {
-    const motivo = x.motivo ? ` (${x.motivo})` : "";
-    if (x.descricao.startsWith("base")) {
-      const qual = x.descricao.replace(/^base:?\s*/, "");
-      if (x.estado === "aplicada") out.push(`base ${x.peso}${qual ? ` (${qual})` : ""}`);
-      else if (x.estado === "não avaliada") out.push(`base por avaliar${motivo}`);
-    } else if (x.estado === "aplicada") out.push(`${sinal(x.peso)} ${x.descricao}`);
-    else if (x.estado === "não avaliada") out.push(`${x.descricao}: por avaliar${motivo}`);
-  }
-  if (n.limite) out.push(`limite: ${n.limite.descricao} → ${n.limite.valor}`);
-  if (n.periodosSemNota?.length) out.push(`sem nota: ${n.periodosSemNota.join(", ")}`);
-  return out;
-}
 
 // Uma linha por pesqueiro, na ordem do motor (a do config). vista: "dia" ou o nome de um período.
 export function linhasComparador(d, contexto, especie, vista = "dia") {
