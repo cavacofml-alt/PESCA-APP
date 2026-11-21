@@ -63,6 +63,15 @@ export function projecaoMotor(analise = analiseDeReferencia()) {
 
 if (process.argv[1] && new URL(import.meta.url).pathname === process.argv[1]) {
   mkdirSync(new URL("testes/referencia/", raiz), { recursive: true });
-  writeFileSync(new URL(FICHEIRO, raiz), JSON.stringify(projecaoMotor(), null, 1) + "\n");
+  // Uma linha por pesqueiro e por dia: o ficheiro lê-se e revê-se num diff.
+  const { descricao, melhoresDias, dias } = projecaoMotor();
+  const linhas = dias.map(d => {
+    const { pesqueiros, ...cabeca } = d;
+    const ps = Object.entries(pesqueiros).map(([id, p]) => `   ${JSON.stringify(id)}: ${JSON.stringify(p)}`);
+    return `  ${JSON.stringify(cabeca).slice(0, -1)}, "pesqueiros": {\n${ps.join(",\n")}\n  }}`;
+  });
+  const texto = `{\n "descricao": ${JSON.stringify(descricao)},\n "melhoresDias": ${JSON.stringify(melhoresDias)},\n "dias": [\n${linhas.join(",\n")}\n ]\n}\n`;
+  JSON.parse(texto);
+  writeFileSync(new URL(FICHEIRO, raiz), texto);
   console.log(`Escrito ${FICHEIRO}`);
 }
