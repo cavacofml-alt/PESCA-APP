@@ -17,6 +17,22 @@ export function dataHora(ms) {
   return l ? `${l.slice(8, 10)}/${l.slice(5, 7)} às ${l.slice(11, 16)}` : "—";
 }
 
+// «às HH:MM» se a leitura é do mesmo dia (Lisboa) que agora; senão «a DD/MM às HH:MM».
+export function quandoLido(iso, agoraIso = iso) {
+  const t = Date.parse(iso), a = Date.parse(agoraIso);
+  if (!Number.isFinite(t)) return "—";
+  const mesmoDia = Number.isFinite(a) && utcToLisbon(new Date(t))?.slice(0, 10) === utcToLisbon(new Date(a))?.slice(0, 10);
+  return mesmoDia ? `às ${hora(t)}` : `a ${dataHora(t)}`;
+}
+// «há 25 min», «há 3 h 10 min», «há 2 dias»; "—" sem valor. Relógio atrasado → «há 0 min».
+export function idadeTexto(ms) {
+  if (typeof ms !== "number" || !Number.isFinite(ms)) return "—";
+  const min = Math.max(0, Math.floor(ms / 60000));
+  if (min < 60) return `há ${min} min`;
+  if (min < 48 * 60) return `há ${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60} min` : ""}`;
+  return `há ${Math.floor(min / 1440)} dias`;
+}
+
 // Número com vírgula decimal (pt-PT); "—" sem valor.
 export function num(v, casas = 1) {
   if (typeof v !== "number" || !Number.isFinite(v)) return "—";

@@ -5,8 +5,8 @@
 // pesqueiros) e a ordem por omissão é a dos pesqueiros (nascente → poente), a do motor.
 // Valores em falta ficam «n.d.» ou «?», nunca zero; uma nota incompleta nunca aparece como definitiva.
 // Funções puras: devolvem dados ou HTML (texto escapado).
-import { esc, num, horaIso, rotuloDia, classeNota, textoNota, ESPECIES, NOME_ESPECIE, PERIODO_CURTO } from "./formato.js";
-import { horasDosPeriodos, faixaDias, escolhaEspecie, parcelas, fontesEmFalta } from "./inicio.js";
+import { esc, num, rotuloDia, classeNota, textoNota, ESPECIES, NOME_ESPECIE, PERIODO_CURTO } from "./formato.js";
+import { horasDosPeriodos, faixaDias, escolhaEspecie, parcelas, fontesEmFalta, agoraDe, linhaLeitura, avisoOrigem } from "./inicio.js";
 import { ESTADO_NOTA } from "../regras/notas.js";
 import { PERIODOS_PADRAO } from "../regras/periodos.js";
 import { utcToLisbon, lisbonDate } from "../normalizacao.js";
@@ -19,7 +19,7 @@ export const vistas = config => ["dia", ...nomesPeriodos(config)];
 
 // Períodos do dia escolhido que já acabaram à hora da leitura (só hoje; hora de Lisboa).
 export function periodosPassados(dia, contexto) {
-  const lido = contexto.lidoEm ? new Date(Date.parse(contexto.lidoEm)) : null;
+  const lido = agoraDe(contexto) ? new Date(Date.parse(agoraDe(contexto))) : null;
   if (!lido || Number.isNaN(lido.getTime()) || dia !== lisbonDate(lido)) return [];
   const agora = Number(utcToLisbon(lido).slice(11, 13));
   return Object.entries(horasDosPeriodos(contexto.config)).filter(([, [, fim]]) => fim <= agora).map(([nome]) => nome);
@@ -207,7 +207,7 @@ function botoes(classe, lista, actual, rotulo) {
 
 // contexto: { analise, config, pontos, mares, lidoEm, indice, especie, vista, ordem }
 export function renderComparador(contexto) {
-  const { analise, lidoEm } = contexto;
+  const { analise } = contexto;
   const indice = Math.min(Math.max(contexto.indice ?? 0, 0), analise.dias.length - 1);
   const especie = ESPECIES.includes(contexto.especie) ? contexto.especie : "robalo";
   const vista = vistas(contexto.config).includes(contexto.vista) ? contexto.vista : "dia";
@@ -220,8 +220,9 @@ export function renderComparador(contexto) {
   const vistaTxt = vista === "dia" ? "o dia (melhor período)" : `${vista} (${String(horas[vista]?.[0]).padStart(2, "0")}–${String(horas[vista]?.[1]).padStart(2, "0")} h)`;
   const opcoesVista = vistas(contexto.config).map(v => [v, v === "dia" ? "Dia" : PERIODO_CURTO[v] ?? v]);
   return `<header class="topo"><div><h1>Comparar pesqueiros</h1>
-      <p class="lido">Dados lidos às ${esc(horaIso(lidoEm))} (hora de Portugal continental) · notas provisórias</p></div>
+      <p class="lido">${linhaLeitura(contexto)}</p></div>
       <button type="button" id="actualizar" class="btn-actualizar" aria-label="Actualizar dados">↻</button></header>
+    ${avisoOrigem(contexto)}
     ${escolhaEspecie(especie)}
     ${faixaDias(analise, indice, especie)}
     ${botoes("vistas", opcoesVista, vista, "Período")}

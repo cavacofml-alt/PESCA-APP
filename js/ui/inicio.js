@@ -4,7 +4,7 @@
 // Requisitos das revisões da Fase 3: nunca mostrar uma nota incompleta como definitiva —
 // intervalo, períodos sem nota, parcelas por avaliar, n.d. e «por confirmar» sempre visíveis.
 // Função pura: devolve HTML (texto escapado).
-import { esc, hora, horaIso, dataHora, num, rotuloDia, classeNota, textoNota, ESPECIES, NOME_ESPECIE, PERIODO_CURTO, NOME_MARE, rumo } from "./formato.js";
+import { esc, hora, horaIso, dataHora, num, rotuloDia, classeNota, textoNota, ESPECIES, NOME_ESPECIE, PERIODO_CURTO, NOME_MARE, rumo, quandoLido, idadeTexto } from "./formato.js";
 import { ordenarMelhoresDias } from "../regras/notas.js";
 import { resumoBoia } from "../fontes/ih-boias.js";
 import { DISTANCIAS_FUNDO } from "../fontes/fundo-tipico.js";
@@ -13,6 +13,43 @@ import { utcToLisbon, lisbonDate } from "../normalizacao.js";
 import { PERIODOS_PADRAO } from "../regras/periodos.js";
 
 export { ESPECIES };
+
+// Hora real desta abertura (sem rede, a hora da leitura arquivada é outra: contexto.lidoEm).
+export const agoraDe = contexto => contexto.agora ?? contexto.lidoEm;
+
+// Linha da hora de leitura no topo: actual, ou previsão arquivada com data, hora e idade.
+export function linhaLeitura(contexto) {
+  const o = contexto.origem;
+  if (o?.tipo === "arquivo") {
+    return `Previsão arquivada, lida ${esc(quandoLido(contexto.lidoEm, agoraDe(contexto)))} (${esc(idadeTexto(Date.parse(agoraDe(contexto)) - Date.parse(contexto.lidoEm)))}) · hora de Portugal continental · notas provisórias`;
+  }
+  if (o?.tipo === "indisponivel") return `Previsão não obtida (tentativa às ${esc(horaIso(contexto.lidoEm))}, hora de Portugal continental)`;
+  return `Dados lidos às ${esc(horaIso(contexto.lidoEm))} (hora de Portugal continental) · notas provisórias`;
+}
+
+// Aviso de onde vêm os dados quando não são a previsão actual (PR 3): previsão arquivada ou
+// indisponível; e, com dados actuais, quando não foi possível guardá-los para usar sem rede.
+export function avisoOrigem(contexto) {
+  const o = contexto.origem;
+  if (!o) return "";
+  if (o.tipo === "arquivo") {
+    return `<section class="aviso-origem arquivo" role="status"><b>Previsão arquivada — não é a previsão actual.</b>
+      Não foi possível obter a previsão agora (sem rede ou fonte indisponível). Mostra-se a última guardada neste aparelho,
+      lida ${esc(quandoLido(contexto.lidoEm, agoraDe(contexto)))} (${esc(idadeTexto(Date.parse(agoraDe(contexto)) - Date.parse(contexto.lidoEm)))}):
+      as notas são as dessa leitura e as condições podem ter mudado. Volta a actualizar quando houver rede.</section>`;
+  }
+  if (o.tipo === "indisponivel") {
+    const porque = o.ultimaLidaEm
+      ? `A última previsão guardada neste aparelho (lida ${esc(quandoLido(o.ultimaLidaEm, agoraDe(contexto)))}) é antiga demais para os dias mostrados.`
+      : o.semArmazem ? `Este aparelho não deixa guardar dados (${esc(o.semArmazem)}).` : "Não há nenhuma previsão guardada neste aparelho.";
+    return `<section class="aviso-origem indisponivel" role="status"><b>Previsão indisponível.</b>
+      Não foi possível obter a previsão agora (sem rede ou fonte indisponível). ${porque} As notas que dependem da previsão ficam sem nota ou incompletas.</section>`;
+  }
+  if (o.guardado && !o.guardado.ok) {
+    return `<p class="aviso-origem leve">Estes dados não ficaram guardados para usar sem rede (${esc(o.guardado.erro ?? "erro")}).</p>`;
+  }
+  return "";
+}
 
 // Melhor nota do dia para a espécie escolhida.
 const melhorNotaDoDia = (d, esp) => {
@@ -58,7 +95,7 @@ const hh = h => `${String(h).padStart(2, "0")}`;
 // períodos que já acabaram à hora da leitura não entram. Função pura.
 export function janelasDoDia(d, contexto, especie, { maximo = 3 } = {}) {
   const horas = horasDosPeriodos(contexto.config);
-  const lido = contexto.lidoEm ? new Date(Date.parse(contexto.lidoEm)) : null;
+  const lido = agoraDe(contexto) ? new Date(Date.parse(agoraDe(contexto))) : null;
   const hoje = Boolean(lido && d.dia === lisbonDate(lido));
   const horaAgora = hoje ? Number(utcToLisbon(lido).slice(11, 13)) : null;
   const outra = ESPECIES.find(e => e !== especie);
@@ -149,7 +186,7 @@ function marAgora(contexto) {
   const topo = `<h3>Mar agora <small>· ${esc(b.nome)} · observado</small></h3>`;
   const titulo = `<span class="mar-titulo">Mar agora</span> <small>· ${esc(b.nome)} · observado</small>`;
   if (!r.ok) return `<section class="mar-agora" aria-label="Mar agora">${topo}<p class="falha">Não obtido${r.error ? ` — ${esc(r.error)}` : ""}</p></section>`;
-  const s = resumoBoia(r.data, { agora: new Date(Date.parse(contexto.lidoEm)), maxIdadeHoras: b.maxIdadeHoras });
+  const s = resumoBoia(r.data, { agora: new Date(Date.parse(agoraDe(contexto))), maxIdadeHoras: b.maxIdadeHoras });
   if (!s) return `<section class="mar-agora" aria-label="Mar agora">${topo}<p class="falha">Sem medições válidas nas últimas ${esc(b.horas)} h</p></section>`;
   const u = s.ultima;
   const prev = previsaoParaHora(contexto, b.previsaoPonto, u.instante);
@@ -177,7 +214,7 @@ function marAgora(contexto) {
     <details><summary>${titulo}<span class="mar-curto">${esc(curto)} · medido a ${esc(dataHora(u.instante))} (${esc(idade)})</span></summary>
     <dl class="factos">${linhas.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
     <p class="fonte-boia">Medido a ${esc(dataHora(u.instante))} (${esc(idade)}) ao largo, a ${esc(b.profundidadeM)} m de fundo: na praia a onda chega diferente. Não entra nas notas. Horas de Portugal continental.<br>
-    Instituto Hidrográfico, boia ${esc(b.codigo)} (${esc(b.latitude)}, ${esc(b.longitude)}) · observado · lido às ${esc(horaIso(r.readAt))} · <a href="${esc(b.licencaUrl)}" target="_blank" rel="noopener">${esc(b.licenca)}</a></p>
+    Instituto Hidrográfico, boia ${esc(b.codigo)} (${esc(b.latitude)}, ${esc(b.longitude)}) · observado · lido ${esc(quandoLido(r.readAt, agoraDe(contexto)))} · <a href="${esc(b.licencaUrl)}" target="_blank" rel="noopener">${esc(b.licenca)}</a></p>
     </details>
     ${s.desactualizada ? `<p class="falha">Última medição ${esc(idade)}: desactualizada</p>` : ""}
   </section>`;
@@ -297,7 +334,8 @@ export function fontesDoCartao(pq, contexto, fundo = null) {
     const r = contexto.pontos[tipo]?.[k];
     const loc = contexto.config.locais[k];
     const onde = loc ? `${loc.latitude}, ${loc.longitude}` : k;
-    linhas.push(r?.ok ? `${nomeFonte} (${onde}) · previsto${nota} · lido às ${horaIso(r.readAt)}`
+    const arquivada = contexto.origem?.tipo === "arquivo" ? " · arquivada (sem rede)" : "";
+    linhas.push(r?.ok ? `${nomeFonte} (${onde}) · previsto${nota}${arquivada} · lido ${quandoLido(r.readAt, agoraDe(contexto))}`
       : `${nomeFonte} (${onde}) · não obtido${r?.error ? `: ${r.error}` : ""}`);
   };
   // Revisão do ChatGPT (20/11/2026): o histórico (past_days) são previsões arquivadas, não medições.
@@ -413,12 +451,13 @@ export function escolhaEspecie(especie) {
 }
 
 export function renderInicio(contexto) {
-  const { analise, indice = 0, lidoEm } = contexto;
+  const { analise, indice = 0 } = contexto;
   const especie = contexto.especie ?? "robalo";
   const d = analise.dias[indice];
   return `<header class="topo"><div><h1>Surfcasting Algarve</h1>
-      <p class="lido">Dados lidos às ${esc(horaIso(lidoEm))} (hora de Portugal continental) · notas provisórias</p></div>
+      <p class="lido">${linhaLeitura(contexto)}</p></div>
       <button type="button" id="actualizar" class="btn-actualizar" aria-label="Actualizar dados">↻</button></header>
+    ${avisoOrigem(contexto)}
     ${escolhaEspecie(especie)}
     ${faixaDias(analise, indice, especie)}
     ${ondeQuando(analise, indice, contexto, especie)}

@@ -49,15 +49,17 @@ const PNG_VAZIO = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC
 
 // Contexto do browser com as respostas simuladas. dispositivo: "Pixel 7" ou { width, height }.
 // semApis: as APIs (Open-Meteo, boia) falham como sem rede; a app em si continua a ser servida.
+// rede.apis pode mudar durante o teste (por exemplo, ler com rede e depois abrir sem rede).
 export const APIS = ["marine-api.open-meteo.com", "api.open-meteo.com", "ogcapi.hidrografico.pt"];
 export async function abrir(browser, dispositivo = "Pixel 7", { semApis = false } = {}) {
   const base = typeof dispositivo === "string" ? devices[dispositivo] : { viewport: dispositivo, isMobile: true, hasTouch: true, deviceScaleFactor: 2 };
   const contexto = await browser.newContext({ ...base, locale: "pt-PT", timezoneId: "Europe/Lisbon", serviceWorkers: "block" });
   const registo = { externos: [], recusados: [], erros: [] };
+  const rede = { apis: !semApis };
   await contexto.route(/^https?:\/\/(?!127\.0\.0\.1)/, async route => {
     const u = new URL(route.request().url());
     registo.externos.push(u.host + u.pathname);
-    if (semApis && APIS.includes(u.host)) return route.abort("internetdisconnected");
+    if (!rede.apis && APIS.includes(u.host)) return route.abort("internetdisconnected");
     if (u.host === "marine-api.open-meteo.com") return route.fulfill({ json: openMeteo("marine", Number(u.searchParams.get("longitude"))), headers: { "access-control-allow-origin": "*" } });
     if (u.host === "api.open-meteo.com") return route.fulfill({ json: openMeteo("forecast", Number(u.searchParams.get("longitude"))), headers: { "access-control-allow-origin": "*" } });
     if (u.host === "ogcapi.hidrografico.pt") return route.fulfill({ json: lerReal("ih_boia_faro_20261115.json"), headers: { "access-control-allow-origin": "*" } });
@@ -69,7 +71,7 @@ export async function abrir(browser, dispositivo = "Pixel 7", { semApis = false 
   await pagina.clock.setFixedTime(AGORA);
   pagina.on("pageerror", e => registo.erros.push(String(e)));
   pagina.on("console", m => { if (m.type() === "error") registo.erros.push(m.text()); });
-  return { contexto, pagina, registo };
+  return { contexto, pagina, registo, rede };
 }
 
 export const lancar = () => chromium.launch();
