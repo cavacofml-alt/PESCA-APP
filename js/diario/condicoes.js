@@ -53,10 +53,12 @@ export function condicoesDaSaida(saida, leitura, { config, mares = null, sol = n
   if (!pq) return semCondicoes(saida, "o pesqueiro não está na configuração", calculadoEm);
   if (!leituraValida(leitura)) return semCondicoes(saida, "leitura guardada inválida", calculadoEm);
   const ini = Date.parse(saida.inicio);
-  const fim = saida.fim ? Date.parse(saida.fim) : ini + H;   // sem hora de fim: a hora do início
+  // Sem hora de fim (revisão de 21/11/2026): só a hora certa em que a saída começou (07:20 → só a
+  // hora das 07:00), e os períodos que essa hora toca. A interface di-lo no formulário e no resumo.
+  const fim = saida.fim ? Date.parse(saida.fim) : Math.floor(ini / H) * H + H;
   const dias = [...new Set([lisbonDate(new Date(ini)), lisbonDate(new Date(fim - 1))])];
   const analise = analisarDias({ dias, pontos: { mar: leitura.fontes.mar, terra: leitura.fontes.terra }, mares, sol, config });
-  const desde = Math.floor(ini / H) * H;
+  const desde = Math.floor(ini / H) * H;   // a hora certa em que a saída começou
   const horas = [];
   const periodos = [];
   const infoDias = [];

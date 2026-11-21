@@ -42,6 +42,13 @@ test("guia: os valores de «Nesta app» vêm do config e mudam com ele", () => {
   assert.match(html, /potência abaixo de 0,8 kW\/m/);
 });
 
+test("guia: frases revistas (21/11/2026) — Hs máxima como possibilidade estatística; a vaga não depende só do vento médio", () => {
+  const geral = TEMAS.flatMap(t => t.geral).join(" ");
+  assert.match(geral, /estatisticamente possível aparecer alguma perto do dobro de Hs, o que não quer dizer que aconteça em cada hora/);
+  assert.match(geral, /quanto tempo sopra, a distância de mar sobre a qual sopra e a direcção/);
+  assert.doesNotMatch(geral, /é normal aparecer|o que mais conta para o estado do mar/);
+});
+
 test("guia: sem ligações externas nem pedidos (funciona sem rede); a segurança não é avaliada pela app", () => {
   const html = renderGuia(config);
   assert.doesNotMatch(html, /https?:\/\//);

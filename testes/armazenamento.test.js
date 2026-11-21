@@ -122,18 +122,74 @@ test("guardar: substitui a leitura com menos de 30 min e aplica a limpeza", asyn
   assert.equal(lista[0].lidoEm, iso(t0 + 50 * 60000), "a mais recente primeiro");
 });
 
-test("guardar: sem espaço apaga as anteriores e tenta outra vez; se nem assim couber, devolve o erro sem lançar", async () => {
-  const unica = JSON.stringify(leituraDe(dadosFalsos("2026-11-20T08:00:00.000Z"))).length;
-  const a = armazemMemoria({ limiteBytes: Math.floor(unica * 1.5) });
-  const t = Date.parse("2026-11-20T08:00:00Z");
-  assert.equal((await guardarLeitura(a, leituraDe(dadosFalsos(iso(t))), POLITICA_PADRAO, t)).ok, true);
-  const r = await guardarLeitura(a, leituraDe(dadosFalsos(iso(t + 2 * H))), POLITICA_PADRAO, t + 2 * H);
+// Sem espaço (revisão de 21/11/2026): apagar só o necessário, das mais antigas para as mais recentes, e
+// nunca ficar sem nenhuma leitura.
+const leituraEm = (ms, extra = {}) => ({ ...leituraDe(dadosFalsos(iso(ms))), ...extra });
+const tamanho = JSON.stringify(leituraEm(Date.parse("2026-11-20T08:00:00Z"))).length;
+const T0 = Date.parse("2026-11-20T08:00:00Z");
+
+test("sem espaço: apaga só as leituras mais antigas, uma a uma, até a nova caber", async () => {
+  const a = armazemMemoria({ limiteBytes: Math.floor(tamanho * 3.5) });
+  for (const h of [0, 3, 6]) assert.equal((await guardarLeitura(a, leituraEm(T0 + h * H), POLITICA_PADRAO, T0 + h * H)).ok, true);
+  const r = await guardarLeitura(a, leituraEm(T0 + 9 * H), POLITICA_PADRAO, T0 + 9 * H);
+  assert.deepEqual([r.ok, r.apagadas], [true, 1]);
+  assert.match(r.aviso, /apagada\(s\) 1 leitura\(s\) mais antiga\(s\)/);
+  assert.deepEqual(await a.chaves("leituras"), [iso(T0 + 3 * H), iso(T0 + 6 * H), iso(T0 + 9 * H)], "só a das 08:00 saiu");
+});
+
+test("sem espaço: registos com chave inválida saem primeiro", async () => {
+  const a = armazemMemoria({ limiteBytes: Math.floor(tamanho * 2.5) });
+  await a.guardar("leituras", { ...leituraEm(T0), id: "estragada" });
+  await guardarLeitura(a, leituraEm(T0), POLITICA_PADRAO, T0);
+  const r = await guardarLeitura(a, leituraEm(T0 + 3 * H), POLITICA_PADRAO, T0 + 3 * H);
   assert.equal(r.ok, true);
-  assert.match(r.aviso, /faltava espaço/);
-  assert.deepEqual(await a.chaves("leituras"), [iso(t + 2 * H)]);
-  const minusculo = armazemMemoria({ limiteBytes: 10 });
-  const r2 = await guardarLeitura(minusculo, leituraDe(dadosFalsos(iso(t))), POLITICA_PADRAO, t);
-  assert.deepEqual([r2.ok, r2.erro], [false, "sem espaço no aparelho"]);
+  assert.deepEqual(await a.chaves("leituras"), [iso(T0), iso(T0 + 3 * H)]);
+});
+
+test("sem espaço só para uma: a anterior é trocada pela nova numa só transacção", async () => {
+  const a = armazemMemoria({ limiteBytes: Math.floor(tamanho * 1.5) });
+  await guardarLeitura(a, leituraEm(T0), POLITICA_PADRAO, T0);
+  const r = await guardarLeitura(a, leituraEm(T0 + 2 * H), POLITICA_PADRAO, T0 + 2 * H);
+  assert.equal(r.ok, true);
+  assert.match(r.aviso, /a leitura anterior \(2026-11-20T08:00:00\.000Z\) foi trocada pela nova/);
+  assert.deepEqual(await a.chaves("leituras"), [iso(T0 + 2 * H)]);
+});
+
+test("sem espaço nem para a nova: fica a leitura anterior, intacta (nunca se fica sem nenhuma)", async () => {
+  const a = armazemMemoria({ limiteBytes: Math.floor(tamanho * 1.5) });
+  await guardarLeitura(a, leituraEm(T0), POLITICA_PADRAO, T0);
+  const antes = await a.obter("leituras", iso(T0));
+  const grande = leituraEm(T0 + 2 * H, { extra: "x".repeat(tamanho * 3) });
+  const r = await guardarLeitura(a, grande, POLITICA_PADRAO, T0 + 2 * H);
+  assert.equal(r.ok, false);
+  assert.match(r.erro, /sem espaço no aparelho: ficou guardada a leitura anterior \(2026-11-20T08:00:00\.000Z\)/);
+  assert.deepEqual(await a.chaves("leituras"), [iso(T0)]);
+  assert.deepEqual(await a.obter("leituras", iso(T0)), antes);
+  // Com várias: as antigas saem uma a uma, mas a válida mais recente fica.
+  const b = armazemMemoria({ limiteBytes: Math.floor(tamanho * 3.5) });
+  for (const h of [0, 3, 6]) await guardarLeitura(b, leituraEm(T0 + h * H), POLITICA_PADRAO, T0 + h * H);
+  const r2 = await guardarLeitura(b, leituraEm(T0 + 9 * H, { extra: "x".repeat(tamanho * 5) }), POLITICA_PADRAO, T0 + 9 * H);
+  assert.equal(r2.ok, false);
+  assert.deepEqual(await b.chaves("leituras"), [iso(T0 + 6 * H)], "ficou a válida mais recente");
+  // A protegida é a válida mais recente: uma mais recente mas estragada não é protegida.
+  const c = armazemMemoria({ limiteBytes: Math.floor(tamanho * 2.5) });
+  await guardarLeitura(c, leituraEm(T0), POLITICA_PADRAO, T0);
+  await c.guardar("leituras", leituraEm(T0 + 3 * H, { esquema: 99 }));
+  const r3 = await guardarLeitura(c, leituraEm(T0 + 6 * H, { extra: "x".repeat(tamanho * 5) }), POLITICA_PADRAO, T0 + 6 * H);
+  assert.equal(r3.ok, false);
+  assert.deepEqual(await c.chaves("leituras"), [iso(T0)]);
+  // Sem nenhuma leitura anterior e sem espaço: erro, sem lançar.
+  const r4 = await guardarLeitura(armazemMemoria({ limiteBytes: 10 }), leituraEm(T0), POLITICA_PADRAO, T0);
+  assert.deepEqual([r4.ok, r4.erro], [false, "sem espaço no aparelho"]);
+});
+
+test("armazém: escrever várias operações é tudo ou nada", async () => {
+  const a = armazemMemoria();
+  await a.guardar("leituras", { id: "a" });
+  await assert.rejects(a.escrever({ apagar: { leituras: ["a"] }, guardar: { leituras: [{ id: "b" }, { semId: 1 }] } }), /falta a chave/);
+  assert.deepEqual(await a.chaves("leituras"), ["a"], "o apagar foi desfeito");
+  await a.escrever({ apagar: { leituras: ["a"] }, guardar: { leituras: [{ id: "b" }], meta: [{ chave: "x", valor: 1 }] } });
+  assert.deepEqual([await a.chaves("leituras"), await a.chaves("meta")], [["b"], ["x"]]);
 });
 
 test("guardar e ler: uma base que falha nunca lança", async () => {

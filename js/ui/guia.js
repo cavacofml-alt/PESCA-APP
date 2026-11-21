@@ -31,7 +31,7 @@ export const TEMAS = [
   {
     id: "ondulacao", titulo: "Interpretar a ondulação",
     geral: [
-      "A altura significativa (Hs) é uma medida estatística da agitação: anda perto da média do terço mais alto das ondas. Ondas isoladas podem ser bastante maiores; em algumas horas é normal aparecer alguma perto do dobro de Hs.",
+      "A altura significativa (Hs) é uma medida estatística da agitação: anda perto da média do terço mais alto das ondas. Ondas isoladas podem ser bastante maiores: num registo longo, com muitas ondas, é estatisticamente possível aparecer alguma perto do dobro de Hs, o que não quer dizer que aconteça em cada hora.",
       "O período é o tempo entre duas ondas. Há várias definições (de pico, médio, de energia) que dão valores diferentes para o mesmo mar: só se devem comparar períodos com a mesma definição.",
       "A ondulação de fundo vem de longe e tem período mais longo; a vaga de vento é feita pelo vento perto, com período curto e mar mais desarrumado. Muitas vezes há as duas ao mesmo tempo, de direcções diferentes.",
       "A direcção da ondulação diz de onde vêm as ondas.",
@@ -50,7 +50,7 @@ export const TEMAS = [
   {
     id: "vento", titulo: "Vento e orientação da costa",
     geral: [
-      "O vento indica-se pela direcção de onde sopra e pela velocidade, em nós (1 nó = 1,852 km/h). A rajada é o pico de pouca duração; o vento médio é o que mais conta para o estado do mar.",
+      "O vento indica-se pela direcção de onde sopra e pela velocidade, em nós (1 nó = 1,852 km/h). A rajada é o pico de pouca duração; para a vaga conta sobretudo o vento sustentado, mas também quanto tempo sopra, a distância de mar sobre a qual sopra e a direcção.",
       "Vento de terra para o mar (terral) tende a alisar a superfície junto à costa; vento do mar para terra levanta vaga. Se uma direcção é terral ou do mar depende de como cada praia está virada: no mapa vê-se a orientação da costa.",
       "Vento forte e persistente numa direcção cria vaga dessa direcção; quando acalma, a vaga demora a baixar.",
       "Rajadas muito acima do vento médio podem indicar instabilidade, ou um valor estranho na previsão."
