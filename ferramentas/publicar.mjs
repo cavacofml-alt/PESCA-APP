@@ -1,8 +1,9 @@
-// Monta a pasta publicar/ só com os ficheiros da app, para o Cloudflare Pages.
-// O site publicado é público: a pasta recolha/ (material de trabalho, que obriga a manter o
-// repositório privado), os testes, as ferramentas e os documentos de trabalho NUNCA são
-// publicados. Lista explícita: um ficheiro novo só é publicado se for acrescentado aqui.
-// Uso (comando de build do Cloudflare Pages): node ferramentas/publicar.mjs  → saída: publicar
+// Monta a pasta publicar/ só com os ficheiros da app, para o Cloudflare Workers (site estático).
+// A pasta recolha/ (material de trabalho), os testes, as ferramentas, o Playwright e os
+// documentos de trabalho NUNCA são publicados no site. (O repositório também é público: o que
+// está em recolha/ vê-se no GitHub, mas não no site.)
+// Lista explícita: um ficheiro novo só é publicado se for acrescentado aqui.
+// Uso (comando de build no wrangler.jsonc): node ferramentas/publicar.mjs  → saída: publicar
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
