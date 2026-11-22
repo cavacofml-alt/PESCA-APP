@@ -34,7 +34,7 @@ O site está no Cloudflare Workers, como site estático (sem código no servidor
 
 Abrir o endereço no Chrome → menu ⋮ → **Instalar app** (ou «Adicionar ao ecrã principal»). A app abre em ecrã inteiro.
 
-**Sem rede (o que está implementado hoje):** a app abre, porque o service worker guarda a shell (HTML, CSS, JS, bibliotecas, fotografias) e a última cópia já descarregada da `config.json`, das tabelas de marés e dos fundos do mar. Os mosaicos do mapa (OpenStreetMap, DGT) não ficam guardados. As previsões do Open-Meteo, a boia e as notas **não ficam guardadas**: sem rede, essas fontes aparecem como «não obtido» e não há notas. Só ficam no aparelho, em `localStorage`, a espécie escolhida e a camada escolhida no mapa. Não há ainda diário, histórico de previsões nem armazenamento em IndexedDB.
+**Sem rede (o que está implementado hoje):** o service worker guarda na instalação só a shell (HTML, CSS, JS, bibliotecas, fotografias). A `config.json`, as tabelas de marés e os fundos do mar só ficam guardados quando a app os pede com o service worker já a controlar a página, o que normalmente só acontece a partir da segunda abertura com rede; e só ficam os que a app já pediu (por exemplo, a tabela de marés de um ano que a janela de 7 dias ainda não tocou não está guardada). Por isso, **depois de uma única visita com rede a app pode não abrir sem rede**: o início e as Fontes mostram «Erro: Failed to fetch», porque falta a `config.json` (o mapa abre). Depois de uma segunda visita com rede, o início, as Fontes e o mapa abrem sem rede (verificado no Chromium a 22/11/2026). Os mosaicos do mapa (OpenStreetMap, DGT) não ficam guardados. As previsões do Open-Meteo, a boia e as notas **não ficam guardadas**: sem rede, essas fontes aparecem como «não obtido» e não há notas. Só ficam no aparelho, em `localStorage`, a espécie escolhida e a camada escolhida no mapa. Não há ainda diário, histórico de previsões nem armazenamento em IndexedDB.
 
 ## Estado das fontes
 
@@ -78,7 +78,7 @@ Com Node ≥ 20, na raiz do projecto:
 node --test
 ```
 
-Não há dependências a instalar para estes testes. `testes/motor-referencia.test.js` compara as notas do motor com uma referência guardada (`testes/referencia/motor-20261014.json`: respostas reais de 14/10/2026, 7 dias × 8 pesqueiros × 4 períodos × 2 espécies): falha se alguma nota mudar. Só se regenera (`node ferramentas/referencia-motor.mjs`) quando o utilizador aprovar uma mudança de regras ou limiares. Os testes não usam a Internet: as respostas das APIs são simuladas com as fixtures de `testes/dados-teste.js` e com respostas reais guardadas em `testes/reais/`, que não são previsões actuais. O GitHub Actions corre os testes em cada push e PR, com Node 20 e 22 e quatro fusos horários (UTC, Europe/Lisbon, America/New_York, Asia/Tokyo).
+Não há dependências a instalar para estes testes. `testes/motor-referencia.test.js` compara as notas do motor com uma referência guardada (`testes/referencia/motor-20261014.json`, com as respostas reais de 14/10/2026: 7 dias × 4 períodos × (7 pesqueiros com robalo e dourada + a Ria, só com dourada) = 420 notas, uma por dia, período, pesqueiro e espécie): falha se alguma nota mudar. Só se regenera (`node ferramentas/referencia-motor.mjs`) quando o utilizador aprovar uma mudança de regras ou limiares. Os testes não usam a Internet: as respostas das APIs são simuladas com as fixtures de `testes/dados-teste.js` e com respostas reais guardadas em `testes/reais/`, que não são previsões actuais. O GitHub Actions corre os testes em cada push e PR, com Node 20 e 22 e quatro fusos horários (UTC, Europe/Lisbon, America/New_York, Asia/Tokyo).
 
 ### Testes no browser (Playwright)
 
@@ -96,7 +96,7 @@ O GitHub Actions corre-os em cada push e PR (workflow «Testes no browser») e g
 
 - Ainda não existem: páginas por pesqueiro, diário de saídas, estatísticas, histórico de previsões e armazenamento das previsões em IndexedDB. Estão no plano de evolução, um PR cada; nada disto está publicado.
 - Os avisos do IPMA não são consultados: a regra de segurança foi retirada por decisão do utilizador (13/10/2026).
-- O `sw.js` serve a shell a partir da cache; `config.json` e marés (`*.json`) vão sempre primeiro à rede e só usam a cópia em cache sem ligação. Ao alterar um ficheiro da shell, correr `node ferramentas/versao-sw.mjs` (actualiza a impressão e sobe a versão da cache em `sw.js`); um teste falha se for esquecido.
+- O `sw.js` serve a shell a partir da cache; `config.json` e marés (`*.json`) vão sempre primeiro à rede e só usam a cópia em cache sem ligação; essa cópia só existe depois de terem sido pedidos com o service worker a controlar a página (ver «Sem rede»). Ao alterar um ficheiro da shell, correr `node ferramentas/versao-sw.mjs` (actualiza a impressão e sobe a versão da cache em `sw.js`); um teste falha se for esquecido.
 - Quando há uma versão nova publicada, a página aberta recarrega sozinha uma vez, assim que o service worker novo toma conta dela (`js/registo-sw.js`). Sem isso ficava o código antigo com a `config.json` nova, que vem sempre da rede. Na primeira instalação não recarrega.
 
 ## Tabela de marés
