@@ -89,6 +89,43 @@ test("restoDoDia: incompleta, pode subir, sem nota e por confirmar ditos; nunca 
   assert.doesNotMatch(h2, /class="mini n4/);
 });
 
+// Revisão de 22/11/2026: «pode subir» só com um limite superior numérico acima da melhor nota. Sem limite
+// superior (intervalo ausente, nulo, sem max, max nulo, infinito ou não numérico), o período fica dito
+// como «incompleta» e não se afirma que pode subir. Com limite que não passa a nota, não se diz nada.
+test("restoDoDia: «pode subir» só com limite superior numérico acima da nota; sem limite, só «incompleta»", () => {
+  const SEM_LIMITE = [["intervalo ausente", undefined], ["intervalo nulo", null], ["sem max", { min: 1 }],
+    ["max nulo", { min: 1, max: null }], ["max infinito", { min: 1, max: Infinity }], ["max não numérico", { min: 1, max: "5" }],
+    ["max NaN", { min: 1, max: NaN }]];
+  for (const [caso, intervalo] of SEM_LIMITE) {
+    const tarde = { estado: "ok", nota: 1, completa: false, parcelas: [] };
+    if (intervalo !== undefined) tarde.intervalo = intervalo;
+    const p = { notas: { robalo: nota(4, { periodo: "madrugada" }) },
+      periodos: [per("madrugada", nota(4)), per("manhã", nota(2)), per("tarde", tarde), per("noite", nota(2))] };
+    const r = restoDoDia(p, "robalo", ["madrugada"]);
+    assert.equal(r.nota, 2, `${caso}: a melhor nota que falta é a do motor`);
+    assert.deepEqual(r.podeSubir, [], `${caso}: sem limite superior, não se afirma que pode subir`);
+    assert.deepEqual(r.incompletas, ["tarde"], `${caso}: a tarde continua dita como incompleta`);
+    assert.equal(r.completa, true, `${caso}: a melhor (manhã e noite) é completa`);
+    const html = notasDoCartao(p, "robalo", ["madrugada"]);
+    assert.match(html, /resto de hoje · manhã, noite · completa · incompleta: tarde/, caso);
+    assert.doesNotMatch(html, /pode subir/, caso);
+  }
+  // Limite numérico acima da nota: «pode subir»; igual ou abaixo: nada (não pode passar a melhor).
+  const com = max => restoDoDia({ notas: { robalo: nota(4, { periodo: "madrugada" }) },
+    periodos: [per("madrugada", nota(4)), per("manhã", nota(2)), per("tarde", nota(1, { completa: false, intervalo: { min: 1, max } }))] }, "robalo", ["madrugada"]);
+  assert.deepEqual([com(3).podeSubir, com(3).incompletas], [["tarde"], []], "até 3 passa o 2: pode subir");
+  assert.deepEqual([com(2).podeSubir, com(2).incompletas], [[], []], "até 2 não passa o 2: nada");
+  assert.deepEqual([com(1).podeSubir, com(1).incompletas], [[], []], "até 1: nada");
+  // Sem nenhum período com nota, as listas vêm vazias (nunca undefined).
+  const vazio = restoDoDia({ notas: { robalo: nota(4, { periodo: "madrugada" }) },
+    periodos: [per("madrugada", nota(4)), per("manhã", { estado: "n.d.", nota: null })] }, "robalo", ["madrugada"]);
+  assert.deepEqual([vazio.nota, vazio.podeSubir, vazio.incompletas, vazio.semNota], [null, [], [], ["manhã"]]);
+  // O motor dá sempre um intervalo numérico às notas «ok» (o caso sem limite não acontece com os dados reais).
+  for (const id of IDS) for (const d of base.analise.dias) for (const pr of d.pesqueiros[id].periodos ?? []) {
+    for (const n of Object.values(pr.notas ?? {})) if (n?.estado === "ok") assert.ok(Number.isFinite(n.intervalo?.max), `${id} ${d.dia} ${pr.nome}`);
+  }
+});
+
 test("cartões dos oito pesqueiros, às 10:46: nenhuma nota de um período que já acabou aparece como actual", () => {
   assert.equal(IDS.length, 8);
   const passados = periodosPassados(base.analise.dias[0].dia, base);

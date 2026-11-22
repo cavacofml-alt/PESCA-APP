@@ -498,9 +498,13 @@ export const TIPO_LOCAL = { praia: "praia (mar de fora)", molhe: "molhe", ria: "
 // F0 (22/11/2026). Hoje, a nota do dia (a do melhor período, regra aprovada) pode ser de um período
 // que já acabou. Nesse caso devolve-se a melhor nota dos períodos que ainda faltam: as mesmas notas
 // do motor, sem outra classificação (como a «melhor janela» e «Onde e quando»). Os empatados vão
-// todos; «pode subir» são os incompletos cujo intervalo passa essa nota; «sem nota» os n.d. e
-// «por confirmar» que faltam. Devolve null quando a nota do dia não é de um período passado.
-// Função pura.
+// todos; «sem nota» são os n.d. e «por confirmar» que faltam. Entre os períodos com nota mais baixa e
+// incompletos (revisão de 22/11/2026): «pode subir» só quando o motor dá um limite superior numérico
+// (intervalo.max) acima dessa nota; sem limite superior conhecido, o período fica dito como
+// «incompleta», sem se afirmar que pode subir; com limite que não passa essa nota, não muda nada e não
+// se diz nada. (Hoje o motor dá sempre um intervalo numérico às notas «ok», js/regras/notas.js; a
+// verificação é só para não afirmar sem limite.) Devolve null quando a nota do dia não é de um
+// período passado. Função pura.
 export function restoDoDia(p, esp, passados) {
   const n = p.notas?.[esp];
   if (!n || n.estado !== "ok" || !n.periodo || !passados.includes(n.periodo)) return null;
@@ -508,17 +512,22 @@ export function restoDoDia(p, esp, passados) {
     .map(per => ({ nome: per.nome, n: per.notas?.[esp] ?? null })).filter(x => x.n);
   const ok = vivos.filter(x => x.n.estado === "ok");
   const semNota = vivos.filter(x => x.n.estado !== "ok").map(x => x.nome);
-  if (!ok.length) return { passou: n.periodo, nota: null, melhor: null, periodos: [], completa: false, podeSubir: [], semNota };
+  if (!ok.length) return { passou: n.periodo, nota: null, melhor: null, periodos: [], completa: false, podeSubir: [], incompletas: [], semNota };
   const nota = Math.max(...ok.map(x => x.n.nota));
   const melhores = ok.filter(x => x.n.nota === nota);
-  const podeSubir = ok.filter(x => x.n.nota < nota && !x.n.completa && (x.n.intervalo?.max ?? Infinity) > nota).map(x => x.nome);
+  const abaixoIncompletas = ok.filter(x => x.n.nota < nota && !x.n.completa);
+  const temLimite = x => Number.isFinite(x.n.intervalo?.max);
+  const podeSubir = abaixoIncompletas.filter(x => temLimite(x) && x.n.intervalo.max > nota).map(x => x.nome);
+  const incompletas = abaixoIncompletas.filter(x => !temLimite(x)).map(x => x.nome);
   return { passou: n.periodo, nota, melhor: melhores[0].n, periodos: melhores.map(x => x.nome),
-    completa: melhores.every(x => x.n.completa === true), podeSubir, semNota };
+    completa: melhores.every(x => x.n.completa === true), podeSubir, incompletas, semNota };
 }
 
 function textoResto(r) {
   if (r.nota === null) return `resto de hoje sem nota${r.semNota.length ? ` (${r.semNota.join(", ")})` : ""}`;
-  const extra = [r.podeSubir.length ? `pode subir: ${r.podeSubir.join(", ")}` : "", r.semNota.length ? `sem nota: ${r.semNota.join(", ")}` : ""].filter(Boolean);
+  const extra = [r.podeSubir.length ? `pode subir: ${r.podeSubir.join(", ")}` : "",
+    r.incompletas.length ? `incompleta: ${r.incompletas.join(", ")}` : "",
+    r.semNota.length ? `sem nota: ${r.semNota.join(", ")}` : ""].filter(Boolean);
   return `resto de hoje · ${r.periodos.join(", ")} · ${r.completa ? "completa" : "incompleta"}${extra.length ? ` · ${extra.join(" · ")}` : ""}`;
 }
 
