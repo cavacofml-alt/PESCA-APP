@@ -38,15 +38,20 @@ export function instantesDaSaida({ dia, horaInicio, horaFim }) {
   const i = lisboaParaUtc(dia, horaInicio);
   if (i.erro) return { erro: `início: ${i.erro}` };
   if (!horaFim) return { inicio: new Date(i.ms).toISOString(), fim: null, avisos: i.ambigua ? ["hora de início ambígua (mudança de hora): ficou a primeira"] : [] };
+  // A hora de fim tem de existir no dia escolhido (revisão de 22/11/2026): uma hora que não existe
+  // (29/03, das 01:00 às 02:00) é recusada logo, e nunca passa em silêncio para o dia seguinte. Só uma
+  // hora de fim válida e igual ou anterior ao início quer dizer «acaba no dia seguinte»; se também aí
+  // não existir, é recusada.
   let f = lisboaParaUtc(dia, horaFim);
+  if (f.erro) return { erro: `fim: ${f.erro}` };
   let diaSeguinte = false;
-  if (f.erro || f.ms <= i.ms) {
+  if (f.ms <= i.ms) {
     const [y, m, d] = dia.split("-").map(Number);
     const amanha = new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
     f = lisboaParaUtc(amanha, horaFim);
+    if (f.erro) return { erro: `fim (dia seguinte): ${f.erro}` };
     diaSeguinte = true;
   }
-  if (f.erro) return { erro: `fim: ${f.erro}` };
   const avisos = [];
   if (i.ambigua) avisos.push("hora de início ambígua (mudança de hora): ficou a primeira");
   if (f.ambigua) avisos.push("hora de fim ambígua (mudança de hora): ficou a primeira");

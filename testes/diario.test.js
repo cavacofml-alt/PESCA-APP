@@ -58,6 +58,25 @@ test("horas: fim antes do início = dia seguinte (pesca de noite); sem fim aceit
   assert.match(instantesDaSaida({ dia: "x", horaInicio: "07:00" }).erro, /início/);
 });
 
+test("horas: hora de fim que não existe é recusada e nunca passa em silêncio para o dia seguinte (29/03)", () => {
+  // 29/03/2026: às 01:00 passa a 02:00 em Lisboa; as horas das 01:00 às 01:59 não existem nesse dia.
+  const a = instantesDaSaida({ dia: "2026-03-29", horaInicio: "00:30", horaFim: "01:30" });
+  assert.match(a.erro, /^fim: .*não existe/);
+  assert.equal(a.fim, undefined);
+  const b = instantesDaSaida({ dia: "2026-03-29", horaInicio: "02:30", horaFim: "01:30" });
+  assert.match(b.erro, /^fim: .*não existe/, "a hora de fim não existe no dia escolhido: recusa, sem conversão para 30/03");
+  assert.equal(b.fim, undefined);
+  // Fim antes do início que cai no dia seguinte numa hora que não existe: também recusado.
+  const c = instantesDaSaida({ dia: "2026-03-28", horaInicio: "23:00", horaFim: "01:30" });
+  assert.match(c.erro, /^fim \(dia seguinte\): .*não existe/);
+  // Na mesma noite, um fim que existe no dia seguinte continua aceite (03:00 de 29/03 = 01:00 UTC).
+  const d = instantesDaSaida({ dia: "2026-03-28", horaInicio: "23:00", horaFim: "03:00" });
+  assert.deepEqual([d.inicio, d.fim, d.avisos], ["2026-03-28T23:00:00.000Z", "2026-03-29T02:00:00.000Z", ["acaba no dia seguinte"]]);
+  // O formulário mostra o erro e não fica nenhuma saída.
+  const f = lerFormulario({ pesqueiro: "ancao", dia: "2026-03-29", horaInicio: "00:30", horaFim: "01:30", resultado: "sem capturas" }, { config });
+  assert.ok((f.erros ?? [f.erro]).some(e => /não existe/.test(e)), JSON.stringify(f));
+});
+
 // ---------- Validação ----------
 
 test("validação: saída válida; erros de cada campo; pesqueiro desconhecido só dá aviso", () => {
@@ -213,7 +232,7 @@ test("condições: sem leitura que sirva fica dito porquê (nunca valores invent
 
 async function diarioCom(...saidas) {
   const a = armazemMemoria();
-  for (const s of saidas) await guardarSaida(a, s, { id: `c-${s.id}`, saidaId: s.id, esquema: 1, disponivel: false, motivo: "teste" });
+  for (const s of saidas) await guardarSaida(a, s, { id: `c-${s.id}`, saidaId: s.id, esquema: 1, calculadoEm: "2026-10-14T10:00:00.000Z", disponivel: false, motivo: "teste" });
   return a;
 }
 
@@ -258,6 +277,60 @@ test("cópia inválida: nada é escrito e os registos que existem ficam intactos
   assert.equal(r.ok, false);
   assert.match(r.erros[0], /nada foi importado/);
   assert.deepEqual(await lim.chaves("diario"), ["s-teste-1"]);
+});
+
+test("cópia: condições reais exportadas pela app são aceites; condições mal formadas são recusadas e nada muda", async () => {
+  // Condições disponíveis, calculadas pela app a partir de uma leitura real (respostas de 14/10).
+  const saida = saidaBase({ id: "s-real" });
+  const real = condicoesDaSaida(saida, leituraReal("2026-10-14T05:00:00.000Z"), { config, mares, sol, calculadoEm: "2026-10-14T10:00:00.000Z" });
+  assert.equal(real.disponivel, true);
+  const copiaCom = cond => JSON.stringify(criarCopia({ saidas: [saida], condicoes: [cond] }));
+  // Aceite: a cópia da app, e a importação desenha-se sem erro.
+  const b = armazemMemoria();
+  const ok = await importarCopia(b, copiaCom(real), { pesqueirosConhecidos: IDS });
+  assert.deepEqual([ok.ok, ok.novas], [true, 1], JSON.stringify(ok.erros));
+  assert.match(resumoCondicoes(await b.obter("condicoes", "c-s-real"), saida), /Condições guardadas/);
+  // Exportar dessa base e importar noutra dá as mesmas condições.
+  const c2 = armazemMemoria();
+  assert.equal((await importarCopia(c2, (await exportarCopia(b)).texto)).ok, true);
+  assert.deepEqual(await c2.listar("condicoes"), await b.listar("condicoes"));
+
+  // Recusadas: cada estrutura que faria o ecrã falhar ao desenhar.
+  const a = await diarioCom(saidaBase());
+  const antes = JSON.stringify([await a.listar("diario"), await a.listar("condicoes")]);
+  const muda = f => { const c = structuredClone(real); f(c); return c; };
+  const casos = [
+    ["disponível sem leitura", muda(c => { delete c.leitura; }), /leitura em falta/],
+    ["disponível sem dias", muda(c => { delete c.dias; }), /dias em falta/],
+    ["dias vazio", muda(c => { c.dias = []; }), /dias em falta/],
+    ["hora mal formada", muda(c => { c.horas[0] = "07:00"; }), /hora 1: mal formada/],
+    ["hora sem instante", muda(c => { delete c.horas[0].instante; }), /hora 1: instante inválido/],
+    ["valor numérico como texto", muda(c => { c.horas[1].vento = "12"; }), /hora 2: vento inválido/],
+    ["valor numérico em falta (undefined)", muda(c => { delete c.horas[0].pressao; }), /hora 1: pressao inválido/],
+    ["instante fora do intervalo", muda(c => { c.horas[0].instante = 1e20; }), /hora 1: instante inválido/],
+    ["lidoEm inválido", muda(c => { c.leitura.lidoEm = "ontem"; }), /leitura: lidoEm inválido/],
+    ["relação inválida", muda(c => { c.leitura.relacao = "durante"; }), /relação com o início/],
+    ["calculadoEm inválido", muda(c => { c.calculadoEm = "2026-13-45T99:00:00Z"; }), /calculadoEm/],
+    ["período com nome desconhecido", muda(c => { c.periodos[0].nome = "alvorada"; }), /período 1: nome «alvorada» desconhecido/],
+    ["período sem notas", muda(c => { c.periodos[0].notas = null; }), /período 1: notas em falta/],
+    ["período de um dia que não está nos dias", muda(c => { c.periodos[0].dia = "2026-10-20"; }), /período 1: dia inválido/],
+    ["nota com estado desconhecido", muda(c => { c.periodos[0].notas.robalo.estado = "ótimo"; }), /estado da nota «ótimo» desconhecido/],
+    ["nota fora de 1–5", muda(c => { c.periodos[0].notas.robalo.nota = 7; }), /nota inválida/],
+    ["nota mal formada", muda(c => { c.periodos[0].notas.dourada = "4"; }), /dourada: nota mal formada/],
+    ["intervalo mal formado", muda(c => { c.periodos[0].notas.robalo.intervalo = [5, 1]; }), /intervalo inválido/],
+    ["reponto mal formado", muda(c => { c.dias[0].repontos[0].tipo = "maré"; }), /reponto 1: mal formado/],
+    ["amplitude como texto", muda(c => { c.dias[0].amplitude = "2,3"; }), /amplitude inválida/],
+    ["boia com valor inválido", muda(c => { c.boia.hm0 = "0,9"; }), /boia mal formada/],
+    ["horas com valores incoerente", muda(c => { c.horasComValores = 99; }), /horas com valores/],
+    ["pesqueiro diferente do da saída", muda(c => { c.pesqueiro = "falesia"; }), /pesqueiro diferente/],
+    ["indisponível sem motivo", { id: "c-s-real", saidaId: "s-real", esquema: 1, calculadoEm: "2026-10-14T10:00:00.000Z", disponivel: false }, /motivo em falta/]
+  ];
+  for (const [nome, cond, erro] of casos) {
+    const r = await importarCopia(a, copiaCom(cond), { pesqueirosConhecidos: IDS });
+    assert.equal(r.ok, false, `${nome}: tinha de ser recusada`);
+    assert.ok(r.erros.some(e => erro.test(e)), `${nome} → ${r.erros}`);
+    assert.equal(JSON.stringify([await a.listar("diario"), await a.listar("condicoes")]), antes, `${nome}: nada mudou`);
+  }
 });
 
 test("cópia: um registo diferente com o mesmo id não substitui o do aparelho (conflito)", async () => {
