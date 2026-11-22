@@ -59,11 +59,18 @@ test("ecrã: fonte em falta aparece no cartão afectado e só nele", () => {
 test("ecrã: nota incompleta mostra o intervalo e o que falta; n.d. e «por confirmar» nunca aparecem como nota", () => {
   const c = { ...contexto(), especie: "dourada" };
   const p = c.analise.dias[0].pesqueiros.ria;
+  // Nota do dia num período ainda por vir (às 10:46, a noite): o selo é a nota do dia.
   p.notas.dourada = { ...p.notas.dourada, estado: "ok", nota: 5, completa: false, intervalo: { min: 4, max: 5 },
-    periodosSemNota: [], naoAvaliadas: ["descida de pressão ≥ 5 hPa/24 h"] };
+    periodosSemNota: [], naoAvaliadas: ["descida de pressão ≥ 5 hPa/24 h"], periodo: "noite" };
   let html = renderInicio(c);
   assert.match(html, /Nota incompleta — pode ser 4 a 5; por avaliar: descida de pressão/);
   assert.match(html, /class="selo n5 inc"/);
+  // F0: a mesma nota num período que já acabou (a madrugada) não aparece como actual no cartão.
+  p.notas.dourada = { ...p.notas.dourada, periodo: "madrugada" };
+  html = renderInicio(c);
+  const ria = html.split('id="pq-ria"')[1].split("</article>")[0];
+  assert.doesNotMatch(ria, /class="selo n5/);
+  assert.match(ria, /nota do dia 5 · madrugada \(já passou\)/);
   p.notas.dourada = { estado: "por confirmar", nota: null, motivo: "mar de Sul", parcelas: [], periodo: "manhã" };
   html = renderInicio(c);
   assert.match(html, /Por confirmar: mar de Sul/);

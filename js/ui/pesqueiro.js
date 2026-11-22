@@ -5,7 +5,7 @@
 // Um pesqueiro novo no config tem página sem mudar código. Função pura (HTML com texto escapado).
 import { esc, num, hora, rotuloDia, classeNota, textoNota, NOME_ESPECIE, NOME_MARE, rumo } from "./formato.js";
 import { linhaEspecie, semEspecie, factos, detalhes, avisosDoCartao, ligacoes, fundoDoCartao, alinhamentosDoDia,
-  textoAlinhamento, linhaLeitura, avisoOrigem, TIPO_LOCAL } from "./inicio.js";
+  textoAlinhamento, linhaLeitura, avisoOrigem, TIPO_LOCAL, periodosPassados } from "./inicio.js";
 import { conteudoHorario, janelasDoPesqueiro } from "./horario.js";
 import { porque } from "./explicacao.js";
 
@@ -225,7 +225,7 @@ export function renderPesqueiro(contexto) {
     <section class="bloco-pq" aria-label="Notas">
       <h2>Notas por período <small>· ${esc(rotuloDia(d.dia, indice))} · ${esc(d.dia.split("-").reverse().join("/"))}</small></h2>
       ${ali.length ? `<div class="alinhamento"><b>Alinhamento</b> ${ali.map(a => esc(textoAlinhamento(a))).join("; ")}</div>` : ""}
-      ${especies.map(esp => (p.notas[esp] ? linhaEspecie(esp, p.notas[esp], p.periodos) : semEspecie(esp, pq))).join("")}
+      ${especies.map(esp => (p.notas[esp] ? linhaEspecie(esp, p.notas[esp], p.periodos, { passados: periodosPassados(d.dia, ctx) }) : semEspecie(esp, pq))).join("")}
       ${avisosDoCartao(p, pq, ctx)}
       <p class="ligacao-comp"><a href="./comparador.html?dia=${indice}">Comparar com os outros pesqueiros ›</a></p>
     </section>

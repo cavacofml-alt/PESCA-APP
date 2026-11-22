@@ -31,13 +31,20 @@ function fundosDeMapa(config) {
   return { [b.osm.nome]: osm, [b.ortofoto.nome]: orto };
 }
 
+// F0 (22/11/2026): os pesqueiros têm um marcador próprio — alfinete escuro com miolo branco, no
+// painel dos marcadores (por cima do canvas) —, que não se confunde com os pontos dos fundões (azul) e
+// dos cabeços (castanho), redondos e desenhados no canvas. Antes era um círculo laranja, parecido com
+// o dos cabeços. Focável pelo teclado; o nome vai no title.
+const iconePesqueiro = () => L.divIcon({ className: "marcador-pesqueiro", html: '<span class="pino-pq"></span>',
+  iconSize: [24, 30], iconAnchor: [12, 28], popupAnchor: [0, -26], tooltipAnchor: [0, -24] });
+
 function camadaPesqueiros(config) {
   const grupo = L.layerGroup();
   for (const [id, pq] of Object.entries(config.pesqueiros)) {
     const p = config.locais[pq.mar];
     if (!p) continue; // a Ria não tem ponto próprio (ver CLAUDE.md §4)
-    const marcador = L.circleMarker([p.latitude, p.longitude], { radius: 7, color: "#fff", weight: 2, fillColor: "#ef6c00", fillOpacity: 1 })
-      .bindTooltip(esc(pq.nomeCurto ?? pq.nome), { direction: "top", offset: [0, -6] })
+    const marcador = L.marker([p.latitude, p.longitude], { icon: iconePesqueiro(), title: pq.nome, keyboard: true, riseOnHover: true })
+      .bindTooltip(esc(pq.nomeCurto ?? pq.nome), { direction: "top" })
       .bindPopup(`<h3>${esc(pq.nome)}</h3><p>Ponto usado para a previsão do mar (Open-Meteo): ` +
         `${p.latitude.toFixed(5)}, ${p.longitude.toFixed(5)}.</p><p class="fonte-mapa">${esc(p.origem ?? "")}</p>` +
         `<p><a href="./pesqueiro.html?id=${encodeURIComponent(id)}">Página do pesqueiro ›</a></p>`)
@@ -59,6 +66,7 @@ function camadasFundos(fundos, mares) {
     }
   }
   const formas = L.layerGroup();
+  formas.rotulos = () => formas.getLayers().map(m => m.getTooltip?.()).filter(Boolean); // F0: para arrumar os rótulos
   // Estimativa por satélite: contorno tracejado, ponto oco e «sat.» no rótulo, para não se confundir
   // com os levantamentos medidos.
   const sat = estimado(fundos);
@@ -93,12 +101,42 @@ function legenda() {
     const cotas = [0, -2, -4, -6, -8, -10, -12];
     div.innerHTML = "<b>Fundo (m ao zero hidrográfico)</b><div class=\"escala\">" +
       cotas.map(z => `<span style="--c:${corIsobata(z)}">${z === 0 ? "0" : `−${-z}`}</span>`).join("") +
-      "</div><span class=\"f\">■</span> fundão · <span class=\"c\">■</span> cabeço · " +
+      "</div><span class=\"leg-pino\" aria-hidden=\"true\"></span> pesqueiro (ponto da previsão do mar) · " +
+      "<span class=\"f\">●</span> fundão · <span class=\"c\">●</span> cabeço · " +
       "ZH = 2 m abaixo do nível médio. LiDAR 2011: m à LAT (0 a 0,22 m acima do ZH)";
     L.DomEvent.disableClickPropagation(div);
     return div;
   };
   return c;
+}
+
+// F0 (22/11/2026): rótulos dos fundões e cabeços sem sobreposição. Há ~150 formas na costa: na vista
+// geral tapavam-se todas. Abaixo de ZOOM_ROTULOS não há rótulos; daí para cima, um rótulo que tape
+// outro já mostrado esconde-se (ficam primeiro os medidos, depois os estimados por satélite). O ponto
+// e o balão de cada forma ficam sempre; só o texto se esconde.
+// As caixas calculam-se em píxeis do mapa (project ao zoom pedido) com o tamanho do rótulo (offsetWidth,
+// que as animações de zoom não alteram): o resultado não depende do momento em que se mede. Todos os
+// rótulos ficam à direita do ponto com o mesmo desvio, que não muda quem tapa quem.
+const ZOOM_ROTULOS = 12.5; // a vista geral fica em 11,5–12 num telemóvel; as zonas dos atalhos em 12,5–14
+const FOLGA_ROTULO = 2; // px entre rótulos
+function arrumarRotulos(mapa, tooltips) {
+  const z = mapa.getZoom();
+  const longe = z < ZOOM_ROTULOS;
+  mapa.getContainer().classList.toggle("rotulos-longe", longe);
+  const abertos = tooltips.filter(t => t.isOpen() && t.getElement());
+  for (const t of abertos) t.getElement().classList.remove("rotulo-tapado");
+  if (longe) return;
+  const vistos = [];
+  const sat = t => /(^|\s)sat(\s|$)/.test(t.options.className ?? "");
+  for (const t of [...abertos.filter(t => !sat(t)), ...abertos.filter(sat)]) {
+    const el = t.getElement();
+    const w = el.offsetWidth, h = el.offsetHeight;
+    if (!w) continue;
+    const p = mapa.project(t.getLatLng(), z);
+    const a = { l: p.x - FOLGA_ROTULO, r: p.x + w + FOLGA_ROTULO, t: p.y - h / 2 - FOLGA_ROTULO, b: p.y + h / 2 + FOLGA_ROTULO };
+    if (vistos.some(b => a.l < b.r && b.l < a.r && a.t < b.b && b.t < a.b)) el.classList.add("rotulo-tapado");
+    else vistos.push(a);
+  }
 }
 
 async function lerJson(url) {
@@ -147,6 +185,16 @@ async function iniciar() {
   const controlo = L.control.layers(bases, sobreposicoes, { collapsed: true }).addTo(mapa);
   L.control.scale({ imperial: false }).addTo(mapa);
   legenda().addTo(mapa);
+  // Depois de cada zoom ou deslocação, de ligar ou desligar uma camada e de carregar um levantamento (F0).
+  // Vários pedidos seguidos dão uma só passagem, no frame seguinte.
+  const gruposDeFormas = [];
+  let pedidoRotulos = 0;
+  const arrumar = () => {
+    cancelAnimationFrame(pedidoRotulos);
+    pedidoRotulos = requestAnimationFrame(() => arrumarRotulos(mapa, gruposDeFormas.flatMap(g => g.rotulos())));
+  };
+  mapa.on("zoomend moveend overlayadd overlayremove", arrumar);
+  arrumar();
 
   const m = config.mares.intervaloEventoMinutos;
   // Próxima preia-mar e baixa-mar: chega a tabela de agora a 3 dias (dois anos na passagem de ano).
@@ -177,12 +225,14 @@ async function iniciar() {
     d.aviso = f.aviso;
     const camadas = camadasFundos(d, eventos);
     for (const c of Object.values(camadas)) c.addTo(mapa);
+    gruposDeFormas.push(camadas.formas);
     if (d.isobatas.length) controlo.addOverlay(camadas.isobatas, `Linhas de fundo — ${esc(f.nome)}`);
     controlo.addOverlay(camadas.formas, `Fundões e cabeços — ${esc(f.nome)}`);
     controlo.addOverlay(camadas.cobertura, `${estimado(d) ? "Zona com estimativa" : "Zona levantada"} — ${esc(f.nome)}`);
     // o nome do LiDAR já traz o ano
     situacao.set(f.id, estimado(d) ? "estimado" : d.fonte.rotulo ? "" : `COSMO ${mesAno(d.fonte)}`);
     mostrarSituacao(eventos);
+    arrumar();
   }
   const verificar = () => {
     const vista = mapa.getBounds();

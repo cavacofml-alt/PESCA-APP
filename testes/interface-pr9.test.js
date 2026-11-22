@@ -10,7 +10,7 @@ import { analisarDias } from "../js/regras/analise.js";
 import { validateTides } from "../js/fontes/mares-locais.js";
 import { pontosNecessarios } from "../js/pontos.js";
 import { limitesDiaLisboa, lisbonDate } from "../js/normalizacao.js";
-import { renderInicio, destaqueDoDia, notasDoCartao } from "../js/ui/inicio.js";
+import { renderInicio, destaqueDoDia, notasDoCartao, restoDoDia, periodosPassados } from "../js/ui/inicio.js";
 import { renderPesqueiro, janelasDoPesqueiro, condicoesDoDia, pontosDoPesqueiro, numerarPontos, atribuicaoSegura } from "../js/ui/pesqueiro.js";
 import { conteudoHorario } from "../js/ui/horario.js";
 import { porque, estadoDaNota } from "../js/ui/explicacao.js";
@@ -107,10 +107,19 @@ test("cartões: os oito pesqueiros com a fotografia, o tipo, as notas do motor d
       const p = base.analise.dias[0].pesqueiros[id];
       if (pq.foto) assert.ok(cartao.includes(pq.foto.ficheiro), `${id}: fotografia`);
       assert.match(cartao, /praia \(mar de fora\)|molhe|Ria \(interior\)/);
+      const passados = periodosPassados(base.analise.dias[0].dia, base);
       for (const [esp, n] of Object.entries(p.notas)) {
         const bloco = cartao.split(`data-especie="${esp}"`)[1].split("</div>")[0];
-        assert.ok(bloco.includes(`>${textoNota(n)}</b>`), `${id} ${esp}: nota do motor`);
-        assert.ok(bloco.includes(estadoDaNota(n)), `${id} ${esp}: estado`);
+        // F0 (22/11/2026): hoje, se a nota do dia é de um período que já acabou, o selo é a melhor nota do
+        // resto do dia e a nota do dia fica escrita com «(já passou)»; nos outros casos, a nota do dia.
+        const r = restoDoDia(p, esp, passados);
+        if (r) {
+          assert.ok(bloco.includes(`>${r.nota ?? "—"}</b>`), `${id} ${esp}: nota do resto do dia (motor)`);
+          assert.ok(bloco.includes(`nota do dia ${textoNota(n)} · ${n.periodo} (já passou)`), `${id} ${esp}: nota do dia passada`);
+        } else {
+          assert.ok(bloco.includes(`>${textoNota(n)}</b>`), `${id} ${esp}: nota do motor`);
+          assert.ok(bloco.includes(estadoDaNota(n)), `${id} ${esp}: estado`);
+        }
       }
       assert.ok(cartao.includes(`href="./pesqueiro.html?id=${id}"`), `${id}: página`);
       const factores = /<ul class="factores-cartao"[^>]*>([\s\S]*?)<\/ul>/.exec(cartao)?.[1] ?? "";

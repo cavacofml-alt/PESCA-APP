@@ -114,6 +114,9 @@ a { color: var(--link); }
 .nota-esp.sel .esp { color: var(--mar); text-decoration: underline 2px var(--turquesa); text-underline-offset: 3px; }
 .estado-nota { color: var(--suave); font-size: .78rem; }
 .estado-nota.e-incompleta, .estado-nota.e-por-confirmar { color: var(--aviso-texto); }
+/* F0: hoje, com a nota do dia num período que já acabou — selo do resto do dia e a nota do dia por baixo. */
+.nota-esp.resto { flex-wrap: wrap; row-gap: .1rem; }
+.nota-passou { flex-basis: 100%; color: var(--suave); font-size: .76rem; }
 .factores-cartao { margin: .55rem 0 0; padding-left: 1.1rem; font-size: .84rem; color: var(--texto); }
 .factores-cartao li + li { margin-top: .15rem; }
 
@@ -283,6 +286,16 @@ a { color: var(--link); }
 .legenda-mapa .escala span { flex: 1; padding-top: .55rem; border-top: .35rem solid var(--c); text-align: center; font-size: .65rem; }
 .legenda-mapa .f { color: #1d4ed8; }
 .legenda-mapa .c { color: #a16207; }
+/* F0 (22/11/2026): marcador próprio dos pesqueiros (alfinete escuro, miolo branco), diferente dos pontos
+   redondos dos fundões e cabeços; rótulos dos fundos escondidos na vista geral e quando tapam outro. */
+.marcador-pesqueiro { background: none; border: 0; }
+.marcador-pesqueiro:focus-visible { outline: 3px solid var(--turquesa); outline-offset: 2px; border-radius: 50%; }
+.pino-pq, .leg-pino { display: block; box-sizing: border-box; border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
+  background: var(--mar); border: 2px solid #fff; box-shadow: 0 1px 4px rgb(0 0 0 / .45); }
+.pino-pq { position: absolute; left: 2px; top: 1px; width: 20px; height: 20px; }
+.pino-pq::after { content: ""; position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: #fff; }
+.leg-pino { display: inline-block; width: .7rem; height: .7rem; margin: 0 .1rem 0 .15rem; border-width: 1.5px; vertical-align: -.05rem; }
+.rotulos-longe .rotulo-forma, .rotulo-forma.rotulo-tapado { display: none; }
 
 /* Comparador (plano de evolução, PR 2, 20/11/2026) */
 .opcoes { display: flex; gap: .3rem; padding: 0 .1rem .5rem; }
@@ -334,7 +347,10 @@ a { color: var(--link); }
 .bloco-pq .factos small { color: var(--suave); }
 .onde-pq .factos { grid-template-columns: 8.5rem 1fr; }
 .notas-dia { display: flex; gap: .2rem; }
-.horas-pq .tabela-horas { margin: 0 -.85rem; padding: 0 .85rem; }
+/* F0 (22/11/2026): sem padding no contentor que desliza. Com ele, a coluna fixa (sticky, left: 0) ficava
+   14 px para dentro do bordo e via-se à esquerda dela o que desliza por baixo; o recuo passa para a coluna. */
+.horas-pq .tabela-horas { margin: 0 -.85rem; padding: 0; }
+.horas-pq .tabela-horas th { padding-left: .85rem; }
 .lista-pq { margin: 0; padding-left: 1.1rem; line-height: 1.8; }
 .accoes-cartao { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; margin: .7rem 0 .25rem; }
 .accoes-cartao .btn, .accoes-cartao .btn-horas { margin: 0; padding: .45rem .85rem; font-size: .86rem; }

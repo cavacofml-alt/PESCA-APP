@@ -313,7 +313,9 @@ export function faixaDias(analise, indice, especie) {
 
 // Linha de uma espécie: nota do dia, notas por período e incompletude.
 // compacto (cartões do início, PR 9): sem a linha do nome e da nota, que já estão nas notas do cartão.
-export function linhaEspecie(esp, n, periodos, { compacto = false } = {}) {
+// passados (F0, 22/11/2026): períodos de hoje que já acabaram; ficam a cinzento com «já passou», e a
+// nota do dia, quando é de um deles, diz «(já passou)» — como no comparador.
+export function linhaEspecie(esp, n, periodos, { compacto = false, passados = [] } = {}) {
   if (!n) return "";
   const avisos = [];
   if (n.estado === "ok" && !n.completa) {
@@ -330,10 +332,11 @@ export function linhaEspecie(esp, n, periodos, { compacto = false } = {}) {
   return `<div class="especie${compacto ? " compacta" : ""}">
     ${compacto ? `<p class="rot">${esc(NOME_ESPECIE[esp] ?? esp)} por período</p>` : `<div class="esp-topo"><span class="esp-nome">${esc(NOME_ESPECIE[esp] ?? esp)}</span>
       <span class="nota ${classeNota(n)}">${esc(textoNota(n))}${n.estado === "ok" ? "<small>/5</small>" : ""}</span>
-      ${n.estado === "ok" && n.periodo ? `<span class="per">${esc(n.periodo)}</span>` : ""}</div>`}
+      ${n.estado === "ok" && n.periodo ? `<span class="per">${esc(n.periodo)}${passados.includes(n.periodo) ? " (já passou)" : ""}</span>` : ""}</div>`}
     <ol class="periodos" aria-label="${esc(NOME_ESPECIE[esp] ?? esp)}: notas por período">${periodos.map(p => {
       const pn = p.notas[esp];
-      return `<li class="${classeNota(pn)}" title="${esc(`${p.nome}: ${pn?.estado === "ok" ? `${pn.nota}/5` : pn?.estado ?? "—"}${pn?.motivo ? ` — ${pn.motivo}` : ""}`)}"><span>${esc(PERIODO_CURTO[p.nome] ?? p.nome)}</span><b>${esc(textoNota(pn))}</b></li>`;
+      const passou = passados.includes(p.nome);
+      return `<li class="${classeNota(pn)}${passou ? " passou" : ""}" title="${esc(`${p.nome}: ${pn?.estado === "ok" ? `${pn.nota}/5` : pn?.estado ?? "—"}${pn?.motivo ? ` — ${pn.motivo}` : ""}${passou ? " · já passou" : ""}`)}"><span>${esc(PERIODO_CURTO[p.nome] ?? p.nome)}</span><b>${esc(textoNota(pn))}</b></li>`;
     }).join("")}</ol>
     ${avisos.join("")}
   </div>`;
@@ -492,12 +495,50 @@ export function semEspecie(esp, pq) {
 export const TIPO_LOCAL = { praia: "praia (mar de fora)", molhe: "molhe", ria: "Ria (interior)" };
 
 // As notas do dia das espécies do pesqueiro, lado a lado, com o estado e o melhor período (PR 9).
-export function notasDoCartao(p, especieEscolhida) {
+// F0 (22/11/2026). Hoje, a nota do dia (a do melhor período, regra aprovada) pode ser de um período
+// que já acabou. Nesse caso devolve-se a melhor nota dos períodos que ainda faltam: as mesmas notas
+// do motor, sem outra classificação (como a «melhor janela» e «Onde e quando»). Os empatados vão
+// todos; «pode subir» são os incompletos cujo intervalo passa essa nota; «sem nota» os n.d. e
+// «por confirmar» que faltam. Devolve null quando a nota do dia não é de um período passado.
+// Função pura.
+export function restoDoDia(p, esp, passados) {
+  const n = p.notas?.[esp];
+  if (!n || n.estado !== "ok" || !n.periodo || !passados.includes(n.periodo)) return null;
+  const vivos = (p.periodos ?? []).filter(per => !passados.includes(per.nome))
+    .map(per => ({ nome: per.nome, n: per.notas?.[esp] ?? null })).filter(x => x.n);
+  const ok = vivos.filter(x => x.n.estado === "ok");
+  const semNota = vivos.filter(x => x.n.estado !== "ok").map(x => x.nome);
+  if (!ok.length) return { passou: n.periodo, nota: null, melhor: null, periodos: [], completa: false, podeSubir: [], semNota };
+  const nota = Math.max(...ok.map(x => x.n.nota));
+  const melhores = ok.filter(x => x.n.nota === nota);
+  const podeSubir = ok.filter(x => x.n.nota < nota && !x.n.completa && (x.n.intervalo?.max ?? Infinity) > nota).map(x => x.nome);
+  return { passou: n.periodo, nota, melhor: melhores[0].n, periodos: melhores.map(x => x.nome),
+    completa: melhores.every(x => x.n.completa === true), podeSubir, semNota };
+}
+
+function textoResto(r) {
+  if (r.nota === null) return `resto de hoje sem nota${r.semNota.length ? ` (${r.semNota.join(", ")})` : ""}`;
+  const extra = [r.podeSubir.length ? `pode subir: ${r.podeSubir.join(", ")}` : "", r.semNota.length ? `sem nota: ${r.semNota.join(", ")}` : ""].filter(Boolean);
+  return `resto de hoje · ${r.periodos.join(", ")} · ${r.completa ? "completa" : "incompleta"}${extra.length ? ` · ${extra.join(" · ")}` : ""}`;
+}
+
+export function notasDoCartao(p, especieEscolhida, passados = []) {
   return `<div class="notas-cartao">${Object.entries(p.notas).map(([esp, n]) => {
+    const r = restoDoDia(p, esp, passados);
+    const abre = `<div class="nota-esp${esp === especieEscolhida ? " sel" : ""}${r ? " resto" : ""}" data-especie="${esc(esp)}">
+      <span class="esp">${esc(NOME_ESPECIE[esp] ?? esp)}</span>`;
+    if (r) {
+      // Não se mostra como actual a nota de um período que já acabou: o selo é o do resto do dia e a
+      // nota do dia fica escrita ao lado, com «já passou» (como no comparador).
+      const selo = r.nota === null ? `<b class="mini nd">—</b>`
+        : `<b class="mini ${classeNota(r.melhor)}${r.completa ? "" : " inc"}">${r.nota}</b>`;
+      return `${abre}${selo}
+      <span class="estado-nota e-${r.nota === null ? "sem-nota" : r.completa ? "completa" : "incompleta"}">${esc(textoResto(r))}</span>
+      <span class="nota-passou">nota do dia ${esc(textoNota(n))} · ${esc(n.periodo)} (já passou)</span></div>`;
+    }
     const estado = estadoDaNota(n);
     const quando = n?.estado === "ok" && n.periodo ? ` · ${n.periodo}` : "";
-    return `<div class="nota-esp${esp === especieEscolhida ? " sel" : ""}" data-especie="${esc(esp)}">
-      <span class="esp">${esc(NOME_ESPECIE[esp] ?? esp)}</span>
+    return `${abre}
       <b class="mini ${classeNota(n)}${n?.estado === "ok" && !n.completa ? " inc" : ""}">${esc(textoNota(n))}</b>
       <span class="estado-nota e-${esc(estado.replace(/\s+/g, "-"))}">${esc(estado)}${esc(quando)}</span></div>`;
   }).join("")}</div>`;
@@ -511,6 +552,14 @@ function cartao(id, p, d, contexto) {
   const esp = contexto.especie ?? "robalo";
   const nEsp = p.notas[esp];
   const melhor = nEsp?.estado === "ok" ? nEsp : null;
+  const passados = periodosPassados(d.dia, contexto);
+  const resto = restoDoDia(p, esp, passados);
+  // Selo da fotografia: a nota do dia; hoje, se o período dela já acabou, a melhor do resto do dia (F0).
+  const selo = resto
+    ? { nota: resto.nota, completa: resto.completa, titulo: resto.nota === null ? `${NOME_ESPECIE[esp]}: resto de hoje sem nota (a nota do dia, da ${resto.passou}, já passou)`
+      : `${NOME_ESPECIE[esp]}: ${resto.nota}/5 no resto de hoje (${resto.periodos.join(", ")}); a nota do dia, da ${resto.passou}, já passou` }
+    : { nota: melhor?.nota ?? null, completa: melhor?.completa ?? false,
+      titulo: melhor ? `${NOME_ESPECIE[esp]}: nota do dia ${melhor.nota}/5 (${melhor.periodo})` : `${NOME_ESPECIE[esp]}: sem nota do dia` };
   const foto = pq.foto;
   // Fase 1 (20/11/2026): o alinhamento do dia aparece uma vez, no topo; o cartão só o repete quando
   // é diferente (por exemplo, quando nem todos os pesqueiros o têm).
@@ -522,12 +571,12 @@ function cartao(id, p, d, contexto) {
   return `<article class="cartao" id="pq-${esc(id)}">
     <div class="foto"${foto ? ` style="background-image:url('${esc(foto.ficheiro)}')"` : ""}>
       <div class="foto-texto"><h2>${esc(pq.nomeCurto ?? pq.nome)}</h2><p>${esc(TIPO_LOCAL[pq.tipo] ?? pq.tipo)} · ${esc(especies.map(e => NOME_ESPECIE[e]).join(" e "))}</p></div>
-      <div class="selo ${melhor ? `n${melhor.nota}` : "nd"}${melhor && !melhor.completa ? " inc" : ""}">${melhor ? melhor.nota : "—"}</div>
+      <div class="selo ${selo.nota !== null ? `n${selo.nota}` : "nd"}${selo.nota !== null && !selo.completa ? " inc" : ""}" title="${esc(selo.titulo)}">${selo.nota ?? "—"}</div>
     </div>
     <div class="corpo">
-      ${notasDoCartao(p, esp)}
+      ${notasDoCartao(p, esp, passados)}
       ${ali.length ? `<div class="alinhamento"><b>Alinhamento</b> ${ali.map(a => esc(textoAlinhamento(a))).join("; ")}</div>` : ""}
-      ${nEsp ? linhaEspecie(esp, nEsp, p.periodos, { compacto: true }) : semEspecie(esp, pq)}
+      ${nEsp ? linhaEspecie(esp, nEsp, p.periodos, { compacto: true, passados }) : semEspecie(esp, pq)}
       ${factores.length ? `<ul class="factores-cartao" aria-label="O que explica a nota">${factores.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
       <div class="accoes-cartao"><a class="ligacao-pq btn" href="${url}">Página do pesqueiro ›</a>
         <button type="button" class="btn-horas" data-pq="${esc(id)}">Hora a hora ›</button></div>
