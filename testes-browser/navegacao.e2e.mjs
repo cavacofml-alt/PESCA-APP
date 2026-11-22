@@ -12,10 +12,10 @@ let srv, browser;
 before(async () => { srv = await servir(); browser = await lancar(); });
 after(async () => { await browser?.close(); await srv?.fechar(); });
 
-const PAGINAS = [["inicio", "/", ".cartoes"], ["mapa", "/mapa.html", ".leaflet-container"],
+const PAGINAS = [["inicio", "/", ".cartoes"], ["comparador", "/comparador.html", ".linha-comp"], ["mapa", "/mapa.html", ".leaflet-container"],
   ["fontes", "/fontes.html", ".cartao-fonte"], ["diagnostico", "/diagnostico.html", "#results article"]];
 
-test("navegação: a barra leva aos três ecrãs e marca o actual; Fontes ↔ Diagnóstico", async () => {
+test("navegação: a barra leva aos quatro ecrãs e marca o actual; Fontes ↔ Diagnóstico", async () => {
   const { contexto, pagina, registo } = await abrir(browser);
   try {
     await pagina.goto(`${srv.url}/`);
@@ -29,6 +29,10 @@ test("navegação: a barra leva aos três ecrãs e marca o actual; Fontes ↔ Di
     assert.equal(await pagina.textContent("nav.barra a.activo"), "Fontes");
     await pagina.click("text=voltar às fontes");
     await pagina.waitForURL(/\/fontes\.html$/);
+    await pagina.click("nav.barra >> text=Comparar");
+    await pagina.waitForURL(/\/comparador\.html$/);
+    await pagina.waitForSelector(".linha-comp");
+    assert.equal(await pagina.textContent("nav.barra a.activo"), "Comparar");
     await pagina.click("nav.barra >> text=Mapa");
     await pagina.waitForURL(/\/mapa\.html$/);
     assert.equal(await pagina.textContent("nav.barra a.activo"), "Mapa");

@@ -1,6 +1,6 @@
 # Surfcasting Algarve
 
-App pessoal (PWA, para Android) com as condições de surfcasting para dourada e robalo em oito pesqueiros, da Ria Formosa (Faro) à Falésia. Sem build e sem dependências de runtime. O ecrã inicial (`index.html`) abre com «Onde e quando» (os melhores pesqueiros e períodos do dia escolhido, a partir das notas) e mostra um cartão por pesqueiro com as notas por período; `mapa.html` mostra os pesqueiros e o fundo do mar; `fontes.html` diz de onde vem cada dado, de que tipo é e com que licença (e os créditos das fotografias); `diagnostico.html`, aberto a partir das «Fontes», mostra o estado técnico de cada pedido. Os quatro ecrãs têm a mesma barra de navegação (Início, Mapa, Fontes).
+App pessoal (PWA, para Android) com as condições de surfcasting para dourada e robalo em oito pesqueiros, da Ria Formosa (Faro) à Falésia. Sem build e sem dependências de runtime. O ecrã inicial (`index.html`) abre com «Onde e quando» (os melhores pesqueiros e períodos do dia escolhido, a partir das notas) e mostra um cartão por pesqueiro com as notas por período; `comparador.html` põe os oito pesqueiros lado a lado (ver «Comparador»); `mapa.html` mostra os pesqueiros e o fundo do mar; `fontes.html` diz de onde vem cada dado, de que tipo é e com que licença (e os créditos das fotografias); `diagnostico.html`, aberto a partir das «Fontes», mostra o estado técnico de cada pedido. Todos os ecrãs têm a mesma barra de navegação (Início, Comparar, Mapa, Fontes).
 
 ## Executar localmente
 
@@ -19,11 +19,22 @@ O site está no Cloudflare Workers, como site estático (sem código no servidor
 
 **Atenção: o site não é o único sítio público.** Com o repositório público, tudo o que está no repositório se vê no GitHub, incluindo a pasta `recolha/` (respostas de APIs guardadas, relatórios de trabalho, a Tabela de Marés do IH de 2026 em PDF e um PDF de outra ferramenta) e o histórico dos commits. O que fazer com esse material é decisão do utilizador (ver «Tabela de marés → Licenças e autorizações»).
 
+## Comparador
+
+`comparador.html` (`js/comparador.js`, `js/ui/comparador.js`) mostra, para a espécie, o dia e o período escolhidos (o dia inteiro, que é a nota do melhor período, ou madrugada, manhã, tarde, noite), a nota de cada pesqueiro **tal como o motor a calculou**: não calcula notas nem cria outra classificação.
+
+- Cada linha diz o estado da nota (completa, incompleta com o intervalo possível, sem nota com o motivo, por confirmar, não se aplica), as notas dos quatro períodos e o «porquê»: as parcelas aplicadas, as que ficaram por avaliar e o limite obrigatório. Em «Parcelas e avisos» estão a tabela das parcelas, as fontes que falharam e os avisos do motor.
+- O resumo diz a nota mais alta e quem a tem, assinala empates e diz «Comparação parcial: não dá para dizer qual é o melhor» quando alguma nota incompleta, sem nota ou por confirmar a pode igualar.
+- A tabela «Factores» põe lado a lado os valores do motor no período de cada pesqueiro (potência máxima, limo, alinhamento, pressão; para a dourada também pressão alta e estável, descida da água e água turva). Dado em falta → «?», nunca zero.
+- Ordem: por omissão, nascente → poente (a do motor), com os pesqueiros sem regra para a espécie no fim, como no início. «Por nota» usa os critérios de «Onde e quando»: nota; em empate, alinhamento no período, nota da outra espécie, período mais cedo, ordem dos pesqueiros. As notas em falta ficam sempre depois das que existem.
+- Hoje, os períodos que já acabaram ficam a cinzento, e a nota do dia diz «(já passou)» quando o seu período já acabou.
+- O início liga ao comparador no dia escolhido («Comparar os 8 pesqueiros ›»).
+
 ## Instalar no telemóvel (Android)
 
 Abrir o endereço no Chrome → menu ⋮ → **Instalar app** (ou «Adicionar ao ecrã principal»). A app abre em ecrã inteiro.
 
-**Sem rede (o que está implementado hoje):** o service worker guarda na instalação só a shell (HTML, CSS, JS, bibliotecas, fotografias). A `config.json`, as tabelas de marés e os fundos do mar só ficam guardados quando a app os pede com o service worker já a controlar a página, o que normalmente só acontece a partir da segunda abertura com rede; e só ficam os que a app já pediu (por exemplo, a tabela de marés de um ano que a janela de 7 dias ainda não tocou não está guardada). Por isso, **depois de uma única visita com rede a app pode não abrir sem rede**: o início e as Fontes mostram «Erro: Failed to fetch», porque falta a `config.json` (o mapa abre). Depois de uma segunda visita com rede, o início, as Fontes e o mapa abrem sem rede (verificado no Chromium a 22/11/2026). Os mosaicos do mapa (OpenStreetMap, DGT) não ficam guardados. As previsões do Open-Meteo, a boia e as notas **não ficam guardadas**: sem rede, essas fontes aparecem como «não obtido» e não há notas. Só ficam no aparelho, em `localStorage`, a espécie escolhida e a camada escolhida no mapa. Não há ainda diário, histórico de previsões nem armazenamento em IndexedDB.
+**Sem rede (o que está implementado hoje):** o service worker guarda na instalação só a shell (HTML, CSS, JS, bibliotecas, fotografias). A `config.json`, as tabelas de marés e os fundos do mar só ficam guardados quando a app os pede com o service worker já a controlar a página, o que normalmente só acontece a partir da segunda abertura com rede; e só ficam os que a app já pediu (por exemplo, a tabela de marés de um ano que a janela de 7 dias ainda não tocou não está guardada). Por isso, **depois de uma única visita com rede a app pode não abrir sem rede**: o início, o comparador e as Fontes mostram «Erro: Failed to fetch», porque falta a `config.json` (o mapa abre). Depois de uma segunda visita com rede, o início, o comparador, as Fontes e o mapa abrem sem rede. **Os endereços com parâmetros só abrem sem rede se esse endereço exacto já tiver sido aberto com rede:** a ligação «Comparar os 8 pesqueiros ›» do início (`comparador.html?dia=…`) falha sem rede, e a «Comparar» da barra (sem parâmetros) abre (verificado no Chromium a 22/11/2026). Os mosaicos do mapa (OpenStreetMap, DGT) não ficam guardados. As previsões do Open-Meteo, a boia e as notas **não ficam guardadas**: sem rede, essas fontes aparecem como «não obtido» e não há notas. Só ficam no aparelho, em `localStorage`, a espécie escolhida e a camada escolhida no mapa. Não há ainda diário, histórico de previsões nem armazenamento em IndexedDB.
 
 ## Estado das fontes
 
@@ -83,7 +94,7 @@ O GitHub Actions corre-os em cada push e PR (workflow «Testes no browser») e g
 
 ## Limitações desta entrega
 
-- Ainda não existem: comparador de pesqueiros, páginas por pesqueiro, diário de saídas, estatísticas, histórico de previsões e armazenamento das previsões em IndexedDB. Estão no plano de evolução, um PR cada; nada disto está publicado.
+- Ainda não existem: páginas por pesqueiro, diário de saídas, estatísticas, histórico de previsões e armazenamento das previsões em IndexedDB. Estão no plano de evolução, um PR cada; nada disto está publicado.
 - Os avisos do IPMA não são consultados: a regra de segurança foi retirada por decisão do utilizador (13/10/2026).
 - O `sw.js` serve a shell a partir da cache; `config.json` e marés (`*.json`) vão sempre primeiro à rede e só usam a cópia em cache sem ligação; essa cópia só existe depois de terem sido pedidos com o service worker a controlar a página (ver «Sem rede»). Ao alterar um ficheiro da shell, correr `node ferramentas/versao-sw.mjs` (actualiza a impressão e sobe a versão da cache em `sw.js`); um teste falha se for esquecido.
 - Quando há uma versão nova publicada, a página aberta recarrega sozinha uma vez, assim que o service worker novo toma conta dela (`js/registo-sw.js`). Sem isso ficava o código antigo com a `config.json` nova, que vem sempre da rede. Na primeira instalação não recarrega.
