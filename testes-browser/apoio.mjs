@@ -22,8 +22,9 @@ const TIPOS = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; ch
   ".css": "text/css; charset=utf-8", ".json": "application/json", ".webmanifest": "application/manifest+json",
   ".png": "image/png", ".jpg": "image/jpeg", ".svg": "image/svg+xml", ".txt": "text/plain; charset=utf-8" };
 
-// Servidor estático da pasta publicada (como no Cloudflare: «/» serve o index.html).
-export async function servir() {
+// Servidor estático da pasta publicada (como no Cloudflare: «/» serve o index.html). porta: para voltar a
+// abrir o servidor no mesmo endereço (a rede volta); por omissão, uma porta livre.
+export async function servir({ porta = 0 } = {}) {
   const pasta = publicar(RAIZ, fs.mkdtempSync(path.join(os.tmpdir(), "pesca-publicar-")));
   const servidor = http.createServer((req, res) => {
     const caminho = decodeURIComponent(new URL(req.url, "http://x").pathname);
@@ -34,7 +35,7 @@ export async function servir() {
     res.writeHead(200, { "content-type": TIPOS[path.extname(ficheiro)] ?? "application/octet-stream" });
     fs.createReadStream(ficheiro).pipe(res);
   });
-  await new Promise(r => servidor.listen(0, "127.0.0.1", r));
+  await new Promise(r => servidor.listen(porta, "127.0.0.1", r));
   return { url: `http://127.0.0.1:${servidor.address().port}`, fechar: () => new Promise(r => servidor.close(r)), pasta };
 }
 
