@@ -58,7 +58,7 @@ const melhorNotaDoDia = (d, esp) => {
 };
 
 // Alinhamentos reponto/Sol do dia, sem repetir o mesmo reponto entre pesqueiros.
-function alinhamentosDoDia(d) {
+export function alinhamentosDoDia(d) {
   const vistos = new Map();
   for (const p of Object.values(d.pesqueiros)) {
     for (const a of p.alinhamento?.alinhamentos ?? []) {
@@ -77,7 +77,7 @@ function maresPorTipo(repontos) {
   }).filter(Boolean).join(" · ");
 }
 
-const textoAlinhamento = a =>
+export const textoAlinhamento = a =>
   `${a.tipo === "PM" ? "Preia-mar" : "Baixa-mar"} às ${hora(a.reponto)}, a ${a.minutos} min do ${a.evento}`;
 
 // Horas de início e fim de cada período (config.periodos, hora de Lisboa).
@@ -229,7 +229,7 @@ export function faixaDias(analise, indice, especie) {
 }
 
 // Linha de uma espécie: nota do dia, notas por período e incompletude.
-function linhaEspecie(esp, n, periodos) {
+export function linhaEspecie(esp, n, periodos) {
   if (!n) return "";
   const avisos = [];
   if (n.estado === "ok" && !n.completa) {
@@ -301,7 +301,7 @@ export function fundoDoCartao(id, d, contexto) {
   return { curto, longo: partes.join("; "), fonte };
 }
 
-function factos(p, pq, fundo) {
+export function factos(p, pq, fundo) {
   const out = [];
   if (p.potencia) {
     out.push(["Potência máx.", p.potencia.valor === null ? "não obtida"
@@ -352,7 +352,7 @@ export function fontesDoCartao(pq, contexto, fundo = null) {
   return `<h4>Fontes</h4><ul class="fontes">${linhas.map(l => `<li>${esc(l)}</li>`).join("")}</ul>`;
 }
 
-function detalhes(p, pq, d, contexto, fundo) {
+export function detalhes(p, pq, d, contexto, fundo, { aberto = false } = {}) {
   const s = contexto.sol ? contexto.sol(d.dia, pq.terra) : null;
   const dados = [];
   if (p.limo && pq.tipo !== "ria") dados.push(["Limo", `${simNao(p.limo.limo)}${p.limo.motivo ? ` — ${p.limo.motivo}` : ""}${p.limo.horasComLimo?.length ? ` (${p.limo.horasComLimo.map(hora).join(", ")})` : ""}`]);
@@ -366,7 +366,7 @@ function detalhes(p, pq, d, contexto, fundo) {
   dados.push(["Sol", s ? `nasce ${hora(s.nascer)} · põe-se ${hora(s.por)}` : "não calculado"]);
   if (p.potencia?.avisos?.length) dados.push(["Potência", p.potencia.avisos.join("; ")]);
   if (fundo?.longo) dados.push(["Fundo típico", fundo.longo]);
-  return `<details class="detalhes"><summary>Dados, parcelas e fontes</summary>
+  return `<details class="detalhes"${aberto ? " open" : ""}><summary>Dados, parcelas e fontes</summary>
     <dl class="factos">${dados.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
     ${Object.entries(p.notas).map(([esp, n]) => parcelas(esp, n)).join("")}
     ${fontesDoCartao(pq, contexto, fundo)}
@@ -388,18 +388,18 @@ export function fontesEmFalta(pq, contexto) {
 }
 
 // Fontes em falta primeiro (o utilizador tem de saber o que não foi lido), depois os avisos do motor.
-function avisosDoCartao(p, pq, contexto) {
+export function avisosDoCartao(p, pq, contexto) {
   const falhas = fontesEmFalta(pq, contexto);
   if (!falhas.length && !p.avisos.length) return "";
   return `<ul class="avisos">${falhas.map(a => `<li class="falha">${esc(a)}</li>`).join("")}${p.avisos.map(a => `<li>${esc(a)}</li>`).join("")}</ul>`;
 }
 
 // Ligações externas (câmaras, estações): só para o utilizador ver; a app não lê estes dados.
-const ligacoes = (titulo, lista) => (lista?.length
+export const ligacoes = (titulo, lista) => (lista?.length
   ? `${esc(titulo)}: ${lista.map(c => `<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.nome)}</a>`).join(" · ")}<br>` : "");
 
 // Pesqueiro sem nota para a espécie escolhida.
-function semEspecie(esp, pq) {
+export function semEspecie(esp, pq) {
   const texto = pq.tipo === "ria" ? "não se aplica na Ria (interior)"
     : esp === "dourada" && pq.tipo === "praia" ? "regra para a dourada nas praias por decidir" : "sem regra para este pesqueiro";
   return `<div class="especie sem"><div class="esp-topo"><span class="esp-nome">${esc(NOME_ESPECIE[esp])}</span><span class="nota nd">—</span></div><p class="motivo">${esc(texto)}</p></div>`;
@@ -427,7 +427,8 @@ function cartao(id, p, d, contexto) {
     <div class="corpo">
       ${ali.length ? `<div class="alinhamento"><b>Alinhamento</b> ${ali.map(a => esc(textoAlinhamento(a))).join("; ")}</div>` : ""}
       ${nEsp ? linhaEspecie(esp, nEsp, p.periodos) : semEspecie(esp, pq)}
-      <button type="button" class="btn-horas" data-pq="${esc(id)}">Hora a hora ›</button>
+      <div class="accoes-cartao"><button type="button" class="btn-horas" data-pq="${esc(id)}">Hora a hora ›</button>
+        <a class="ligacao-pq" href="./pesqueiro.html?id=${encodeURIComponent(id)}${contexto.indice > 0 ? `&dia=${contexto.indice}` : ""}">Página do pesqueiro ›</a></div>
       ${factos(p, pq, fundo)}
       ${avisosDoCartao(p, pq, contexto)}
       ${detalhes(p, pq, d, contexto, fundo)}

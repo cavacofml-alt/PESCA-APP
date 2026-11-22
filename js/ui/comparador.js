@@ -153,7 +153,7 @@ function linha(l, especie, vista, passados, contexto) {
   const ndet = n ? { ...n, periodo: l.periodo ?? n.periodo } : null;
   return `<li class="linha-comp" id="cmp-${esc(l.id)}" data-estado="${esc(l.estado)}">
     <div class="lc-topo"><b class="nota ${n ? classeNota(n) : "nd"}${marca}">${n ? esc(textoNota(n)) : "—"}${n?.estado === ESTADO_NOTA.OK ? "<small>/5</small>" : ""}</b>
-      <span class="lc-nome">${esc(l.nome)}<small>${esc(textoEstado(l))}${vista === "dia" && n?.estado === ESTADO_NOTA.OK && l.periodo ? ` · ${esc(l.periodo)}${passados.includes(l.periodo) ? " (já passou)" : ""}` : ""}</small></span></div>
+      <span class="lc-nome"><a href="./pesqueiro.html?id=${encodeURIComponent(l.id)}${contexto.indice > 0 ? `&dia=${contexto.indice}` : ""}">${esc(l.nome)}</a><small>${esc(textoEstado(l))}${vista === "dia" && n?.estado === ESTADO_NOTA.OK && l.periodo ? ` · ${esc(l.periodo)}${passados.includes(l.periodo) ? " (já passou)" : ""}` : ""}</small></span></div>
     <ol class="periodos">${periodos}</ol>
     ${l.porque.length ? `<p class="porque">${esc(l.porque.join(" · "))}</p>` : ""}
     ${n?.observacao ? `<p class="obs">${esc(n.observacao)}</p>` : ""}

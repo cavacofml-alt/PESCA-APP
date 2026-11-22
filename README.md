@@ -1,6 +1,6 @@
 # Surfcasting Algarve
 
-App pessoal (PWA, para Android) com as condições de surfcasting para dourada e robalo em oito pesqueiros, da Ria Formosa (Faro) à Falésia. Sem build e sem dependências de runtime. O ecrã inicial (`index.html`) abre com «Onde e quando» (os melhores pesqueiros e períodos do dia escolhido, a partir das notas) e mostra um cartão por pesqueiro com as notas por período; `comparador.html` põe os oito pesqueiros lado a lado (ver «Comparador»); `mapa.html` mostra os pesqueiros e o fundo do mar; `fontes.html` diz de onde vem cada dado, de que tipo é e com que licença (e os créditos das fotografias); `diagnostico.html`, aberto a partir das «Fontes», mostra o estado técnico de cada pedido. Todos os ecrãs têm a mesma barra de navegação (Início, Comparar, Mapa, Fontes).
+App pessoal (PWA, para Android) com as condições de surfcasting para dourada e robalo em oito pesqueiros, da Ria Formosa (Faro) à Falésia. Sem build e sem dependências de runtime. O ecrã inicial (`index.html`) abre com «Onde e quando» (os melhores pesqueiros e períodos do dia escolhido, a partir das notas) e mostra um cartão por pesqueiro com as notas por período; `comparador.html` põe os oito pesqueiros lado a lado (ver «Comparador»); `pesqueiro.html?id=<id>` mostra tudo sobre um pesqueiro (ver «Página do pesqueiro»); `mapa.html` mostra os pesqueiros e o fundo do mar; `fontes.html` diz de onde vem cada dado, de que tipo é e com que licença (e os créditos das fotografias); `diagnostico.html`, aberto a partir das «Fontes», mostra o estado técnico de cada pedido. Todos os ecrãs têm a mesma barra de navegação (Início, Comparar, Mapa, Fontes).
 
 ## Executar localmente
 
@@ -30,6 +30,20 @@ O site está no Cloudflare Workers, como site estático (sem código no servidor
 - Hoje, os períodos que já acabaram ficam a cinzento, e a nota do dia diz «(já passou)» quando o seu período já acabou.
 - O início liga ao comparador no dia escolhido («Comparar os 8 pesqueiros ›»).
 
+## Página do pesqueiro
+
+`pesqueiro.html?id=<id>[&dia=<0–6>]` (`js/pesqueiro.js`, `js/ui/pesqueiro.js`) é gerada a partir do `config.json`: um pesqueiro novo em `pesqueiros` (com os seus pontos em `locais`) tem página sem mudar código. Mostra:
+
+- nome, fotografia, tipo e espécies;
+- os pontos de dados (vento, ondulação, água), com as coordenadas e a origem de cada um; a ligação ao mapa (`mapa.html?pesqueiro=<id>` centra-se nele e abre o balão);
+- os dias com as notas do pesqueiro;
+- as notas por espécie e período, com incompletude, limites e motivos, e o alinhamento;
+- o «hora a hora» completo, com as marés da tabela;
+- os factos do dia (potência, limo, água, fundo típico nas praias), as parcelas, as fontes com a hora de leitura e os avisos;
+- as câmaras e as estações de vento.
+
+Reutiliza os componentes do ecrã inicial e do «hora a hora» (não há outra cópia do motor nem das regras). Chega-se a ela pelos cartões do início («Página do pesqueiro ›»), pelos nomes no comparador e pelos balões do mapa.
+
 ## Instalar no telemóvel (Android)
 
 Abrir o endereço no Chrome → menu ⋮ → **Instalar app** (ou «Adicionar ao ecrã principal»). A app abre em ecrã inteiro.
@@ -38,9 +52,9 @@ Abrir o endereço no Chrome → menu ⋮ → **Instalar app** (ou «Adicionar ao
 
 - Na instalação, o service worker guarda só a shell (HTML, CSS, JS, bibliotecas, fotografias). A `config.json`, as tabelas de marés e os fundos do mar só ficam guardados quando a app os pede com o service worker já a controlar a página, o que normalmente só acontece a partir da segunda abertura com rede; e só ficam os que a app já pediu (por exemplo, a tabela de marés de um ano que a janela de 7 dias ainda não tocou não está guardada). Os mosaicos do mapa (OpenStreetMap, DGT) não ficam guardados.
 - Por isso, **depois de uma única visita com rede a app pode não abrir sem rede**: o início, o comparador e as Fontes mostram «Erro: Failed to fetch», porque falta a `config.json` (o mapa abre), mesmo que a leitura dessa visita já tenha ficado guardada em IndexedDB. Depois de uma segunda visita com rede, o início e o comparador abrem com a previsão arquivada, e as Fontes e o mapa abrem.
-- **Os endereços com parâmetros só abrem sem rede se esse endereço exacto já tiver sido aberto com rede:** a ligação «Comparar os 8 pesqueiros ›» do início (`comparador.html?dia=…`) falha sem rede, e a «Comparar» da barra (sem parâmetros) abre (verificado no Chromium a 22/11/2026).
+- **Os endereços com parâmetros só abrem sem rede se esse endereço exacto já tiver sido aberto com rede:** a ligação «Comparar os 8 pesqueiros ›» do início (`comparador.html?dia=…`) falha sem rede, e a «Comparar» da barra (sem parâmetros) abre. O mesmo nas páginas dos pesqueiros (`pesqueiro.html?id=…`), a que só se chega por endereços com parâmetros: sem rede, só abre a de um pesqueiro que já tenha sido aberta com rede com esse mesmo endereço (com a previsão arquivada); as outras falham, tal como o mapa centrado num pesqueiro (`mapa.html?pesqueiro=…`) (verificado no Chromium a 22/11/2026).
 - Cada leitura com rede (previsões do Open-Meteo de todos os pontos e boia de Faro) fica guardada no aparelho, em IndexedDB (ver «Armazenamento local»).
-- Quando nenhum ponto do Open-Meteo responde (sem rede ou fonte em baixo), o início e o comparador mostram a **última leitura guardada**, com o aviso «Previsão arquivada — não é a previsão actual», a data, a hora e a idade da leitura. As notas são as dessa leitura; os dias e os períodos já passados contam a partir da hora real. Nunca aparece como previsão actual.
+- Quando nenhum ponto do Open-Meteo responde (sem rede ou fonte em baixo), o início, o comparador e a página do pesqueiro mostram a **última leitura guardada**, com o aviso «Previsão arquivada — não é a previsão actual», a data, a hora e a idade da leitura. As notas são as dessa leitura; os dias e os períodos já passados contam a partir da hora real. Nunca aparece como previsão actual.
 - Sem leitura guardada, ou com uma mais antiga do que 7 dias: «Previsão indisponível». As notas que dependem da previsão ficam sem nota; a da Ria, que vem das marés (ficheiro local), fica incompleta.
 - Quando a rede volta, a página actualiza sozinha.
 - Ficam ainda no aparelho, em `localStorage`, a espécie escolhida e a camada escolhida no mapa.
@@ -114,7 +128,7 @@ O GitHub Actions corre-os em cada push e PR (workflow «Testes no browser») e g
 
 ## Limitações desta entrega
 
-- Ainda não existem: páginas por pesqueiro, diário de saídas (a base já tem as lojas), estatísticas e o ecrã do histórico de previsões (as leituras já ficam guardadas). Estão no plano de evolução, um PR cada.
+- Ainda não existem: diário de saídas (a base já tem as lojas), estatísticas e o ecrã do histórico de previsões (as leituras já ficam guardadas). Estão no plano de evolução, um PR cada.
 - Os avisos do IPMA não são consultados: a regra de segurança foi retirada por decisão do utilizador (13/10/2026).
 - O `sw.js` serve a shell a partir da cache; `config.json` e marés (`*.json`) vão sempre primeiro à rede e só usam a cópia em cache sem ligação; essa cópia só existe depois de terem sido pedidos com o service worker a controlar a página (ver «Sem rede»). Ao alterar um ficheiro da shell, correr `node ferramentas/versao-sw.mjs` (actualiza a impressão e sobe a versão da cache em `sw.js`); um teste falha se for esquecido.
 - Quando há uma versão nova publicada, a página aberta recarrega sozinha uma vez, assim que o service worker novo toma conta dela (`js/registo-sw.js`). Sem isso ficava o código antigo com a `config.json` nova, que vem sempre da rede. Na primeira instalação não recarrega.

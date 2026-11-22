@@ -67,7 +67,9 @@ function gruposDePeriodo(horas) {
 }
 
 // contexto: o mesmo do ecrã inicial (+ lua). id: pesqueiro.
-export function renderHorario(contexto, id) {
+// Conteúdo do «hora a hora» (Sol, Lua e marés; tabela por hora; nota): o painel do início e a
+// página do pesqueiro (PR 4 do plano de evolução) usam o mesmo.
+export function conteudoHorario(contexto, id) {
   const { analise, config, indice = 0 } = contexto;
   const d = analise.dias[indice];
   const p = d.pesqueiros[id];
@@ -127,6 +129,16 @@ export function renderHorario(contexto, id) {
   linha("Pressão (hPa)", horas.map(h => `<td>${num(h.pressao, 0)}</td>`).join(""));
   linha("Chuva (mm)", horas.map(h => `<td>${num(h.chuva, 1)}</td>`).join(""));
 
+  return `<div class="chips">${chips}</div>
+    <div class="tabela-horas"><table><tbody>${linhas.join("")}</tbody></table></div>
+    <p class="nota-mare">Marés: as horas e alturas de preia-mar e baixa-mar são da tabela oficial do Instituto Hidrográfico; a curva entre elas é só ilustrativa. Notas por período (provisórias). Vento e rajada em nós; direcções «de onde vem». «—» = não obtido.</p>`;
+}
+
+export function renderHorario(contexto, id) {
+  const { analise, config, indice = 0 } = contexto;
+  const d = analise.dias[indice];
+  const pq = config.pesqueiros[id];
+  if (!d?.pesqueiros[id] || !pq) return "";
   const n = analise.dias.length;
   return `<div class="painel-topo">
       <button type="button" class="nav-dia" data-dia="${indice - 1}" ${indice === 0 ? "disabled" : ""} aria-label="Dia anterior">‹</button>
@@ -134,8 +146,6 @@ export function renderHorario(contexto, id) {
       <button type="button" class="nav-dia" data-dia="${indice + 1}" ${indice >= n - 1 ? "disabled" : ""} aria-label="Dia seguinte">›</button>
       <button type="button" class="fechar" aria-label="Fechar">×</button>
     </div>
-    <div class="chips">${chips}</div>
-    <div class="tabela-horas"><table><tbody>${linhas.join("")}</tbody></table></div>
-    <p class="nota-mare">Marés: as horas e alturas de preia-mar e baixa-mar são da tabela oficial do Instituto Hidrográfico; a curva entre elas é só ilustrativa. Notas por período (provisórias). Vento e rajada em nós; direcções «de onde vem». «—» = não obtido.</p>
+    ${conteudoHorario(contexto, id)}
     <details class="detalhes"><summary>Fontes</summary>${fontesDoCartao(pq, contexto)}</details>`;
 }
