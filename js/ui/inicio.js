@@ -11,6 +11,7 @@ import { DISTANCIAS_FUNDO } from "../fontes/fundo-tipico.js";
 import { intervaloLat } from "../fundos.js";
 import { utcToLisbon, lisbonDate } from "../normalizacao.js";
 import { PERIODOS_PADRAO } from "../regras/periodos.js";
+import { porque, estadoDaNota } from "./explicacao.js";
 
 export { ESPECIES };
 
@@ -121,6 +122,88 @@ export function janelasDoDia(d, contexto, especie, { maximo = 3 } = {}) {
   return { janelas, maisComMesmaNota: mais, hoje };
 }
 
+// Períodos do dia escolhido que já acabaram à hora real (só hoje; hora de Lisboa).
+export function periodosPassados(dia, contexto) {
+  const lido = agoraDe(contexto) ? new Date(Date.parse(agoraDe(contexto))) : null;
+  if (!lido || Number.isNaN(lido.getTime()) || dia !== lisbonDate(lido)) return [];
+  const agora = Number(utcToLisbon(lido).slice(11, 13));
+  return Object.entries(horasDosPeriodos(contexto.config)).filter(([, [, fim]]) => fim <= agora).map(([nome]) => nome);
+}
+
+// Melhor oportunidade do dia (PR 9 da evolução, 21/11/2026): a primeira janela de «Onde e quando» (as
+// mesmas notas do motor e os mesmos critérios de desempate) e o que impede chamá-la «a melhor»:
+// empate na nota, nota incompleta, ou outras combinações pesqueiro × período ainda por vir que a
+// podiam igualar (incompletas com intervalo até lá, sem nota, por confirmar). Função pura.
+export function destaqueDoDia(d, contexto, especie) {
+  const { janelas, hoje } = janelasDoDia(d, contexto, especie, { maximo: Infinity });
+  const passados = periodosPassados(d.dia, contexto);
+  const semNota = [];
+  for (const [id, p] of Object.entries(d.pesqueiros)) {
+    for (const per of p.periodos ?? []) {
+      const n = per.notas?.[especie];
+      if (!n || n.estado === "ok" || passados.includes(per.nome)) continue;
+      semNota.push({ id, nome: contexto.config.pesqueiros[id]?.nomeCurto ?? id, periodo: per.nome, n });
+    }
+  }
+  const janela = janelas[0] ?? null;
+  if (!janela) return { janela: null, empate: [], podemIgualar: semNota, semNota, definitivo: false, hoje };
+  const empate = janelas.slice(1).filter(j => j.n.nota === janela.n.nota);
+  const podemIgualar = [...janelas.filter(j => j.n.nota < janela.n.nota && !j.n.completa && (j.n.intervalo?.max ?? Infinity) >= janela.n.nota), ...semNota];
+  return { janela, empate, podemIgualar, semNota, hoje, definitivo: !empate.length && janela.n.completa && !podemIgualar.length };
+}
+
+const listaNomes = (xs, max = 3) => (xs.length <= max ? xs.join(", ") : `${xs.slice(0, max).join(", ")} e mais ${xs.length - max}`);
+
+function destaque(analise, indice, contexto, especie) {
+  const d = analise.dias[indice];
+  const r = destaqueDoDia(d, contexto, especie);
+  const rotulo = `<p class="rot">Melhor oportunidade · ${esc(rotuloDia(d.dia, indice))} · ${esc(NOME_ESPECIE[especie])}</p>`;
+  const comparar = `<a class="btn sec" href="./comparador.html?dia=${indice}">Comparar pesqueiros ›</a>`;
+  if (!r.janela) {
+    return `<section class="destaque vazio" aria-label="Melhor oportunidade" data-estado="sem-notas">${rotulo}
+      <p class="destaque-msg">Sem notas para ${r.hoje ? "o resto de hoje" : "este dia"}${r.semNota.length ? ` (${r.semNota.length} período(s) sem nota ou por confirmar)` : ""}: não há uma melhor oportunidade a indicar.</p>
+      <div class="accoes">${comparar}</div></section>`;
+  }
+  const j = r.janela;
+  const p = d.pesqueiros[j.id];
+  const per = p.periodos.find(x => x.nome === j.periodo);
+  const inc = j.n.completa ? "" : ` inc`;
+  let estado;
+  let tipo;
+  if (r.empate.length) {
+    tipo = "empate";
+    estado = `Empate com ${j.n.nota}: ${listaNomes([j, ...r.empate].map(x => `${x.nome} (${x.periodo})`))}. Não há uma única melhor; a primeira é a do desempate de «Onde e quando».`;
+  } else if (!j.n.completa) {
+    tipo = "incompleta";
+    estado = `Nota incompleta${j.n.intervalo && j.n.intervalo.min !== j.n.intervalo.max ? ` (pode ser ${j.n.intervalo.min} a ${j.n.intervalo.max})` : ""}: não é definitiva.`;
+  } else if (r.podemIgualar.length) {
+    tipo = "parcial";
+    estado = `Comparação parcial: ${r.podemIgualar.length} período(s) incompletos, sem nota ou por confirmar podiam igualar esta nota.`;
+  } else {
+    tipo = "definitiva";
+    estado = "A nota mais alta do dia, completa e sem empate.";
+  }
+  const ali = j.alinhamentos.length ? `<p class="destaque-ali"><span class="ic ic-sol" aria-hidden="true"></span>${esc(j.alinhamentos.map(textoAlinhamento).join("; "))}</p>` : "";
+  const chips = [];
+  const pot = per?.potencia;
+  if (pot) chips.push(["onda", `P máx. ${pot.status === "obtido" ? `${num(pot.valor, 2)} kW/m` : "não obtida"}`]);
+  if (per?.limo && contexto.config.pesqueiros[j.id]?.tipo !== "ria") chips.push(["limo", `Limo: ${per.limo.limo === true ? "sim" : per.limo.limo === false ? "não" : "por verificar"}`]);
+  chips.push(["mare", d.amplitude.amplitude === null ? "Maré não obtida" : `Maré ${d.amplitude.classe} ${num(d.amplitude.amplitude, 1)} m`]);
+  const linhas = porque(j.n).slice(0, 3);
+  return `<section class="destaque" aria-label="Melhor oportunidade" data-estado="${tipo}">${rotulo}
+    <div class="destaque-corpo">
+      <b class="nota-grande ${classeNota(j.n)}${inc}" aria-label="nota ${j.n.nota} de 5${j.n.completa ? "" : ", incompleta"}">${j.n.nota}<small>/5</small></b>
+      <div class="destaque-onde"><h2><a href="./pesqueiro.html?id=${encodeURIComponent(j.id)}${indice > 0 ? `&dia=${indice}` : ""}">${esc(j.nome)}</a></h2>
+        <p class="destaque-janela"><span class="ic ic-relogio" aria-hidden="true"></span>${esc(j.periodo)}${j.inicio === null ? "" : ` · ${hh(j.inicio)}–${hh(j.fim)} h`}</p></div>
+    </div>
+    ${ali}
+    <p class="destaque-estado e-${tipo}">${esc(estado)}</p>
+    ${linhas.length ? `<ul class="porque-lista">${linhas.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+    <ul class="chips-condicoes">${chips.map(([ic, t]) => `<li><span class="ic ic-${ic}" aria-hidden="true"></span>${esc(t)}</li>`).join("")}</ul>
+    <div class="accoes"><a class="btn" href="./pesqueiro.html?id=${encodeURIComponent(j.id)}${indice > 0 ? `&dia=${indice}` : ""}">Ver pesqueiro ›</a>${comparar}</div>
+  </section>`;
+}
+
 function linhaJanela(j) {
   const inc = j.n.completa ? "" : ` · incompleta${j.n.intervalo && j.n.intervalo.min !== j.n.intervalo.max ? ` (pode ser ${j.n.intervalo.min} a ${j.n.intervalo.max})` : ""}`;
   const ali = j.alinhamentos.length ? ` · ${j.alinhamentos.map(textoAlinhamento).join("; ")}` : "";
@@ -229,7 +312,8 @@ export function faixaDias(analise, indice, especie) {
 }
 
 // Linha de uma espécie: nota do dia, notas por período e incompletude.
-export function linhaEspecie(esp, n, periodos) {
+// compacto (cartões do início, PR 9): sem a linha do nome e da nota, que já estão nas notas do cartão.
+export function linhaEspecie(esp, n, periodos, { compacto = false } = {}) {
   if (!n) return "";
   const avisos = [];
   if (n.estado === "ok" && !n.completa) {
@@ -243,11 +327,11 @@ export function linhaEspecie(esp, n, periodos) {
   if (n.estado === "por confirmar") avisos.push(`<p class="motivo pc-txt">Por confirmar: ${esc(n.motivo ?? "")}</p>`);
   if (n.limite) avisos.push(`<p class="limite">Limite: ${esc(n.limite.descricao)} → ${n.limite.valor}/5</p>`);
   if (n.observacao) avisos.push(`<p class="obs">${esc(n.observacao)}</p>`);
-  return `<div class="especie">
-    <div class="esp-topo"><span class="esp-nome">${esc(NOME_ESPECIE[esp] ?? esp)}</span>
+  return `<div class="especie${compacto ? " compacta" : ""}">
+    ${compacto ? `<p class="rot">${esc(NOME_ESPECIE[esp] ?? esp)} por período</p>` : `<div class="esp-topo"><span class="esp-nome">${esc(NOME_ESPECIE[esp] ?? esp)}</span>
       <span class="nota ${classeNota(n)}">${esc(textoNota(n))}${n.estado === "ok" ? "<small>/5</small>" : ""}</span>
-      ${n.estado === "ok" && n.periodo ? `<span class="per">${esc(n.periodo)}</span>` : ""}</div>
-    <ol class="periodos">${periodos.map(p => {
+      ${n.estado === "ok" && n.periodo ? `<span class="per">${esc(n.periodo)}</span>` : ""}</div>`}
+    <ol class="periodos" aria-label="${esc(NOME_ESPECIE[esp] ?? esp)}: notas por período">${periodos.map(p => {
       const pn = p.notas[esp];
       return `<li class="${classeNota(pn)}" title="${esc(`${p.nome}: ${pn?.estado === "ok" ? `${pn.nota}/5` : pn?.estado ?? "—"}${pn?.motivo ? ` — ${pn.motivo}` : ""}`)}"><span>${esc(PERIODO_CURTO[p.nome] ?? p.nome)}</span><b>${esc(textoNota(pn))}</b></li>`;
     }).join("")}</ol>
@@ -352,7 +436,7 @@ export function fontesDoCartao(pq, contexto, fundo = null) {
   return `<h4>Fontes</h4><ul class="fontes">${linhas.map(l => `<li>${esc(l)}</li>`).join("")}</ul>`;
 }
 
-export function detalhes(p, pq, d, contexto, fundo, { aberto = false } = {}) {
+export function detalhes(p, pq, d, contexto, fundo, { aberto = false, antes = "" } = {}) {
   const s = contexto.sol ? contexto.sol(d.dia, pq.terra) : null;
   const dados = [];
   if (p.limo && pq.tipo !== "ria") dados.push(["Limo", `${simNao(p.limo.limo)}${p.limo.motivo ? ` — ${p.limo.motivo}` : ""}${p.limo.horasComLimo?.length ? ` (${p.limo.horasComLimo.map(hora).join(", ")})` : ""}`]);
@@ -366,7 +450,7 @@ export function detalhes(p, pq, d, contexto, fundo, { aberto = false } = {}) {
   dados.push(["Sol", s ? `nasce ${hora(s.nascer)} · põe-se ${hora(s.por)}` : "não calculado"]);
   if (p.potencia?.avisos?.length) dados.push(["Potência", p.potencia.avisos.join("; ")]);
   if (fundo?.longo) dados.push(["Fundo típico", fundo.longo]);
-  return `<details class="detalhes"${aberto ? " open" : ""}><summary>Dados, parcelas e fontes</summary>
+  return `<details class="detalhes"${aberto ? " open" : ""}><summary>Dados, parcelas e fontes</summary>${antes}
     <dl class="factos">${dados.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
     ${Object.entries(p.notas).map(([esp, n]) => parcelas(esp, n)).join("")}
     ${fontesDoCartao(pq, contexto, fundo)}
@@ -405,6 +489,20 @@ export function semEspecie(esp, pq) {
   return `<div class="especie sem"><div class="esp-topo"><span class="esp-nome">${esc(NOME_ESPECIE[esp])}</span><span class="nota nd">—</span></div><p class="motivo">${esc(texto)}</p></div>`;
 }
 
+export const TIPO_LOCAL = { praia: "praia (mar de fora)", molhe: "molhe", ria: "Ria (interior)" };
+
+// As notas do dia das espécies do pesqueiro, lado a lado, com o estado e o melhor período (PR 9).
+export function notasDoCartao(p, especieEscolhida) {
+  return `<div class="notas-cartao">${Object.entries(p.notas).map(([esp, n]) => {
+    const estado = estadoDaNota(n);
+    const quando = n?.estado === "ok" && n.periodo ? ` · ${n.periodo}` : "";
+    return `<div class="nota-esp${esp === especieEscolhida ? " sel" : ""}" data-especie="${esc(esp)}">
+      <span class="esp">${esc(NOME_ESPECIE[esp] ?? esp)}</span>
+      <b class="mini ${classeNota(n)}${n?.estado === "ok" && !n.completa ? " inc" : ""}">${esc(textoNota(n))}</b>
+      <span class="estado-nota e-${esc(estado.replace(/\s+/g, "-"))}">${esc(estado)}${esc(quando)}</span></div>`;
+  }).join("")}</div>`;
+}
+
 const chaveAlinhamentos = lista => lista.map(a => `${a.reponto}|${a.evento}`).join(";");
 
 function cartao(id, p, d, contexto) {
@@ -419,19 +517,22 @@ function cartao(id, p, d, contexto) {
   const aliCartao = alinhamentosDoDia({ pesqueiros: { [id]: p } });
   const ali = aliCartao.length && chaveAlinhamentos(aliCartao) !== chaveAlinhamentos(alinhamentosDoDia(d)) ? aliCartao : [];
   const fundo = fundoDoCartao(id, d, contexto);
+  const url = `./pesqueiro.html?id=${encodeURIComponent(id)}${contexto.indice > 0 ? `&dia=${contexto.indice}` : ""}`;
+  const factores = nEsp ? porque(nEsp).slice(0, 3) : [];
   return `<article class="cartao" id="pq-${esc(id)}">
     <div class="foto"${foto ? ` style="background-image:url('${esc(foto.ficheiro)}')"` : ""}>
-      <div class="foto-texto"><h2>${esc(pq.nomeCurto ?? pq.nome)}</h2><p>${esc(especies.map(e => NOME_ESPECIE[e]).join(" e "))}</p></div>
+      <div class="foto-texto"><h2>${esc(pq.nomeCurto ?? pq.nome)}</h2><p>${esc(TIPO_LOCAL[pq.tipo] ?? pq.tipo)} · ${esc(especies.map(e => NOME_ESPECIE[e]).join(" e "))}</p></div>
       <div class="selo ${melhor ? `n${melhor.nota}` : "nd"}${melhor && !melhor.completa ? " inc" : ""}">${melhor ? melhor.nota : "—"}</div>
     </div>
     <div class="corpo">
+      ${notasDoCartao(p, esp)}
       ${ali.length ? `<div class="alinhamento"><b>Alinhamento</b> ${ali.map(a => esc(textoAlinhamento(a))).join("; ")}</div>` : ""}
-      ${nEsp ? linhaEspecie(esp, nEsp, p.periodos) : semEspecie(esp, pq)}
-      <div class="accoes-cartao"><button type="button" class="btn-horas" data-pq="${esc(id)}">Hora a hora ›</button>
-        <a class="ligacao-pq" href="./pesqueiro.html?id=${encodeURIComponent(id)}${contexto.indice > 0 ? `&dia=${contexto.indice}` : ""}">Página do pesqueiro ›</a></div>
-      ${factos(p, pq, fundo)}
+      ${nEsp ? linhaEspecie(esp, nEsp, p.periodos, { compacto: true }) : semEspecie(esp, pq)}
+      ${factores.length ? `<ul class="factores-cartao" aria-label="O que explica a nota">${factores.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+      <div class="accoes-cartao"><a class="ligacao-pq btn" href="${url}">Página do pesqueiro ›</a>
+        <button type="button" class="btn-horas" data-pq="${esc(id)}">Hora a hora ›</button></div>
       ${avisosDoCartao(p, pq, contexto)}
-      ${detalhes(p, pq, d, contexto, fundo)}
+      ${detalhes(p, pq, d, contexto, fundo, { antes: factos(p, pq, fundo) })}
       <p class="rodape">${ligacoes("Vento agora (Windguru)", pq.estacoes)}${ligacoes("Câmaras", pq.camaras)}</p>
     </div>
   </article>`;
@@ -461,6 +562,7 @@ export function renderInicio(contexto) {
     ${avisoOrigem(contexto)}
     ${escolhaEspecie(especie)}
     ${faixaDias(analise, indice, especie)}
+    ${destaque(analise, indice, contexto, especie)}
     ${ondeQuando(analise, indice, contexto, especie)}
     ${marAgora(contexto)}
     <section class="cartoes">${ordemDosCartoes(d, especie).map(([id, p]) => cartao(id, p, d, contexto)).join("")}</section>

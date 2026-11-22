@@ -51,7 +51,7 @@ test("página do pesqueiro: chega-se do início e do comparador, no dia escolhid
     await pagina.click("#cmp-falesia .lc-nome a");
     await pagina.waitForURL(/pesqueiro\.html\?id=falesia&dia=1$/);
     await pagina.waitForSelector("h1");
-    await pagina.click("text=Ver no mapa");
+    await pagina.getByRole("link", { name: /^Ver no mapa/ }).click(); // a legenda do mini-mapa também diz «Ver no mapa»: é a ligação que conta
     await pagina.waitForURL(/mapa\.html\?pesqueiro=falesia$/);
     await pagina.waitForSelector(".leaflet-popup-content");
     assert.match(await pagina.textContent(".leaflet-popup-content"), /Falésia/);

@@ -1,7 +1,7 @@
 // Ecrã inicial: lê as fontes, corre o motor de regras e desenha os cartões.
 import { lerEAnalisar, especieGuardada, guardarEspecie } from "./carregar.js";
 import { renderInicio } from "./ui/inicio.js";
-import { renderHorario } from "./ui/horario.js";
+import { renderHorario, irParaAgora } from "./ui/horario.js";
 import { esc } from "./ui/formato.js";
 import { registarServiceWorker } from "./registo-sw.js";
 
@@ -21,6 +21,7 @@ function abrirHorario(id) {
     });
   }
   if (!painel.open) painel.showModal();
+  irParaAgora(painel);
 }
 
 function desenhar() {

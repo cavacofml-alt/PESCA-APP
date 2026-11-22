@@ -2,9 +2,32 @@
 // no topo; uma coluna por hora do dia civil de Lisboa (23, 24 ou 25), com deslocamento lateral.
 // Só apresenta o que o motor calculou (analise → pesqueiros[id].horas e .periodos). Função pura.
 import { esc, hora, num, rotuloDia, classeNota, textoNota, NOME_ESPECIE, rumo, nomeFaseLua, NOME_MARE } from "./formato.js";
-import { fontesDoCartao } from "./inicio.js";
+import { fontesDoCartao, horasDosPeriodos, periodosPassados, agoraDe } from "./inicio.js";
 
 const LARGURA = 52; // px por coluna (igual ao CSS .tabela-horas td)
+
+// Melhor e pior período de uma espécie no dia (PR 9 da evolução, 21/11/2026): só as notas por período
+// que o motor calculou, sem outra classificação. Hoje, os períodos que já acabaram não contam.
+// «definitiva» só quando o melhor período é único, completo e nenhum outro (incompleto com intervalo
+// até lá, sem nota ou por confirmar) o podia igualar. Função pura.
+export function janelasDoPesqueiro(p, d, contexto, esp) {
+  const horas = horasDosPeriodos(contexto.config);
+  const passados = periodosPassados(d.dia, contexto);
+  const periodos = (p.periodos ?? []).map(per => ({ nome: per.nome, n: per.notas?.[esp] ?? null, horas: horas[per.nome] ?? null,
+    passou: passados.includes(per.nome), alinhamentos: per.alinhamento?.alinhado === true ? per.alinhamento.alinhamentos ?? [] : [] }));
+  const vivos = periodos.filter(x => !x.passou && x.n);
+  const ok = vivos.filter(x => x.n.estado === "ok");
+  const semNota = vivos.filter(x => x.n.estado !== "ok");
+  if (!ok.length) return { melhor: [], pior: [], podemIgualar: semNota, semNota, passados, definitiva: false };
+  const max = Math.max(...ok.map(x => x.n.nota));
+  const min = Math.min(...ok.map(x => x.n.nota));
+  const melhor = ok.filter(x => x.n.nota === max);
+  const pior = max === min ? [] : ok.filter(x => x.n.nota === min);
+  const podemIgualar = [...ok.filter(x => x.n.nota < max && !x.n.completa && (x.n.intervalo?.max ?? Infinity) >= max), ...semNota];
+  return { melhor, pior, podemIgualar, semNota, passados, max, min,
+    definitiva: melhor.length === 1 && melhor[0].n.completa === true && !podemIgualar.length };
+}
+
 
 // Curva da maré entre preia-mares e baixa-mares da tabela do IH. Entre dois eventos desenha-se
 // uma meia onda de cosseno: é só a FORMA da curva (ilustrativa); os únicos valores são as horas
@@ -91,47 +114,97 @@ export function conteudoHorario(contexto, id) {
     }) : []
   ].join("");
 
+  // PR 9 (21/11/2026): início de cada período marcado em todas as linhas; coluna da hora actual (hoje);
+  // valores em falta com a classe «falta» (nunca zero); melhor e pior período de cada espécie pelas
+  // notas do motor (janelasDoPesqueiro); previsão arquivada avisada no topo da tabela.
+  const iniPer = new Set(horas.map((h, i) => (i > 0 && h.periodo !== horas[i - 1].periodo ? i : -1)).filter(i => i > 0));
+  const agora = Date.parse(agoraDe(contexto) ?? "");
+  const iAgora = Number.isFinite(agora) ? horas.findIndex((h, i) => h.instante <= agora && (i + 1 < horas.length ? horas[i + 1].instante : h.instante + 3600000) > agora) : -1;
+  const passados = periodosPassados(d.dia, contexto);
+  const cls = (i, extra = "") => {
+    const c = [extra, iniPer.has(i) ? "ini-per" : "", i === iAgora ? "agora" : "", passados.includes(horas[i].periodo) ? "passou" : ""].filter(Boolean).join(" ");
+    return c ? ` class="${c}"` : "";
+  };
+  const celula = (i, v, casas, extra = "") => (typeof v === "number" && Number.isFinite(v)
+    ? `<td${cls(i, extra)}>${num(v, casas)}</td>`
+    : `<td${cls(i, `${extra} falta`.trim())} title="não obtido">—</td>`);
+  const texto = (i, t, extra = "", titulo = "") => {
+    const falta = t === "—" || t === null || t === undefined;
+    return `<td${cls(i, `${extra}${falta ? " falta" : ""}`.trim())}${falta ? ' title="não obtido"' : titulo ? ` title="${esc(titulo)}"` : ""}>${falta ? "—" : t}</td>`;
+  };
   const linhas = [];
-  const linha = (rotulo, celulas, classe = "") => linhas.push(`<tr class="${classe}"><th scope="row">${rotulo}</th>${celulas}</tr>`);
-  linha("Hora", horas.map(h => `<td class="h">${hora(h.instante)}</td>`).join(""), "cab");
+  const linha = (rotulo, celulas, classe = "", tipo = "") => linhas.push(`<tr class="${classe}"><th scope="row">${rotulo}${tipo ? ` <small class="tipo-linha">${tipo}</small>` : ""}</th>${celulas}</tr>`);
+  linha("Hora", horas.map((h, i) => `<td${cls(i, "h")}>${hora(h.instante)}${i === iAgora ? '<span class="agora-rot">agora</span>' : ""}</td>`).join(""), "cab");
   for (const esp of Object.keys(p.notas)) {
+    const r = janelasDoPesqueiro(p, d, contexto, esp);
+    const melhor = new Set(r.melhor.map(x => x.nome));
+    const pior = new Set(r.pior.map(x => x.nome));
+    let i0 = 0;
     linha(`Nota ${esc(NOME_ESPECIE[esp].toLowerCase())}`, gruposDePeriodo(horas).map(g => {
       const n = p.periodos.find(x => x.nome === g.periodo)?.notas[esp];
-      return `<td colspan="${g.n}" class="nota-per ${classeNota(n)}" title="${esc(n?.motivo ?? "")}"><b>${esc(textoNota(n))}</b> <span>${esc(g.periodo)}</span></td>`;
-    }).join(""), "notas");
+      const marca = melhor.has(g.periodo) ? "melhor" : pior.has(g.periodo) ? "pior" : "";
+      const inc = n?.estado === "ok" && !n.completa ? " inc" : "";
+      const c = [`nota-per ${classeNota(n)}${inc}`, marca, iniPer.has(i0) ? "ini-per" : "", passados.includes(g.periodo) ? "passou" : ""].filter(Boolean).join(" ");
+      i0 += g.n;
+      const sinal = marca === "melhor" ? '<i class="marca" aria-label="melhor período">★</i>' : marca === "pior" ? '<i class="marca" aria-label="período mais fraco">▽</i>' : "";
+      return `<td colspan="${g.n}" class="${c}" title="${esc(n?.motivo ?? "")}">${sinal}<b>${esc(textoNota(n))}</b> <span>${esc(g.periodo)}</span></td>`;
+    }).join(""), "notas", "calc.");
   }
   const curva = eventos ? curvaMare(horas.map(h => h.instante), eventos) : null;
-  linha("Maré", `<td colspan="${horas.length}" class="mare">${curva ?? "marés não obtidas"}</td>`);
-  linha("Água (°C)", horas.map(h => `<td>${num(h.agua, 1)}</td>`).join(""));
-  linha("Vento (nós)", horas.map(h => `<td class="${classeVento(h.vento?.velocidade ?? null)}">${num(h.vento?.velocidade ?? null, 0)}</td>`).join(""));
-  linha("Rajada (nós)", horas.map(h => `<td class="${classeVento(h.vento?.rajada ?? null)}">${num(h.vento?.rajada ?? null, 0)}</td>`).join(""));
-  linha("Vento de", horas.map(h => `<td>${rumo(h.vento?.direcao)}</td>`).join(""));
+  linha("Maré", `<td colspan="${horas.length}" class="mare${curva ? "" : " falta"}">${curva ?? "marés não obtidas"}</td>`, "", "tabela");
+  linha("Água (°C)", horas.map((h, i) => celula(i, h.agua, 1)).join(""));
+  linha("Vento (nós)", horas.map((h, i) => celula(i, h.vento?.velocidade ?? null, 0, classeVento(h.vento?.velocidade ?? null))).join(""));
+  linha("Rajada (nós)", horas.map((h, i) => celula(i, h.vento?.rajada ?? null, 0, classeVento(h.vento?.rajada ?? null))).join(""));
+  linha("Vento de", horas.map((h, i) => texto(i, rumo(h.vento?.direcao))).join(""));
   if (pq.mar) {
-    linha("Ondulação (m)", horas.map(h => `<td>${num(h.mar?.hs ?? null, 1)}</td>`).join(""));
-    linha("Período (s)", horas.map(h => `<td>${num(h.mar?.periodo ?? null, 1)}</td>`).join(""));
-    linha("Ondulação de", horas.map(h => `<td>${rumo(h.mar?.direcao)}</td>`).join(""));
-    linha("Fundo", horas.map(h => `<td class="comp">${h.mar ? textoComp(h.mar.fundo, h.mar.semAltura, ["swell"]) : "—"}</td>`).join(""));
-    linha("Vaga", horas.map(h => `<td class="comp">${h.mar ? textoComp(h.mar.vaga, h.mar.semAltura, ["wind_wave", "swell"]) : "—"}</td>`).join(""));
-    linha("Potência (kW/m)", horas.map(h => {
+    linha("Ondulação (m)", horas.map((h, i) => celula(i, h.mar?.hs ?? null, 1)).join(""));
+    linha("Período (s)", horas.map((h, i) => celula(i, h.mar?.periodo ?? null, 1)).join(""));
+    linha("Ondulação de", horas.map((h, i) => texto(i, rumo(h.mar?.direcao))).join(""));
+    linha("Fundo", horas.map((h, i) => texto(i, h.mar ? textoComp(h.mar.fundo, h.mar.semAltura, ["swell"]) : "—", "comp")).join(""));
+    linha("Vaga", horas.map((h, i) => texto(i, h.mar ? textoComp(h.mar.vaga, h.mar.semAltura, ["wind_wave", "swell"]) : "—", "comp")).join(""));
+    linha("Potência (kW/m)", horas.map((h, i) => {
       const v = h.mar?.potencia.valor ?? null;
-      return `<td class="${classePotencia(v, cfgMar)}">${num(v, 2)}</td>`;
-    }).join(""));
+      return celula(i, v, 2, classePotencia(v, cfgMar));
+    }).join(""), "", "calc.");
     if (pq.tipo !== "ria") {
-      linha("Limo", horas.map(h => {
+      linha("Limo", horas.map((h, i) => {
         const [t, c] = simNaoInd(h.limo?.limo ?? null);
-        return `<td class="limo-${c}" title="${esc(h.limo?.motivo ?? "")}">${t}</td>`;
-      }).join(""));
+        return `<td${cls(i, `limo-${c}`)} title="${esc(h.limo?.motivo ?? "")}">${t}</td>`;
+      }).join(""), "", "calc.");
     }
     if (pq.tipo === "molhe") {
-      linha("Lado do molhe", horas.map(h => `<td class="lado" title="${esc(h.lado?.motivo ?? "")}">${esc(h.lado?.lado ?? "?")}</td>`).join(""));
+      linha("Lado do molhe", horas.map((h, i) => `<td${cls(i, "lado")} title="${esc(h.lado?.motivo ?? "")}">${esc(h.lado?.lado ?? "?")}</td>`).join(""), "", "calc.");
     }
   }
-  linha("Pressão (hPa)", horas.map(h => `<td>${num(h.pressao, 0)}</td>`).join(""));
-  linha("Chuva (mm)", horas.map(h => `<td>${num(h.chuva, 1)}</td>`).join(""));
+  linha("Pressão (hPa)", horas.map((h, i) => celula(i, h.pressao, 0)).join(""));
+  linha("Chuva (mm)", horas.map((h, i) => celula(i, h.chuva, 1)).join(""));
 
+  const arquivo = contexto.origem?.tipo === "arquivo";
+  const faltam = linhas.join("").includes('title="não obtido"');
+  const legenda = [
+    '<li><i class="sw melhor">★</i> melhor período (nota mais alta)</li>',
+    '<li><i class="sw pior">▽</i> período mais fraco</li>',
+    '<li><i class="sw inc"></i> nota incompleta</li>',
+    `<li><i class="sw falta">—</i> não obtido${faltam ? " (há valores em falta neste dia)" : ""}</li>`,
+    '<li><small class="tipo-linha">calc.</small> calculado pela app a partir das previsões</li>',
+    '<li><small class="tipo-linha">tabela</small> tabela oficial de marés (a curva é ilustrativa)</li>',
+    iAgora >= 0 ? '<li><i class="sw agora"></i> hora actual</li>' : "",
+    arquivo ? '<li><i class="sw arquivo"></i> previsão arquivada</li>' : ""
+  ].join("");
   return `<div class="chips">${chips}</div>
-    <div class="tabela-horas"><table><tbody>${linhas.join("")}</tbody></table></div>
-    <p class="nota-mare">Marés: as horas e alturas de preia-mar e baixa-mar são da tabela oficial do Instituto Hidrográfico; a curva entre elas é só ilustrativa. Notas por período (provisórias). Vento e rajada em nós; direcções «de onde vem». «—» = não obtido.</p>`;
+    ${arquivo ? `<p class="aviso-origem arquivo aviso-horas"><b>Previsão arquivada — não é a previsão actual</b>Os valores desta tabela são da última leitura guardada.</p>` : ""}
+    <div class="tabela-horas${arquivo ? " arquivada" : ""}"><table><tbody>${linhas.join("")}</tbody></table></div>
+    <ul class="legenda-horas" aria-label="Legenda do hora a hora">${legenda}</ul>
+    <p class="nota-mare">Marés: as horas e alturas de preia-mar e baixa-mar são da tabela oficial do Instituto Hidrográfico; a curva entre elas é só ilustrativa. Notas por período (provisórias). Vento e rajada em nós; direcções «de onde vem». «—» = não obtido. Os valores previstos são de modelos com células de vários quilómetros, não medições no pesqueiro.</p>`;
+}
+
+// Única função com DOM deste módulo: abre a tabela na hora actual (hoje), com a hora anterior à vista.
+export function irParaAgora(raiz) {
+  const t = raiz?.querySelector(".tabela-horas");
+  const c = t?.querySelector("tr.cab td.agora");
+  if (!t || !c) return;
+  const th = t.querySelector("th");
+  t.scrollLeft = Math.max(0, c.offsetLeft - (th?.offsetWidth ?? 0) - c.offsetWidth);
 }
 
 export function renderHorario(contexto, id) {
