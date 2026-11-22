@@ -317,3 +317,11 @@ a { color: var(--azul2); }
 .bloco-pq > p { font-size: .9rem; }
 .bloco-pq h3 { margin: .7rem 0 .3rem; font-size: .92rem; color: var(--azul); }
 .bloco-pq h3 small { color: var(--suave); font-weight: normal; font-size: .76rem; }
+
+/* Guia (PR 8) */
+.indice-guia ol { margin: 0 0 .4rem; padding-left: 1.3rem; line-height: 1.9; font-size: .92rem; }
+.tema-guia { scroll-margin-top: .5rem; }
+.tema-guia h3 { margin: .5rem 0 .25rem; }
+.tema-guia .geral p { margin: .35rem 0; font-size: .9rem; line-height: 1.5; }
+.tema-guia .na-app { margin-top: .6rem; padding: .5rem .7rem; border-left: 4px solid var(--azul2); border-radius: .5rem; background: #f4f9fc; }
+.tema-guia .na-app ul { margin: .2rem 0 0; padding-left: 1.1rem; font-size: .86rem; line-height: 1.5; }
