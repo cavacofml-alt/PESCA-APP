@@ -6,7 +6,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { filtrar, resumo, porPesqueiro, porEspecie, porPeriodo, porMes, estatisticas, limitesPeriodo, AMOSTRA_PEQUENA } from "../js/diario/estatisticas.js";
 import { renderEstatisticas } from "../js/ui/estatisticas.js";
-import { validarSaida } from "../js/diario/saidas.js";
+import { validarSaida, listarSaidas } from "../js/diario/saidas.js";
+import { armazemMemoria } from "../js/armazenamento/armazem-memoria.js";
 
 const config = JSON.parse(readFileSync(new URL("../config.json", import.meta.url), "utf8"));
 let k = 0;
@@ -113,4 +114,55 @@ test("ecrã: n em cada valor, amostra pequena, «sem registos» e nenhuma conclu
   const h2 = html_ => html_.split('aria-label="Resumo"><h2>')[1].split("</h2>")[0];
   assert.match(h2(html), /amostra pequena/);
   assert.doesNotMatch(h2(renderEstatisticas({ config, armazem: { ok: true }, stats: estatisticas(muitas, config, { pesqueiro: "ancao" }), filtros: {} })), /amostra pequena/);
+});
+
+// Registos do diário que não passam na validação (revisão do PR #30, 22/11/2026): não entram nas contas e
+// o ecrã diz quantos são, como o diário, também quando não há nenhuma saída válida.
+test("registos inválidos: ficam fora das contas e o ecrã diz quantos são, também sem nenhuma saída válida", async () => {
+  const validas = saidas.slice(0, 3);
+  const estragadas = [
+    { ...S("2026-07-11T06:00:00.000Z", "ancao", [["robalo", 5, 60]]), inicio: "2026-02-30T06:00:00.000Z" },   // 30/02 não existe
+    { ...S("2026-07-11T06:00:00.000Z", "falesia", [["robalo", 4, 50]]), esquema: 99 }                          // esquema desconhecido
+  ];
+  for (const r of estragadas) assert.equal(validarSaida(r).ok, false, r.id);
+  const avisoDe = n => `<p class="falha">${n} registo(s) com formato inválido não entram nas estatísticas.</p>`;
+
+  // Válidas e inválidas juntas: as contas são as das válidas, e o aviso tem a contagem certa.
+  const a = armazemMemoria();
+  await a.escrever({ guardar: { diario: [...validas, ...estragadas] } });
+  const lidas = await listarSaidas(a);
+  assert.deepEqual([lidas.saidas.length, lidas.invalidas], [3, 2]);
+  const stats = estatisticas(lidas.saidas, config);
+  assert.deepEqual(stats, estatisticas(validas, config), "as contas são exactamente as das saídas válidas");
+  assert.deepEqual([stats.total, stats.resumo.n, stats.resumo.capturas], [3, 3, 4]);
+  const html = renderEstatisticas({ config, armazem: { ok: true }, stats, filtros: {}, invalidas: lidas.invalidas });
+  assert.ok(html.includes(avisoDe(2)));
+  assert.match(html, /n = 3 saída\(s\)/);
+  assert.match(html, /<dt>Capturas<\/dt><dd>4 /);
+  assert.ok(html.includes(`<tr class="sem"><th>${config.pesqueiros.falesia.nomeCurto}</th><td>0</td><td colspan="3">sem registos`), "a saída inválida da Falésia não conta");
+  // Com um filtro sem resultados, o aviso continua.
+  const filtrado = renderEstatisticas({ config, armazem: { ok: true }, stats: estatisticas(lidas.saidas, config, { pesqueiro: "falesia" }), filtros: { pesqueiro: "falesia" }, invalidas: lidas.invalidas });
+  assert.ok(filtrado.includes(avisoDe(2)));
+  assert.match(filtrado, /Nenhuma saída com estes filtros/);
+
+  // Só registos inválidos: o aviso aparece e não há estatísticas nem «Ainda não há saídas».
+  const b = armazemMemoria();
+  await b.escrever({ guardar: { diario: estragadas } });
+  const soInvalidas = await listarSaidas(b);
+  assert.deepEqual([soInvalidas.saidas.length, soInvalidas.invalidas], [0, 2]);
+  const htmlInv = renderEstatisticas({ config, armazem: { ok: true }, stats: estatisticas(soInvalidas.saidas, config), filtros: {}, invalidas: soInvalidas.invalidas });
+  assert.ok(htmlInv.includes(avisoDe(2)));
+  assert.match(htmlInv, /Não há saídas válidas no diário: sem registos válidos, não há estatísticas\./);
+  assert.doesNotMatch(htmlInv, /Ainda não há saídas no diário|aria-label="Resumo"|tabela-stats|n = \d|id="filtros"/);
+
+  // Nenhum registo, válido ou inválido: igual ao que era (sem aviso).
+  const c = armazemMemoria();
+  const nada = await listarSaidas(c);
+  assert.deepEqual([nada.saidas.length, nada.invalidas], [0, 0]);
+  const htmlVazio = renderEstatisticas({ config, armazem: { ok: true }, stats: estatisticas(nada.saidas, config), filtros: {}, invalidas: nada.invalidas });
+  assert.equal(htmlVazio, renderEstatisticas({ config, armazem: { ok: true }, stats: estatisticas([], config), filtros: {} }));
+  assert.match(htmlVazio, /Ainda não há saídas no diário: sem registos, não há estatísticas\./);
+  assert.doesNotMatch(htmlVazio, /formato inválido/);
+  // Sem armazenamento, nada muda.
+  assert.doesNotMatch(renderEstatisticas({ config, armazem: { ok: false, erro: "x" }, invalidas: 3 }), /formato inválido/);
 });

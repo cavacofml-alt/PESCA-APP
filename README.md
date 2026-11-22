@@ -63,6 +63,7 @@ Reutiliza os componentes do ecrã inicial e do «hora a hora» (não há outra c
 - filtros de período (tudo, 30 dias, 90 dias, 12 meses, este ano, intervalo), espécie e pesqueiro;
 - cada valor tem o número de saídas que o sustenta (n); com menos de 10, «amostra pequena» (ou «*» nas tabelas);
 - a falta de registos nunca aparece como zero capturas; não há previsões, «melhores» pesqueiros nem explicações de causa; não muda as notas nem as regras.
+- os registos do diário com formato inválido não entram nas contas, e o ecrã diz quantos são («N registo(s) com formato inválido não entram nas estatísticas»), também quando não há nenhuma saída válida.
 
 ## Instalar no telemóvel (Android)
 
