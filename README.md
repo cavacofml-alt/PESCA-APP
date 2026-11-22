@@ -1,6 +1,6 @@
 # Surfcasting Algarve
 
-App pessoal (PWA, para Android) com as condições de surfcasting para dourada e robalo em oito pesqueiros, da Ria Formosa (Faro) à Falésia. Sem build e sem dependências de runtime. O ecrã inicial (`index.html`) abre com «Onde e quando» (os melhores pesqueiros e períodos do dia escolhido, a partir das notas) e mostra um cartão por pesqueiro com as notas por período; `comparador.html` põe os oito pesqueiros lado a lado (ver «Comparador»); `pesqueiro.html?id=<id>` mostra tudo sobre um pesqueiro (ver «Página do pesqueiro»); `mapa.html` mostra os pesqueiros e o fundo do mar; `fontes.html` diz de onde vem cada dado, de que tipo é e com que licença (e os créditos das fotografias); `diagnostico.html`, aberto a partir das «Fontes», mostra o estado técnico de cada pedido. Todos os ecrãs têm a mesma barra de navegação (Início, Comparar, Mapa, Fontes).
+App pessoal (PWA, para Android) com as condições de surfcasting para dourada e robalo em oito pesqueiros, da Ria Formosa (Faro) à Falésia. Sem build e sem dependências de runtime. O ecrã inicial (`index.html`) abre com «Onde e quando» (os melhores pesqueiros e períodos do dia escolhido, a partir das notas) e mostra um cartão por pesqueiro com as notas por período; `comparador.html` põe os oito pesqueiros lado a lado (ver «Comparador»); `pesqueiro.html?id=<id>` mostra tudo sobre um pesqueiro (ver «Página do pesqueiro»); `diario.html` é o diário de saídas (ver «Diário»); `mapa.html` mostra os pesqueiros e o fundo do mar; `fontes.html` diz de onde vem cada dado, de que tipo é e com que licença (e os créditos das fotografias); `diagnostico.html`, aberto a partir das «Fontes», mostra o estado técnico de cada pedido. Todos os ecrãs têm a mesma barra de navegação (Início, Comparar, Mapa, Diário, Fontes).
 
 ## Executar localmente
 
@@ -44,6 +44,16 @@ O site está no Cloudflare Workers, como site estático (sem código no servidor
 
 Reutiliza os componentes do ecrã inicial e do «hora a hora» (não há outra cópia do motor nem das regras). Chega-se a ela pelos cartões do início («Página do pesqueiro ›»), pelos nomes no comparador e pelos balões do mapa.
 
+## Diário
+
+`diario.html` (`js/diario.js`, `js/diario/`, `js/ui/diario.js`): saídas de pesca guardadas **só neste aparelho** (IndexedDB, lojas `diario` e `condicoes`). Funciona sem rede depois de a app ter sido aberta pelo menos duas vezes com rede (ver «Sem rede»): nesse caso abre, guarda saídas (com as condições da última leitura guardada) e mantém-nas. Depois de uma única visita com rede, não abre sem rede. Sem fotografias.
+
+- **Saída:** pesqueiro, dia, hora de início e de fim (hora de Portugal continental; um fim antes do início acaba no dia seguinte; na hora repetida da mudança de hora fica a primeira e diz-se; a hora que não existe é recusada), espécies (robalo, dourada, outra com o nome), resultado «com capturas» ou «sem capturas» (nunca se confunde uma saída sem capturas com uma sem registo), capturas (espécie, quantidade, tamanho em cm opcional, observações) e observações.
+- **Condições associadas:** ao guardar, a app procura a leitura guardada (ver «Armazenamento local») que cubra as horas da saída — primeiro a mais recente lida antes do início, depois as lidas depois, até 7 dias — e guarda a previsão hora a hora no pesqueiro, as notas do motor nos períodos da saída, as marés do dia (tabela do IH) e a medição da boia mais perto do início. É sempre a previsão dessa leitura, com a hora da leitura, nunca uma medição no pesqueiro; sem leitura que sirva, fica dito porquê. Sem hora de fim, ficam só as condições da hora em que a saída começou (o formulário e o resumo dizem-no). Ao editar, só se recalculam se mudar o pesqueiro ou as horas.
+- **Editar, apagar** (a saída e as suas condições, juntas) e **consultar** (a mais recente primeiro).
+- **Cópia de segurança:** «Exportar cópia» descarrega um JSON versionado (`formato: surfcasting-algarve-diario`, `versao: 1`). «Importar cópia» valida o ficheiro inteiro antes de escrever: um ficheiro inválido não escreve nada; um válido escreve numa só transacção; um registo que já existe igual é ignorado e um diferente com o mesmo id fica como conflito (fica o do aparelho). Lembrete quando há saídas e nunca se fez cópia, ou a última tem mais de 30 dias (`config.persistencia.lembreteCopiaSegurancaDias`).
+- Os registos não mudam as regras, os limiares nem as notas.
+
 ## Instalar no telemóvel (Android)
 
 Abrir o endereço no Chrome → menu ⋮ → **Instalar app** (ou «Adicionar ao ecrã principal»). A app abre em ecrã inteiro.
@@ -51,7 +61,7 @@ Abrir o endereço no Chrome → menu ⋮ → **Instalar app** (ou «Adicionar ao
 **Sem rede (o que está implementado):**
 
 - Na instalação, o service worker guarda só a shell (HTML, CSS, JS, bibliotecas, fotografias). A `config.json`, as tabelas de marés e os fundos do mar só ficam guardados quando a app os pede com o service worker já a controlar a página, o que normalmente só acontece a partir da segunda abertura com rede; e só ficam os que a app já pediu (por exemplo, a tabela de marés de um ano que a janela de 7 dias ainda não tocou não está guardada). Os mosaicos do mapa (OpenStreetMap, DGT) não ficam guardados.
-- Por isso, **depois de uma única visita com rede a app pode não abrir sem rede**: o início, o comparador e as Fontes mostram «Erro: Failed to fetch», porque falta a `config.json` (o mapa abre), mesmo que a leitura dessa visita já tenha ficado guardada em IndexedDB. Depois de uma segunda visita com rede, o início e o comparador abrem com a previsão arquivada, e as Fontes e o mapa abrem.
+- Por isso, **depois de uma única visita com rede a app pode não abrir sem rede**: o início, o comparador, o diário e as Fontes mostram «Erro: Failed to fetch», porque falta a `config.json` (o mapa abre), mesmo que a leitura dessa visita já tenha ficado guardada em IndexedDB. Depois de uma segunda visita com rede, o início e o comparador abrem com a previsão arquivada, as Fontes e o mapa abrem, e o diário abre e guarda saídas (verificado no Chromium a 22/11/2026, com o servidor da app desligado).
 - **Os endereços com parâmetros só abrem sem rede se esse endereço exacto já tiver sido aberto com rede:** a ligação «Comparar os 8 pesqueiros ›» do início (`comparador.html?dia=…`) falha sem rede, e a «Comparar» da barra (sem parâmetros) abre. O mesmo nas páginas dos pesqueiros (`pesqueiro.html?id=…`), a que só se chega por endereços com parâmetros: sem rede, só abre a de um pesqueiro que já tenha sido aberta com rede com esse mesmo endereço (com a previsão arquivada); as outras falham, tal como o mapa centrado num pesqueiro (`mapa.html?pesqueiro=…`) (verificado no Chromium a 22/11/2026).
 - Cada leitura com rede (previsões do Open-Meteo de todos os pontos e boia de Faro) fica guardada no aparelho, em IndexedDB (ver «Armazenamento local»).
 - Quando nenhum ponto do Open-Meteo responde (sem rede ou fonte em baixo), o início, o comparador e a página do pesqueiro mostram a **última leitura guardada**, com o aviso «Previsão arquivada — não é a previsão actual», a data, a hora e a idade da leitura. As notas são as dessa leitura; os dias e os períodos já passados contam a partir da hora real. Nunca aparece como previsão actual.
@@ -63,7 +73,7 @@ Abrir o endereço no Chrome → menu ⋮ → **Instalar app** (ou «Adicionar ao
 
 `js/armazenamento/` — camada independente da interface, só no aparelho (nada vai para servidores):
 
-- `esquema.js`: base `surfcasting-algarve` em IndexedDB, com as lojas `leituras` (cada leitura das fontes), `diario` e `condicoes` (para o diário, ainda sem interface) e `meta`. A versão da base é o número de migrações; para mudar o esquema acrescenta-se uma migração no fim, nunca se altera uma publicada.
+- `esquema.js`: base `surfcasting-algarve` em IndexedDB, com as lojas `leituras` (cada leitura das fontes), `diario` e `condicoes` (o diário) e `meta`. A versão da base é o número de migrações; para mudar o esquema acrescenta-se uma migração no fim, nunca se altera uma publicada.
 - `indexeddb.js`: abre a base e aplica as migrações. Se o navegador não deixar (sem IndexedDB, modo privado, base aberta noutro separador com outra versão, erro na migração), a app continua sem guardar e o diagnóstico di-lo.
 - `leituras.js`: guardar, ler a última e limpar. Política em `config.json` (`persistencia.leituras`): todas as leituras das últimas 48 h; das mais antigas, a última de cada dia (hora de Lisboa) até 30 dias; no máximo 60; uma leitura com menos de 30 min é substituída pela nova; sem rede, só se usa a última se tiver até 168 h (7 dias). A mais recente nunca é apagada pela limpeza. Sem espaço (quota), apagam-se só as leituras mais antigas, uma de cada vez, até a nova caber; a leitura válida mais recente nunca se apaga sozinha: no fim, só é trocada pela nova numa única transacção, que se desfaz se a nova não couber. Nunca se fica sem nenhuma leitura; se a nova não couber, a app continua e avisa que os dados não ficaram guardados.
 - `armazem-memoria.js`: a mesma interface em memória, só para os testes em Node.
@@ -128,7 +138,7 @@ O GitHub Actions corre-os em cada push e PR (workflow «Testes no browser») e g
 
 ## Limitações desta entrega
 
-- Ainda não existem: diário de saídas (a base já tem as lojas), estatísticas e o ecrã do histórico de previsões (as leituras já ficam guardadas). Estão no plano de evolução, um PR cada.
+- Ainda não existem: estatísticas e o ecrã do histórico de previsões (as leituras já ficam guardadas). Estão no plano de evolução, um PR cada.
 - Os avisos do IPMA não são consultados: a regra de segurança foi retirada por decisão do utilizador (13/10/2026).
 - O `sw.js` serve a shell a partir da cache; `config.json` e marés (`*.json`) vão sempre primeiro à rede e só usam a cópia em cache sem ligação; essa cópia só existe depois de terem sido pedidos com o service worker a controlar a página (ver «Sem rede»). Ao alterar um ficheiro da shell, correr `node ferramentas/versao-sw.mjs` (actualiza a impressão e sobe a versão da cache em `sw.js`); um teste falha se for esquecido.
 - Quando há uma versão nova publicada, a página aberta recarrega sozinha uma vez, assim que o service worker novo toma conta dela (`js/registo-sw.js`). Sem isso ficava o código antigo com a `config.json` nova, que vem sempre da rede. Na primeira instalação não recarrega.

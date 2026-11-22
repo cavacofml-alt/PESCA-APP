@@ -8,7 +8,7 @@ import { renderFontes, creditosFotos } from "../js/ui/fontes.js";
 const ler = rel => readFileSync(new URL(`../${rel}`, import.meta.url), "utf8");
 const config = JSON.parse(ler("config.json"));
 const PAGINAS = { "index.html": "./", "mapa.html": "./mapa.html", "fontes.html": "./fontes.html", "diagnostico.html": "./fontes.html",
-  "comparador.html": "./comparador.html", "pesqueiro.html": "./" };
+  "comparador.html": "./comparador.html", "pesqueiro.html": "./", "diario.html": "./diario.html" };
 
 test("Fontes: cada fonte com o que dá na app, o tipo, a licença e a ligação; créditos de todas as fotografias", () => {
   const html = renderFontes(config);
@@ -69,12 +69,12 @@ test("Diagnóstico: só estado técnico (sem créditos), estilo comum, ligação
   assert.equal(existsSync(new URL("../css/base.css", import.meta.url)), false);
 });
 
-test("barra de navegação: a mesma nos cinco ecrãs (Início, Comparar, Mapa, Fontes), com o ecrã actual marcado", () => {
+test("barra de navegação: a mesma em todos os ecrãs (Início, Comparar, Mapa, Diário, Fontes), com o ecrã actual marcado", () => {
   for (const [pagina, activo] of Object.entries(PAGINAS)) {
     const nav = /<nav class="barra" aria-label="Secções">([\s\S]*?)<\/nav>/.exec(ler(pagina))?.[1];
     assert.ok(nav, pagina);
     const ligacoes = [...nav.matchAll(/<a href="([^"]+)"( class="activo")?>([^<]+)<\/a>/g)].map(m => [m[1], m[3], Boolean(m[2])]);
-    assert.deepEqual(ligacoes.map(([h, t]) => [h, t]), [["./", "Início"], ["./comparador.html", "Comparar"], ["./mapa.html", "Mapa"], ["./fontes.html", "Fontes"]], pagina);
+    assert.deepEqual(ligacoes.map(([h, t]) => [h, t]), [["./", "Início"], ["./comparador.html", "Comparar"], ["./mapa.html", "Mapa"], ["./diario.html", "Diário"], ["./fontes.html", "Fontes"]], pagina);
     assert.deepEqual(ligacoes.filter(l => l[2]).map(l => l[0]), [activo], `${pagina}: marcado ${activo}`);
   }
   for (const f of Object.keys(PAGINAS)) assert.doesNotMatch(ler(f), /href="\.\/diagnostico\.html">Fontes/, f);
