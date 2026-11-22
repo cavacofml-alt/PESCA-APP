@@ -115,7 +115,9 @@ async function importar(ev) {
   const ficheiro = ev.target.files?.[0];
   if (!ficheiro) return;
   const texto = await ficheiro.text();
-  const opcoes = { pesqueirosConhecidos: Object.keys(config.pesqueiros) };
+  // Os nomes dos períodos são os do config, os mesmos com que condicoes.js calcula as condições.
+  const opcoes = { pesqueirosConhecidos: Object.keys(config.pesqueiros),
+    ...(Array.isArray(config.periodos) ? { nomesPeriodos: config.periodos.map(p => p.nome) } : {}) };
   const v = validarCopia(texto, opcoes);
   if (!v.ok) {
     avisar(`Ficheiro recusado, nada foi importado: ${v.erros.slice(0, 5).join("; ")}${v.erros.length > 5 ? ` (e mais ${v.erros.length - 5})` : ""}`, "erro");

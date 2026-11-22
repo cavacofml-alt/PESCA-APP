@@ -46,7 +46,7 @@ Reutiliza os componentes do ecrã inicial e do «hora a hora» (não há outra c
 
 ## Diário
 
-`diario.html` (`js/diario.js`, `js/diario/`, `js/ui/diario.js`): saídas de pesca guardadas **só neste aparelho** (IndexedDB, lojas `diario` e `condicoes`). Funciona sem rede. Sem fotografias.
+`diario.html` (`js/diario.js`, `js/diario/`, `js/ui/diario.js`): saídas de pesca guardadas **só neste aparelho** (IndexedDB, lojas `diario` e `condicoes`). Funciona sem rede depois de a app ter sido aberta pelo menos duas vezes com rede (ver «Sem rede»): nesse caso abre, guarda saídas (com as condições da última leitura guardada) e mantém-nas. Depois de uma única visita com rede, não abre sem rede. Sem fotografias.
 
 - **Saída:** pesqueiro, dia, hora de início e de fim (hora de Portugal continental; um fim antes do início acaba no dia seguinte; na hora repetida da mudança de hora fica a primeira e diz-se; a hora que não existe é recusada), espécies (robalo, dourada, outra com o nome), resultado «com capturas» ou «sem capturas» (nunca se confunde uma saída sem capturas com uma sem registo), capturas (espécie, quantidade, tamanho em cm opcional, observações) e observações.
 - **Condições associadas:** ao guardar, a app procura a leitura guardada (ver «Armazenamento local») que cubra as horas da saída — primeiro a mais recente lida antes do início, depois as lidas depois, até 7 dias — e guarda a previsão hora a hora no pesqueiro, as notas do motor nos períodos da saída, as marés do dia (tabela do IH) e a medição da boia mais perto do início. É sempre a previsão dessa leitura, com a hora da leitura, nunca uma medição no pesqueiro; sem leitura que sirva, fica dito porquê. Sem hora de fim, ficam só as condições da hora em que a saída começou (o formulário e o resumo dizem-no). Ao editar, só se recalculam se mudar o pesqueiro ou as horas.
@@ -56,17 +56,18 @@ Reutiliza os componentes do ecrã inicial e do «hora a hora» (não há outra c
 
 ## Estatísticas pessoais
 
-`estatisticas.html` (`js/diario/estatisticas.js`, `js/ui/estatisticas.js`), a partir de «Estatísticas ›» no diário: calculadas **só a partir do diário deste aparelho**, sem rede. São descritivas:
+`estatisticas.html` (`js/diario/estatisticas.js`, `js/ui/estatisticas.js`), a partir de «Estatísticas ›» no diário: calculadas **só a partir do diário deste aparelho**, sem pedidos a fontes externas. Sem rede, abrem depois de a app ter sido aberta pelo menos duas vezes com rede (ver «Sem rede»), mesmo que as estatísticas nunca tenham sido abertas com rede, e contam as saídas guardadas sem rede; depois de uma única visita com rede, não abrem sem rede. Os filtros não ficam guardados: ao recarregar a página voltam a «tudo». São descritivas:
 
 - resumo (saídas, com e sem capturas, capturas, capturas por saída, horas de pesca das saídas com hora de fim);
 - por pesqueiro (os oito aparecem; sem saídas = «sem registos»), por espécie (saídas com ela como alvo, saídas em que foi apanhada, quantidade, tamanhos com o seu n), por período do dia (pela hora de início, em Lisboa) e por mês (do primeiro ao último mês com saídas; os meses do meio sem saídas dizem «sem saídas registadas (não é zero capturas)»);
 - filtros de período (tudo, 30 dias, 90 dias, 12 meses, este ano, intervalo), espécie e pesqueiro;
 - cada valor tem o número de saídas que o sustenta (n); com menos de 10, «amostra pequena» (ou «*» nas tabelas);
 - a falta de registos nunca aparece como zero capturas; não há previsões, «melhores» pesqueiros nem explicações de causa; não muda as notas nem as regras.
+- os registos do diário com formato inválido não entram nas contas, e o ecrã diz quantos são («N registo(s) com formato inválido não entram nas estatísticas»), também quando não há nenhuma saída válida.
 
 ## Histórico de previsões e validação pessoal
 
-`historico.html` (`js/historico/validacao.js`, `js/ui/historico.js`), a partir das «Fontes»: as leituras guardadas neste aparelho e, na zona da boia de Faro, a previsão do Open-Meteo que a app tinha ao lado do que a boia mediu.
+`historico.html` (`js/historico/validacao.js`, `js/ui/historico.js`), a partir das «Fontes»: as leituras guardadas neste aparelho e, na zona da boia de Faro, a previsão do Open-Meteo que a app tinha ao lado do que a boia mediu. Usa só o que está guardado no aparelho (as leituras e o diário), sem pedidos a fontes externas. Sem rede, abre depois de o início ter sido aberto pelo menos duas vezes com rede (ver «Sem rede»), mesmo que o histórico nunca tenha sido aberto com rede, com as leituras guardadas e os pares previsão × boia que já houver; depois de uma única visita com rede ao início, não abre sem rede.
 
 - **Previsão arquivada ≠ observação:** a previsão vem com a hora da leitura e a antecedência; a observação é a da boia (ao largo, a 90 m de fundo).
 - **Só horas que eram previsão:** de cada leitura só contam as horas depois da hora da leitura e que já chegaram (os 7 dias para trás de cada leitura não contam). A medição da boia tem de estar a 15 min da hora certa; sem medição (ou com QC mau), fica «sem medição», nunca zero.
@@ -91,9 +92,11 @@ Abrir o endereço no Chrome → menu ⋮ → **Instalar app** (ou «Adicionar ao
 
 **Sem rede (o que está implementado):**
 
-- A app abre: o service worker guarda a shell (HTML, CSS, JS, bibliotecas, fotografias) e a última cópia já descarregada da `config.json`, das tabelas de marés e dos fundos do mar. Os mosaicos do mapa (OpenStreetMap, DGT) não ficam guardados.
+- Na instalação, o service worker guarda só a shell (HTML, CSS, JS, bibliotecas, fotografias). A `config.json`, as tabelas de marés e os fundos do mar só ficam guardados quando a app os pede com o service worker já a controlar a página, o que normalmente só acontece a partir da segunda abertura com rede; e só ficam os que a app já pediu (por exemplo, a tabela de marés de um ano que a janela de 7 dias ainda não tocou não está guardada). Os mosaicos do mapa (OpenStreetMap, DGT) não ficam guardados.
+- Por isso, **depois de uma única visita com rede a app pode não abrir sem rede**: o início, o comparador, o diário, as estatísticas, o histórico e as Fontes mostram «Erro: Failed to fetch», porque falta a `config.json` (o mapa abre), mesmo que a leitura dessa visita já tenha ficado guardada em IndexedDB. Depois de uma segunda visita com rede, o início e o comparador abrem com a previsão arquivada, as Fontes e o mapa abrem, o diário abre e guarda saídas, e as estatísticas abrem com as saídas do diário, incluindo as guardadas sem rede (verificado no Chromium a 22/11/2026, com o servidor da app desligado e o browser fechado e reaberto). O histórico foi verificado depois de duas visitas com rede ao início, sem nunca ter sido aberto com rede: abre com as leituras guardadas e os pares previsão × boia (Chromium, 22/11/2026, com o servidor da app desligado e o browser fechado e reaberto).
+- **Os endereços com parâmetros só abrem sem rede se esse endereço exacto já tiver sido aberto com rede:** a ligação «Comparar os 8 pesqueiros ›» do início (`comparador.html?dia=…`) falha sem rede, e a «Comparar» da barra (sem parâmetros) abre. O mesmo nas páginas dos pesqueiros (`pesqueiro.html?id=…`), a que só se chega por endereços com parâmetros: sem rede, só abre a de um pesqueiro que já tenha sido aberta com rede com esse mesmo endereço (com a previsão arquivada); as outras falham, tal como o mapa centrado num pesqueiro (`mapa.html?pesqueiro=…`) (verificado no Chromium a 22/11/2026).
 - Cada leitura com rede (previsões do Open-Meteo de todos os pontos e boia de Faro) fica guardada no aparelho, em IndexedDB (ver «Armazenamento local»).
-- Quando nenhum ponto do Open-Meteo responde (sem rede ou fonte em baixo), o início e o comparador mostram a **última leitura guardada**, com o aviso «Previsão arquivada — não é a previsão actual», a data, a hora e a idade da leitura. As notas são as dessa leitura; os dias e os períodos já passados contam a partir da hora real. Nunca aparece como previsão actual.
+- Quando nenhum ponto do Open-Meteo responde (sem rede ou fonte em baixo), o início, o comparador e a página do pesqueiro mostram a **última leitura guardada**, com o aviso «Previsão arquivada — não é a previsão actual», a data, a hora e a idade da leitura. As notas são as dessa leitura; os dias e os períodos já passados contam a partir da hora real. Nunca aparece como previsão actual.
 - Sem leitura guardada, ou com uma mais antiga do que 7 dias: «Previsão indisponível». As notas que dependem da previsão ficam sem nota; a da Ria, que vem das marés (ficheiro local), fica incompleta.
 - Quando a rede volta, a página actualiza sozinha.
 - Ficam ainda no aparelho, em `localStorage`, a espécie escolhida e a camada escolhida no mapa.
@@ -151,7 +154,7 @@ Com Node ≥ 20, na raiz do projecto:
 node --test
 ```
 
-Não há dependências a instalar para estes testes. `testes/motor-referencia.test.js` compara as notas do motor com uma referência guardada (`testes/referencia/motor-20261014.json`: respostas reais de 14/10/2026, 7 dias × 8 pesqueiros × 4 períodos × 2 espécies): falha se alguma nota mudar. Só se regenera (`node ferramentas/referencia-motor.mjs`) quando o utilizador aprovar uma mudança de regras ou limiares. Os testes não usam a Internet: as respostas das APIs são simuladas com as fixtures de `testes/dados-teste.js` e com respostas reais guardadas em `testes/reais/`, que não são previsões actuais. O GitHub Actions corre os testes em cada push e PR, com Node 20 e 22 e quatro fusos horários (UTC, Europe/Lisbon, America/New_York, Asia/Tokyo).
+Não há dependências a instalar para estes testes. `testes/motor-referencia.test.js` compara as notas do motor com uma referência guardada (`testes/referencia/motor-20261014.json`, com as respostas reais de 14/10/2026: 7 dias × 4 períodos × (7 pesqueiros com robalo e dourada + a Ria, só com dourada) = 420 notas, uma por dia, período, pesqueiro e espécie): falha se alguma nota mudar. Só se regenera (`node ferramentas/referencia-motor.mjs`) quando o utilizador aprovar uma mudança de regras ou limiares. Os testes não usam a Internet: as respostas das APIs são simuladas com as fixtures de `testes/dados-teste.js` e com respostas reais guardadas em `testes/reais/`, que não são previsões actuais. O GitHub Actions corre os testes em cada push e PR, com Node 20 e 22 e quatro fusos horários (UTC, Europe/Lisbon, America/New_York, Asia/Tokyo).
 
 ### Testes no browser (Playwright)
 
@@ -168,7 +171,7 @@ O GitHub Actions corre-os em cada push e PR (workflow «Testes no browser») e g
 ## Limitações desta entrega
 
 - Os avisos do IPMA não são consultados: a regra de segurança foi retirada por decisão do utilizador (13/10/2026).
-- O `sw.js` serve a shell a partir da cache; `config.json` e marés (`*.json`) vão sempre primeiro à rede e só usam a cópia em cache sem ligação. Ao alterar um ficheiro da shell, correr `node ferramentas/versao-sw.mjs` (actualiza a impressão e sobe a versão da cache em `sw.js`); um teste falha se for esquecido.
+- O `sw.js` serve a shell a partir da cache; `config.json` e marés (`*.json`) vão sempre primeiro à rede e só usam a cópia em cache sem ligação; essa cópia só existe depois de terem sido pedidos com o service worker a controlar a página (ver «Sem rede»). Ao alterar um ficheiro da shell, correr `node ferramentas/versao-sw.mjs` (actualiza a impressão e sobe a versão da cache em `sw.js`); um teste falha se for esquecido.
 - Quando há uma versão nova publicada, a página aberta recarrega sozinha uma vez, assim que o service worker novo toma conta dela (`js/registo-sw.js`). Sem isso ficava o código antigo com a `config.json` nova, que vem sempre da rede. Na primeira instalação não recarrega.
 
 ## Tabela de marés

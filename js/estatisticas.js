@@ -11,11 +11,12 @@ const raiz = document.querySelector("#app");
 let config = null;
 let base = null;
 let saidas = [];
+let invalidas = 0;   // registos que não passam na validação: não entram nas contas, mas diz-se quantos são
 let filtros = { periodo: "tudo", especie: "todas", pesqueiro: "todos" };
 
 function desenhar() {
   const stats = base.ok ? estatisticas(saidas, config, filtros) : null;
-  raiz.innerHTML = renderEstatisticas({ config, armazem: base, stats, filtros });
+  raiz.innerHTML = renderEstatisticas({ config, armazem: base, stats, filtros, invalidas });
   raiz.querySelector("#filtros")?.addEventListener("change", ev => {
     filtros = Object.fromEntries(new FormData(ev.currentTarget).entries());
     desenhar();
@@ -29,7 +30,7 @@ async function iniciar() {
     config = await r.json();
     base = await abrirArmazem();
     if (base.ok) {
-      saidas = (await listarSaidas(base.armazem)).saidas;
+      ({ saidas, invalidas } = await listarSaidas(base.armazem));
       await base.armazem.fechar();
     }
     desenhar();
