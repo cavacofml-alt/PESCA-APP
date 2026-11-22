@@ -95,7 +95,12 @@ Reutiliza os componentes do ecrã inicial e do «hora a hora» (não há outra c
 `guia.html` (`js/ui/guia.js`), a partir das «Fontes»: estático, sem IA nem serviços externos. Sem rede, abre depois de o início ter sido aberto pelo menos duas vezes com rede (ver «Sem rede»), mesmo que o guia nunca tenha sido aberto com rede; depois de uma única visita com rede ao início, não abre sem rede. Seis temas: ler as marés, interpretar a ondulação, vento e orientação da costa, ler os fundos e as estruturas, usar as informações da app, preparar e registar uma saída. Em cada tema:
 
 - **Em geral:** conceitos gerais, escritos com prudência (sem espécies, notas nem limiares: um teste confirma-o);
-- **Nesta app:** as decisões do utilizador que a app usa, com os valores lidos do `config.json` (mudam com ele; nenhum número escrito à mão), todas provisórias.
+- **Nesta app:** as decisões do utilizador que a app usa, todas provisórias. Os valores têm três origens:
+  - **lidos do `config.json`** quando a página abre, e mudam com ele: classes de amplitude, base da dourada na Ria, alinhamento, potência (coeficiente e limites), período da vaga de vento, mar mexido, sectores, mar de Sul, anomalias, notas e períodos, pressão, água, chuva e o lembrete das cópias de segurança (um teste muda três deles no config e confirma que o texto muda);
+  - **constantes do código, escritas no texto:** «menos de 10 saídas» é `AMOSTRA_PEQUENA` (`js/diario/estatisticas.js`);
+  - **decisões e referências fixas, escritas no texto, que o `config.json` não parametriza:** a ordem de prioridade das regras, as diferenças da Barra do Ancão (−3 a +13 min, do IH), «vento a 0 nós não tem direcção», a curva da maré só ilustrativa, as cotas ao zero hidrográfico, a LAT 0 a 0,22 m acima do zero hidrográfico (como nos ficheiros de `fundos/`), o erro do satélite (0,7 a 0,8 m; 0,70–0,79 m em `fundos/satelite.json`), as distâncias do fundo típico (100, 150 e 200 m, como em `fundos/tipico.json`) e as datas dos levantamentos.
+
+  Dois valores existem no `config.json` mas estão escritos no texto, sem o ler: o «1» do limo nas praias (`pontuacao.limitesObrigatorios`) e os 90 m de fundo da boia de Faro (`boias.faro.profundidadeM`). Só os do primeiro grupo acompanham uma mudança: ao mudar uma regra, um limiar, uma constante ou um ficheiro de fundos, é preciso rever o texto do guia (`js/ui/guia.js`).
 
 Não é um manual de pesca nem traz regras novas; diz que a app não avalia a segurança.
 

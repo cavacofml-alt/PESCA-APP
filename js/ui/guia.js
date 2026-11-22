@@ -2,8 +2,19 @@
 // Cada tema tem duas partes separadas:
 //   «Em geral»  — conceitos gerais, escritos com prudência (física das marés, das ondas e do vento,
 //                 leitura de fundos, como ler uma previsão); não são regras de pesca;
-//   «Nesta app» — as decisões do utilizador que a app usa, com os valores lidos do config.json (não
-//                 há números escritos à mão que possam ficar desactualizados); todas provisórias.
+//   «Nesta app» — as decisões do utilizador que a app usa, todas provisórias. Os valores têm três origens:
+//     1. lidos do config.json (os `c.…` abaixo): mudam com ele;
+//     2. constantes do código escritas no texto: «menos de 10 saídas» é AMOSTRA_PEQUENA
+//        (js/diario/estatisticas.js);
+//     3. decisões e referências fixas escritas no texto, que o config.json não parametriza: a ordem de
+//        prioridade das regras, a Barra do Ancão (−3 a +13 min, IH), «vento a 0 nós», a curva da maré
+//        só ilustrativa, as cotas ao zero hidrográfico, a LAT (0 a 0,22 m, como em fundos/), o erro do
+//        satélite (0,7 a 0,8 m; fundos/satelite.json), as distâncias do fundo típico (100, 150 e
+//        200 m; fundos/tipico.json) e as datas dos levantamentos.
+//     Dois valores existem no config.json mas estão escritos no texto, sem o ler: o «1» do limo
+//     (pontuacao.limitesObrigatorios) e os 90 m de fundo da boia (boias.faro.profundidadeM).
+//     Os de 2 e 3 (e estes dois) não acompanham mudanças: ao mudar uma regra, um limiar, uma constante
+//     ou um ficheiro de fundos, rever este texto.
 // Não traz regras novas nem recomendações apresentadas como validadas. Função pura.
 import { esc, num } from "./formato.js";
 
