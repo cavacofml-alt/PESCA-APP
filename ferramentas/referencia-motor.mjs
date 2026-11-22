@@ -1,6 +1,7 @@
 // Referência do motor de notas (plano de evolução, PR 1, 20/11/2026): com as respostas reais de 14/10/2026
-// guardadas em testes/reais/ e a tabela oficial de marés, calcula a projecção das notas de 7 dias × 8
-// pesqueiros × 4 períodos × 2 espécies (estado, nota, completa, intervalo, limite) e os valores que as
+// guardadas em testes/reais/ e a tabela oficial de marés, calcula a projecção das notas de 7 dias × 4
+// períodos × (7 pesqueiros com robalo e dourada + a Ria, só com dourada) = 420 notas, uma por dia,
+// período, pesqueiro e espécie (estado, nota, completa, intervalo, limite), e os valores que as
 // sustentam (potência máxima, limo, amplitude, alinhamento). O teste testes/motor-referencia.test.js
 // compara o motor com testes/referencia/motor-20261014.json: garante que nenhum PR de interface,
 // armazenamento ou diário muda as notas.
