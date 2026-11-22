@@ -63,7 +63,34 @@ export const novoId = (prefixo, agora = Date.now(), aleatorio = Math.random) =>
   `${prefixo}-${agora.toString(36)}-${Math.floor(aleatorio() * 36 ** 6).toString(36).padStart(6, "0")}`;
 
 const texto = v => typeof v === "string";
-const instanteValido = v => texto(v) && /T.*Z$/.test(v) && Number.isFinite(Date.parse(v));
+
+// Datas e instantes reais (revisão de 22/11/2026). O Date.parse não serve de prova: no Node 20 e 22 e
+// no Chromium aceita 30/02, 31/04, 29/02 de um ano comum e a hora 24:00 e passa-os para o dia
+// seguinte (30/02/2026 → 02/03/2026), e aceita desvios como +15:00. Por isso confere-se cada parte:
+// mês 01–12, dia que existe nesse mês (com os anos bissextos), hora 00–23, minutos e segundos 00–59 e
+// desvio de −12:00 a +14:00 (minutos 00–59).
+const bissexto = a => a % 4 === 0 && (a % 100 !== 0 || a % 400 === 0);
+const DIAS_DO_MES = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+export const dataReal = (ano, mes, dia) => Number.isInteger(ano) && Number.isInteger(mes) && Number.isInteger(dia)
+  && mes >= 1 && mes <= 12 && dia >= 1 && dia <= (mes === 2 && bissexto(ano) ? 29 : DIAS_DO_MES[mes - 1]);
+const RE_INSTANTE = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,3})?)?(?:Z|([+-])(\d{2}):(\d{2}))$/;
+
+// «AAAA-MM-DDThh:mm[:ss[.sss]]» com «Z» ou desvio «±hh:mm», com data e hora reais. soUtc: só com «Z».
+export function instanteIsoReal(v, { soUtc = false } = {}) {
+  const r = texto(v) ? RE_INSTANTE.exec(v) : null;
+  if (!r) return false;
+  const [ano, mes, dia, hora, min] = r.slice(1, 6).map(Number);
+  const seg = r[6] === undefined ? 0 : Number(r[6]);
+  if (!dataReal(ano, mes, dia) || hora > 23 || min > 59 || seg > 59) return false;
+  if (r[7] !== undefined) {
+    const [h, m] = [Number(r[8]), Number(r[9])];
+    if (soUtc || m > 59 || h * 60 + m > (r[7] === "+" ? 14 : 12) * 60) return false;
+  }
+  return Number.isFinite(Date.parse(v));
+}
+
+// As saídas guardam sempre instantes UTC («Z»), escritos pela app com toISOString().
+const instanteValido = v => instanteIsoReal(v, { soUtc: true });
 
 // Validação completa de uma saída (formulário e importação). pesqueirosConhecidos: ids do config;
 // um pesqueiro desconhecido (por exemplo, retirado do config) só dá aviso, não erro.

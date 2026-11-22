@@ -8,8 +8,8 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { armazemMemoria } from "../js/armazenamento/armazem-memoria.js";
 import { leituraDe } from "../js/armazenamento/leituras.js";
-import { lisboaParaUtc, utcParaLisboa, instantesDaSaida, validarSaida, guardarSaida, apagarSaida, listarSaidas, obterCondicoes, novoId }
-  from "../js/diario/saidas.js";
+import { lisboaParaUtc, utcParaLisboa, instantesDaSaida, validarSaida, guardarSaida, apagarSaida, listarSaidas, obterCondicoes, novoId,
+  instanteIsoReal, dataReal } from "../js/diario/saidas.js";
 import { leiturasCandidatas, condicoesDaSaida, associarCondicoes } from "../js/diario/condicoes.js";
 import { validarCopia, importarCopia, exportarCopia, planoImportacao, precisaLembrete, registarCopia, criarCopia, FORMATO } from "../js/diario/copia.js";
 import { lerFormulario, renderDiario, formularioSaida, textoResultado, resumoCondicoes } from "../js/ui/diario.js";
@@ -330,6 +330,66 @@ test("cópia: condições reais exportadas pela app são aceites; condições ma
     assert.equal(r.ok, false, `${nome}: tinha de ser recusada`);
     assert.ok(r.erros.some(e => erro.test(e)), `${nome} → ${r.erros}`);
     assert.equal(JSON.stringify([await a.listar("diario"), await a.listar("condicoes")]), antes, `${nome}: nada mudou`);
+  }
+});
+
+test("datas: só instantes e dias reais (30/02, 31/04, 29/02 de um ano comum, 24:00 e desvios fora de ±12/14 h recusados)", () => {
+  // O Date.parse do Node 20 e 22 e do Chromium aceita estes valores e passa-os para outro dia
+  // (medido a 22/11/2026: 2026-02-30T12:00Z → 2026-03-02, 2025-02-29 → 2025-03-01, 24:00 → dia seguinte).
+  const validos = ["2026-10-14T10:00:00.000Z", "2026-10-14T10:00Z", "2026-10-14T10:00:00Z", "2026-12-31T23:59:59.999Z",
+    "2024-02-29T12:00:00.000Z", "2000-02-29T00:00:00Z", "2026-10-14T11:00:00+01:00", "2026-10-14T10:00:00+00:00",
+    "2026-10-14T00:00:00+14:00", "2026-10-14T00:00:00-12:00", "2026-10-14T05:30:00+05:30"];
+  for (const v of validos) assert.equal(instanteIsoReal(v), true, v);
+  const invalidos = ["2026-02-30T12:00:00.000Z", "2026-04-31T12:00:00.000Z", "2025-02-29T12:00:00.000Z", "2100-02-29T00:00:00Z",
+    "2026-06-31T00:00:00Z", "2026-02-31T00:00:00Z", "2026-13-01T00:00:00Z", "2026-00-10T00:00:00Z", "2026-02-00T00:00:00Z",
+    "2026-02-28T24:00:00Z", "2026-02-28T23:60:00Z", "2026-02-28T23:59:60Z", "2026-02-28T12:00:00+15:00",
+    "2026-02-28T12:00:00+14:30", "2026-02-28T12:00:00-13:00", "2026-02-28T12:00:00+01:60", "2026-02-28T12:00:00+25:00",
+    "2026-02-28T12:00:00", "2026-02-28 12:00:00Z", "2026-2-28T12:00:00Z", "2026-02-28T12:00:00.1234Z", "", null, 1791958800000];
+  for (const v of invalidos) assert.equal(instanteIsoReal(v), false, String(v));
+  // Saídas: só UTC («Z»), como a app as escreve.
+  assert.equal(instanteIsoReal("2026-10-14T11:00:00+01:00", { soUtc: true }), false);
+  assert.equal(instanteIsoReal("2026-10-14T10:00:00.000Z", { soUtc: true }), true);
+  assert.deepEqual([dataReal(2024, 2, 29), dataReal(2025, 2, 29), dataReal(2026, 4, 31), dataReal(2026, 4, 30), dataReal(1900, 2, 29), dataReal(2000, 2, 29)],
+    [true, false, false, true, false, true]);
+  // Instantes que a própria app escreve continuam válidos.
+  assert.equal(instanteIsoReal(new Date(Date.UTC(2026, 9, 25, 1, 30)).toISOString(), { soUtc: true }), true);
+});
+
+test("cópia: datas impossíveis nas condições e nas saídas são recusadas e nada muda; instantes com Z e com desvio são aceites", async () => {
+  const saida = saidaBase({ id: "s-real" });
+  const real = condicoesDaSaida(saida, leituraReal("2026-10-14T05:00:00.000Z"), { config, mares, sol, calculadoEm: "2026-10-14T10:00:00.000Z" });
+  const copia = (saidas, condicoes) => JSON.stringify(criarCopia({ saidas, condicoes }));
+  const muda = f => { const c = structuredClone(real); f(c); return c; };
+  const IMPOSSIVEIS = { "30 de Fevereiro": "2026-02-30T12:00:00.000Z", "31 de Abril": "2026-04-31T12:00:00.000Z", "29 de Fevereiro de 2025": "2025-02-29T12:00:00.000Z" };
+  const a = await diarioCom(saidaBase());
+  const antes = JSON.stringify([await a.listar("diario"), await a.listar("condicoes")]);
+  const recusada = async (nome, texto, erro) => {
+    const r = await importarCopia(a, texto, { pesqueirosConhecidos: IDS });
+    assert.equal(r.ok, false, `${nome}: tinha de ser recusada`);
+    assert.ok(r.erros.some(e => erro.test(e)), `${nome} → ${r.erros}`);
+    assert.equal(JSON.stringify([await a.listar("diario"), await a.listar("condicoes")]), antes, `${nome}: nada mudou`);
+  };
+  for (const [nome, v] of Object.entries(IMPOSSIVEIS)) {
+    await recusada(`calculadoEm ${nome}`, copia([saida], [muda(c => { c.calculadoEm = v; })]), /calculadoEm\) inválida/);
+    await recusada(`leitura.lidoEm ${nome}`, copia([saida], [muda(c => { c.leitura.lidoEm = v; })]), /leitura: lidoEm inválido/);
+    await recusada(`leitura.id ${nome}`, copia([saida], [muda(c => { c.leitura.id = v; })]), /leitura: id inválido/);
+    // As saídas da cópia passam pela mesma regra (início, fim, criadoEm, alteradoEm).
+    await recusada(`saída: início ${nome}`, copia([saidaBase({ id: "s-nova", inicio: v, fim: null })], []), /início inválido/);
+    await recusada(`saída: criadoEm ${nome}`, copia([saidaBase({ id: "s-nova", criadoEm: v })], []), /criadoEm inválido/);
+  }
+  await recusada("saída: fim 31 de Abril", copia([saidaBase({ id: "s-nova", inicio: "2026-04-30T20:00:00.000Z", fim: "2026-04-31T01:00:00.000Z" })], []), /fim inválido/);
+  await recusada("condições: dia 30 de Fevereiro", copia([saida], [muda(c => { c.dias[0].dia = "2026-02-30"; c.periodos.forEach(p => { p.dia = "2026-02-30"; }); })]), /dia 1: data inválida/);
+  await recusada("condições: 24:00", copia([saida], [muda(c => { c.calculadoEm = "2026-10-14T24:00:00Z"; })]), /calculadoEm\) inválida/);
+  await recusada("condições: desvio +15:00", copia([saida], [muda(c => { c.leitura.lidoEm = "2026-10-14T20:00:00+15:00"; })]), /leitura: lidoEm inválido/);
+
+  // Aceites: os mesmos instantes escritos com «Z» (como a app os escreve) e com desvio explícito.
+  const comDesvio = muda(c => { c.calculadoEm = "2026-10-14T11:00:00+01:00"; c.leitura.lidoEm = "2026-10-14T06:00:00+01:00"; });
+  for (const [nome, cond] of [["com Z", real], ["com desvio", comDesvio]]) {
+    const b = armazemMemoria();
+    const r = await importarCopia(b, copia([saida], [cond]), { pesqueirosConhecidos: IDS });
+    assert.deepEqual([r.ok, r.novas], [true, 1], `${nome}: ${r.erros}`);
+    assert.deepEqual(await b.obter("condicoes", "c-s-real"), cond, `${nome}: guardadas sem mudança`);
+    assert.match(resumoCondicoes(await b.obter("condicoes", "c-s-real"), saida), /Condições guardadas/);
   }
 });
 

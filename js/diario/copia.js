@@ -3,7 +3,7 @@
 // nada; uma válida escreve numa só transacção (ou tudo, ou nada). Os registos que já existem nunca são
 // substituídos: o mesmo registo é ignorado, e um registo diferente com o mesmo id fica como conflito
 // (o do aparelho mantém-se). Os dados ficam só no aparelho e no ficheiro que o utilizador guardar.
-import { validarSaida } from "./saidas.js";
+import { validarSaida, instanteIsoReal, dataReal } from "./saidas.js";
 import { ESQUEMA_CONDICOES } from "./condicoes.js";
 import { lisbonDate } from "../normalizacao.js";
 import { ESTADO_NOTA } from "../regras/notas.js";
@@ -35,10 +35,13 @@ const booleanoOuNull = v => v === null || typeof v === "boolean";
 const MIN_MS = Date.UTC(2000, 0, 1);
 const MAX_MS = Date.UTC(2100, 0, 1);
 const instanteMs = v => Number.isSafeInteger(v) && v >= MIN_MS && v < MAX_MS;
-const instanteIso = v => typeof v === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?(Z|[+-]\d{2}:\d{2})$/.test(v)
-  && instanteMs(Date.parse(v));
-const diaIso = v => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(`${v}T00:00:00Z`))
-  && new Date(`${v}T00:00:00Z`).toISOString().slice(0, 10) === v;
+// Instantes ISO com data e hora reais (instanteIsoReal, em saidas.js: o Date.parse sozinho aceita
+// 30/02 e passa-o para Março) e entre 2000 e 2100.
+const instanteIso = v => instanteIsoReal(v) && instanteMs(Date.parse(v));
+const diaIso = v => {
+  const r = typeof v === "string" ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(v) : null;
+  return !!r && dataReal(Number(r[1]), Number(r[2]), Number(r[3]));
+};
 const ESTADOS_NOTA = Object.values(ESTADO_NOTA);
 const CLASSES_MARE = Object.values(CLASSE_MARE);
 const ESPECIES_COM_NOTA = ["robalo", "dourada"];
