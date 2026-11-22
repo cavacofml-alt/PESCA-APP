@@ -29,11 +29,16 @@ function filtros(f, config) {
   </form>`;
 }
 
-// estado: { config, armazem: { ok, erro }, stats (de estatisticas()), filtros }
-export function renderEstatisticas({ config, armazem, stats, filtros: f = {} }) {
-  const topo = `<header class="topo"><div><h1>Estatísticas</h1><p class="lido">Só a partir do seu diário · registos deste aparelho · <a href="./diario.html">voltar ao diário</a></p></div></header>`;
-  if (armazem && !armazem.ok) return `${topo}<section class="aviso-origem indisponivel" role="alert"><b>Sem diário neste aparelho.</b> O navegador não deixa guardar dados (${esc(armazem.erro)}).</section>`;
-  if (!stats.total) return `${topo}<p class="motivo vazio">Ainda não há saídas no diário: sem registos, não há estatísticas.</p>`;
+// estado: { config, armazem: { ok, erro }, stats (de estatisticas(), só com as saídas válidas), filtros,
+// invalidas (registos do diário que não passam na validação: ficam de fora e diz-se quantos, como no diário) }
+export function renderEstatisticas({ config, armazem, stats, filtros: f = {}, invalidas = 0 }) {
+  const cabeca = `<header class="topo"><div><h1>Estatísticas</h1><p class="lido">Só a partir do seu diário · registos deste aparelho · <a href="./diario.html">voltar ao diário</a></p></div></header>`;
+  if (armazem && !armazem.ok) return `${cabeca}<section class="aviso-origem indisponivel" role="alert"><b>Sem diário neste aparelho.</b> O navegador não deixa guardar dados (${esc(armazem.erro)}).</section>`;
+  const topo = `${cabeca}${invalidas ? `<p class="falha">${invalidas} registo(s) com formato inválido não entram nas estatísticas.</p>` : ""}`;
+  if (!stats.total) {
+    return `${topo}<p class="motivo vazio">${invalidas ? "Não há saídas válidas no diário: sem registos válidos, não há estatísticas."
+      : "Ainda não há saídas no diário: sem registos, não há estatísticas."}</p>`;
+  }
   const r = stats.resumo;
   const aviso = `<p class="aviso-origem leve">Descrição dos seus registos, não uma previsão: não diz porque é que se apanhou mais ou menos peixe. Cada valor tem o número de saídas que o sustenta (n); com menos de ${AMOSTRA_PEQUENA}, é uma amostra pequena.</p>`;
   if (!r.n) return `${topo}${filtros(f, config)}${aviso}<p class="motivo vazio">Nenhuma saída com estes filtros. Não quer dizer zero capturas: não há registos.</p>`;
