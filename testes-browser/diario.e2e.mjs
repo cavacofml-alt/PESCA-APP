@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { servir, abrir, lancar, larguras, captura } from "./apoio.mjs";
+import { servir, abrir, lancar, larguras, textoLarguras, captura } from "./apoio.mjs";
 
 let srv, browser;
 before(async () => { srv = await servir(); browser = await lancar(); });
@@ -51,7 +51,7 @@ for (const dispositivo of ["Pixel 7", { width: 360, height: 780 }]) {
       assert.match(await pagina.textContent(".aviso-origem.arquivo"), /Cópia de segurança/);
       await pagina.click(".saida summary");
       const l = await larguras(pagina);
-      assert.ok(l.conteudo <= l.ecra, `${l.conteudo} > ${l.ecra}`);
+      assert.ok(l.ok, `sem deslocamento horizontal — ${textoLarguras(l)}`);
       await captura(pagina, `diario-${nome}`);
       // Formulário aberto também cabe no ecrã.
       await pagina.click("#nova-saida");
@@ -94,7 +94,7 @@ test("diário: com uma leitura guardada, a saída fica com as condições da pre
     assert.equal(await pagina.locator(".horas-saida tbody tr").count(), 4, "07:00, 08:00, 09:00 e 10:00");
     // Com a saída aberta, a tabela das condições desliza dentro do cartão: a página não passa a largura do ecrã.
     const l = await larguras(pagina);
-    assert.ok(l.conteudo <= l.ecra, `saída aberta sem deslocamento horizontal (${l.conteudo} > ${l.ecra})`);
+    assert.ok(l.ok, `saída aberta: sem deslocamento horizontal — ${textoLarguras(l)}`);
     // Editar: muda as observações; as condições ficam.
     await pagina.click(".editar");
     await pagina.fill("[name=observacoes]", "água limpa");

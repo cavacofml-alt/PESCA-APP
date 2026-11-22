@@ -4,7 +4,7 @@
 // Correr: npm run test:browser.
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { servir, abrir, lancar, larguras, captura, AGORA } from "./apoio.mjs";
+import { servir, abrir, lancar, larguras, textoLarguras, captura, AGORA } from "./apoio.mjs";
 
 let srv, browser;
 before(async () => { srv = await servir(); browser = await lancar(); });
@@ -144,7 +144,7 @@ test("app: com rede guarda a leitura; sem rede mostra a previsão arquivada com 
     await pagina.click(".cartao .detalhes summary");
     assert.match(await pagina.textContent(".cartao .fontes"), /arquivada \(sem rede\) · lido às 10:40/);
     const l = await larguras(pagina);
-    assert.ok(l.conteudo <= l.ecra);
+    assert.ok(l.ok, `sem deslocamento horizontal — ${textoLarguras(l)}`);
     await captura(pagina, "inicio-sem-rede-arquivo");
     // O comparador também diz que é arquivada.
     await pagina.goto(`${srv.url}/comparador.html`);
@@ -172,7 +172,7 @@ for (const dispositivo of ["Pixel 7", { width: 360, height: 780 }]) {
       assert.equal(await pagina.locator(".cartao").count(), 8);
       assert.equal(await pagina.locator(".selo:not(.nd):not(.inc)").count(), 0, "nenhuma nota completa");
       const l = await larguras(pagina);
-      assert.ok(l.conteudo <= l.ecra, `${l.conteudo} > ${l.ecra}`);
+      assert.ok(l.ok, `sem deslocamento horizontal — ${textoLarguras(l)}`);
       await captura(pagina, `inicio-sem-rede-indisponivel-${nome}`);
       assert.deepEqual(registo.erros.filter(e => !ERROS_DE_REDE.test(e)), []);
     } finally { await contexto.close(); }

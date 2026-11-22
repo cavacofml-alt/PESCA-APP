@@ -3,7 +3,7 @@
 // sem rede para as APIs (notas «sem nota», nunca zero). Correr: npm run test:browser.
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { servir, abrir, lancar, larguras, captura } from "./apoio.mjs";
+import { servir, abrir, lancar, larguras, textoLarguras, captura } from "./apoio.mjs";
 
 let srv, browser;
 before(async () => { srv = await servir(); browser = await lancar(); });
@@ -25,7 +25,7 @@ for (const dispositivo of ["Pixel 7", { width: 360, height: 780 }]) {
       assert.match(await pagina.textContent(".resumo-comp h2"), /Hoje · (Robalo|Dourada)/);
       assert.ok(await pagina.isVisible(".factores table"));
       const l = await larguras(pagina);
-      assert.ok(l.conteudo <= l.ecra, `sem deslocamento horizontal (${l.conteudo} > ${l.ecra})`);
+      assert.ok(l.ok, `sem deslocamento horizontal — ${textoLarguras(l)}`);
       await captura(pagina, `comparador-${nome}`);
       assert.deepEqual(registo.recusados, []);
       assert.deepEqual(registo.erros, []);

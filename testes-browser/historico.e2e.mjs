@@ -5,7 +5,7 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { servir, abrir, lancar, larguras, captura, RAIZ } from "./apoio.mjs";
+import { servir, abrir, lancar, larguras, textoLarguras, captura, RAIZ } from "./apoio.mjs";
 
 const marine = JSON.parse(fs.readFileSync(path.join(RAIZ, "testes/reais/openmeteo_marine_faro_20261014_0946.json"), "utf8"));
 const config = JSON.parse(fs.readFileSync(path.join(RAIZ, "config.json"), "utf8"));
@@ -49,7 +49,7 @@ for (const dispositivo of ["Pixel 7", { width: 360, height: 780 }]) {
       assert.deepEqual(cab, ["Hora", "Antecedência", "Onda prevista (m)", "Hm0 medido (m)", "Dif.", "Água prevista (°C)", "Água medida (°C)", "Dif.", "wave_period (s)", "Tm02 (s)"]);
       assert.equal(await pagina.textContent("nav.barra a.activo"), "Fontes");
       const l = await larguras(pagina);
-      assert.ok(l.conteudo <= l.ecra, `${l.conteudo} > ${l.ecra}`);
+      assert.ok(l.ok, `sem deslocamento horizontal — ${textoLarguras(l)}`);
       await captura(pagina, `historico-${nome}`);
       assert.deepEqual(registo.erros, []);
     } finally { await contexto.close(); }
