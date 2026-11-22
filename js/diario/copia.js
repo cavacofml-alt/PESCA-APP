@@ -3,9 +3,12 @@
 // nada; uma válida escreve numa só transacção (ou tudo, ou nada). Os registos que já existem nunca são
 // substituídos: o mesmo registo é ignorado, e um registo diferente com o mesmo id fica como conflito
 // (o do aparelho mantém-se). Os dados ficam só no aparelho e no ficheiro que o utilizador guardar.
-import { validarSaida } from "./saidas.js";
+import { validarSaida, instanteIsoReal, dataReal } from "./saidas.js";
 import { ESQUEMA_CONDICOES } from "./condicoes.js";
 import { lisbonDate } from "../normalizacao.js";
+import { ESTADO_NOTA } from "../regras/notas.js";
+import { CLASSE_MARE } from "../regras/mares.js";
+import { PERIODOS_PADRAO } from "../regras/periodos.js";
 
 export const FORMATO = "surfcasting-algarve-diario";
 export const VERSAO_COPIA = 1;
@@ -19,19 +22,121 @@ export function criarCopia({ saidas, condicoes, agora = new Date().toISOString()
 
 export const nomeFicheiro = (agora = new Date()) => `diario-surfcasting-${lisbonDate(agora)}.json`;
 
-function validarCondicoes(c, ids) {
+// ---------- Validação das condições importadas (revisão de 22/11/2026) ----------
+// Valida a estrutura inteira que a app produz (condicoesDaSaida em condicoes.js) e que o ecrã lê
+// (resumoCondicoes em ui/diario.js): uma cópia mal formada é recusada na importação e nunca chega a
+// impedir o diário de se desenhar. Não basta haver listas: cada elemento tem de ter os campos, os
+// tipos e os valores possíveis. Os valores numéricos são finitos ou null (dado em falta), nunca NaN.
+const objecto = v => v !== null && typeof v === "object" && !Array.isArray(v);
+const finito = v => typeof v === "number" && Number.isFinite(v);
+const finitoOuNull = v => v === null || finito(v);
+const textoOuNull = v => v === null || typeof v === "string";
+const booleanoOuNull = v => v === null || typeof v === "boolean";
+const MIN_MS = Date.UTC(2000, 0, 1);
+const MAX_MS = Date.UTC(2100, 0, 1);
+const instanteMs = v => Number.isSafeInteger(v) && v >= MIN_MS && v < MAX_MS;
+// Instantes ISO com data e hora reais (instanteIsoReal, em saidas.js: o Date.parse sozinho aceita
+// 30/02 e passa-o para Março) e entre 2000 e 2100.
+const instanteIso = v => instanteIsoReal(v) && instanteMs(Date.parse(v));
+const diaIso = v => {
+  const r = typeof v === "string" ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(v) : null;
+  return !!r && dataReal(Number(r[1]), Number(r[2]), Number(r[3]));
+};
+const ESTADOS_NOTA = Object.values(ESTADO_NOTA);
+const CLASSES_MARE = Object.values(CLASSE_MARE);
+const ESPECIES_COM_NOTA = ["robalo", "dourada"];
+const TIPOS_REPONTO = ["PM", "BM"];
+const CAMPOS_NUMERICOS_HORA = ["hs", "periodo", "direcaoOnda", "potencia", "vento", "rajada", "direcaoVento", "pressao", "agua", "chuva"];
+
+function errosNota(n, onde) {
+  if (n === null) return [];
+  if (!objecto(n)) return [`${onde}: nota mal formada`];
+  const e = [];
+  if (!ESTADOS_NOTA.includes(n.estado)) e.push(`${onde}: estado da nota «${n.estado}» desconhecido`);
+  if (n.estado === ESTADO_NOTA.OK ? !(finito(n.nota) && n.nota >= 1 && n.nota <= 5) : !finitoOuNull(n.nota)) e.push(`${onde}: nota inválida`);
+  if (!booleanoOuNull(n.completa)) e.push(`${onde}: «completa» inválido`);
+  if (n.intervalo !== null && !(Array.isArray(n.intervalo) && n.intervalo.length === 2 && n.intervalo.every(finito) && n.intervalo[0] <= n.intervalo[1])) {
+    e.push(`${onde}: intervalo inválido`);
+  }
+  if (!textoOuNull(n.motivo)) e.push(`${onde}: motivo inválido`);
+  if (typeof n.provisorio !== "boolean") e.push(`${onde}: «provisorio» inválido`);
+  return e;
+}
+
+function errosDisponiveis(c, saida, nomesPeriodos) {
+  const e = [];
+  if (saida && c.pesqueiro !== saida.pesqueiro) e.push("pesqueiro diferente do da saída");
+  if (typeof c.tipo !== "string" || !c.tipo) e.push("tipo em falta");
+  const l = c.leitura;
+  if (!objecto(l)) e.push("leitura em falta");
+  else {
+    if (!instanteIso(l.id)) e.push("leitura: id inválido");
+    if (!instanteIso(l.lidoEm)) e.push("leitura: lidoEm inválido");
+    if (!["antes", "depois"].includes(l.relacao)) e.push("leitura: relação com o início inválida");
+    if (!finito(l.horasEntreLeituraEInicio)) e.push("leitura: horas entre a leitura e o início inválidas");
+  }
+  const dias = new Set();
+  if (!Array.isArray(c.dias) || !c.dias.length) e.push("dias em falta");
+  else c.dias.forEach((d, k) => {
+    const onde = `dia ${k + 1}`;
+    if (!objecto(d)) { e.push(`${onde}: mal formado`); return; }
+    if (!diaIso(d.dia)) e.push(`${onde}: data inválida`); else dias.add(d.dia);
+    if (!finitoOuNull(d.amplitude)) e.push(`${onde}: amplitude inválida`);
+    if (d.classe !== null && !CLASSES_MARE.includes(d.classe)) e.push(`${onde}: classe de maré inválida`);
+    if (!Array.isArray(d.repontos)) e.push(`${onde}: repontos em falta`);
+    else d.repontos.forEach((r, j) => {
+      if (!objecto(r) || !TIPOS_REPONTO.includes(r.tipo) || !instanteMs(r.instante) || !finitoOuNull(r.alturaM)) e.push(`${onde}, reponto ${j + 1}: mal formado`);
+    });
+  });
+  if (!Array.isArray(c.periodos)) e.push("períodos em falta");
+  else c.periodos.forEach((p, k) => {
+    const onde = `período ${k + 1}`;
+    if (!objecto(p)) { e.push(`${onde}: mal formado`); return; }
+    if (!diaIso(p.dia) || (dias.size && !dias.has(p.dia))) e.push(`${onde}: dia inválido`);
+    if (!nomesPeriodos.includes(p.nome)) e.push(`${onde}: nome «${p.nome}» desconhecido`);
+    if (!objecto(p.notas)) { e.push(`${onde}: notas em falta`); return; }
+    for (const [esp, n] of Object.entries(p.notas)) {
+      if (!ESPECIES_COM_NOTA.includes(esp)) e.push(`${onde}: espécie «${esp}» sem regra`);
+      e.push(...errosNota(n, `${onde}, ${esp}`));
+    }
+  });
+  if (!Array.isArray(c.horas) || !c.horas.length) e.push("horas em falta");
+  else c.horas.forEach((h, k) => {
+    const onde = `hora ${k + 1}`;
+    if (!objecto(h)) { e.push(`${onde}: mal formada`); return; }
+    if (!instanteMs(h.instante)) e.push(`${onde}: instante inválido`);
+    for (const campo of CAMPOS_NUMERICOS_HORA) if (!finitoOuNull(h[campo])) e.push(`${onde}: ${campo} inválido`);
+    if (!booleanoOuNull(h.limo)) e.push(`${onde}: limo inválido`);
+    if (!textoOuNull(h.lado)) e.push(`${onde}: lado inválido`);
+  });
+  if (!Number.isInteger(c.horasComValores) || c.horasComValores < 1 || (Array.isArray(c.horas) && c.horasComValores > c.horas.length)) {
+    e.push("número de horas com valores inválido");
+  }
+  if (c.boia !== null) {
+    const b = c.boia;
+    if (!objecto(b) || !instanteMs(b.instante) || !finitoOuNull(b.hm0) || !finitoOuNull(b.tm02) || !finitoOuNull(b.agua) || typeof b.tipo !== "string") {
+      e.push("medição da boia mal formada");
+    }
+  }
+  return e;
+}
+
+function validarCondicoes(c, saidasPorId, nomesPeriodos) {
+  if (!objecto(c)) return ["registo não é um objecto"];
   const erros = [];
-  if (!c || typeof c !== "object") return ["registo não é um objecto"];
-  if (typeof c.saidaId !== "string" || !ids.has(c.saidaId)) erros.push("não pertence a nenhuma saída do ficheiro");
+  const saida = typeof c.saidaId === "string" ? saidasPorId.get(c.saidaId) : undefined;
+  if (!saida) erros.push("não pertence a nenhuma saída do ficheiro");
   if (c.id !== `c-${c.saidaId}`) erros.push("id não corresponde à saída");
   if (c.esquema !== ESQUEMA_CONDICOES) erros.push(`esquema ${c.esquema} desconhecido`);
+  if (!instanteIso(c.calculadoEm)) erros.push("data do cálculo (calculadoEm) inválida");
   if (typeof c.disponivel !== "boolean") erros.push("«disponivel» em falta");
-  if (c.disponivel && (!Array.isArray(c.horas) || !Array.isArray(c.periodos))) erros.push("horas ou períodos em falta");
+  else if (!c.disponivel) { if (typeof c.motivo !== "string" || !c.motivo) erros.push("motivo em falta"); }
+  else erros.push(...errosDisponiveis(c, saida, nomesPeriodos));
   return erros;
 }
 
 // Valida o ficheiro inteiro (texto ou objecto). { ok, erros, avisos, saidas, condicoes }.
-export function validarCopia(entrada, { pesqueirosConhecidos = null } = {}) {
+export function validarCopia(entrada, { pesqueirosConhecidos = null, nomesPeriodos = PERIODOS_PADRAO.map(p => p.nome) } = {}) {
   let c = entrada;
   if (typeof entrada === "string") {
     try { c = JSON.parse(entrada); } catch { return { ok: false, erros: ["o ficheiro não é JSON válido"], avisos: [] }; }
@@ -47,19 +152,19 @@ export function validarCopia(entrada, { pesqueirosConhecidos = null } = {}) {
   if (erros.length) return { ok: false, erros, avisos };
   const condicoes = c.condicoes ?? [];
   if (c.saidas.length + condicoes.length > MAX_REGISTOS) return { ok: false, erros: [`mais de ${MAX_REGISTOS} registos`], avisos };
-  const ids = new Set();
+  const saidasPorId = new Map();
   c.saidas.forEach((s, i) => {
     const v = validarSaida(s, { pesqueirosConhecidos });
     for (const e of v.erros) erros.push(`saída ${i + 1}${s?.id ? ` (${s.id})` : ""}: ${e}`);
     for (const a of v.avisos) if (!avisos.includes(a)) avisos.push(a);
     if (typeof s?.id === "string") {
-      if (ids.has(s.id)) erros.push(`saída ${i + 1}: id ${s.id} repetido`);
-      ids.add(s.id);
+      if (saidasPorId.has(s.id)) erros.push(`saída ${i + 1}: id ${s.id} repetido`);
+      saidasPorId.set(s.id, s);
     }
   });
   const idsC = new Set();
   condicoes.forEach((x, i) => {
-    for (const e of validarCondicoes(x, ids)) erros.push(`condições ${i + 1}: ${e}`);
+    for (const e of validarCondicoes(x, saidasPorId, nomesPeriodos)) erros.push(`condições ${i + 1}: ${e}`);
     if (idsC.has(x?.id)) erros.push(`condições ${i + 1}: id repetido`);
     idsC.add(x?.id);
   });
