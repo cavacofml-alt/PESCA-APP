@@ -34,7 +34,27 @@ O site está no Cloudflare Workers, como site estático (sem código no servidor
 
 Abrir o endereço no Chrome → menu ⋮ → **Instalar app** (ou «Adicionar ao ecrã principal»). A app abre em ecrã inteiro.
 
-**Sem rede (o que está implementado hoje):** o service worker guarda na instalação só a shell (HTML, CSS, JS, bibliotecas, fotografias). A `config.json`, as tabelas de marés e os fundos do mar só ficam guardados quando a app os pede com o service worker já a controlar a página, o que normalmente só acontece a partir da segunda abertura com rede; e só ficam os que a app já pediu (por exemplo, a tabela de marés de um ano que a janela de 7 dias ainda não tocou não está guardada). Por isso, **depois de uma única visita com rede a app pode não abrir sem rede**: o início, o comparador e as Fontes mostram «Erro: Failed to fetch», porque falta a `config.json` (o mapa abre). Depois de uma segunda visita com rede, o início, o comparador, as Fontes e o mapa abrem sem rede. **Os endereços com parâmetros só abrem sem rede se esse endereço exacto já tiver sido aberto com rede:** a ligação «Comparar os 8 pesqueiros ›» do início (`comparador.html?dia=…`) falha sem rede, e a «Comparar» da barra (sem parâmetros) abre (verificado no Chromium a 22/11/2026). Os mosaicos do mapa (OpenStreetMap, DGT) não ficam guardados. As previsões do Open-Meteo, a boia e as notas **não ficam guardadas**: sem rede, essas fontes aparecem como «não obtido» e não há notas. Só ficam no aparelho, em `localStorage`, a espécie escolhida e a camada escolhida no mapa. Não há ainda diário, histórico de previsões nem armazenamento em IndexedDB.
+**Sem rede (o que está implementado):**
+
+- Na instalação, o service worker guarda só a shell (HTML, CSS, JS, bibliotecas, fotografias). A `config.json`, as tabelas de marés e os fundos do mar só ficam guardados quando a app os pede com o service worker já a controlar a página, o que normalmente só acontece a partir da segunda abertura com rede; e só ficam os que a app já pediu (por exemplo, a tabela de marés de um ano que a janela de 7 dias ainda não tocou não está guardada). Os mosaicos do mapa (OpenStreetMap, DGT) não ficam guardados.
+- Por isso, **depois de uma única visita com rede a app pode não abrir sem rede**: o início, o comparador e as Fontes mostram «Erro: Failed to fetch», porque falta a `config.json` (o mapa abre), mesmo que a leitura dessa visita já tenha ficado guardada em IndexedDB. Depois de uma segunda visita com rede, o início e o comparador abrem com a previsão arquivada, e as Fontes e o mapa abrem.
+- **Os endereços com parâmetros só abrem sem rede se esse endereço exacto já tiver sido aberto com rede:** a ligação «Comparar os 8 pesqueiros ›» do início (`comparador.html?dia=…`) falha sem rede, e a «Comparar» da barra (sem parâmetros) abre (verificado no Chromium a 22/11/2026).
+- Cada leitura com rede (previsões do Open-Meteo de todos os pontos e boia de Faro) fica guardada no aparelho, em IndexedDB (ver «Armazenamento local»).
+- Quando nenhum ponto do Open-Meteo responde (sem rede ou fonte em baixo), o início e o comparador mostram a **última leitura guardada**, com o aviso «Previsão arquivada — não é a previsão actual», a data, a hora e a idade da leitura. As notas são as dessa leitura; os dias e os períodos já passados contam a partir da hora real. Nunca aparece como previsão actual.
+- Sem leitura guardada, ou com uma mais antiga do que 7 dias: «Previsão indisponível». As notas que dependem da previsão ficam sem nota; a da Ria, que vem das marés (ficheiro local), fica incompleta.
+- Quando a rede volta, a página actualiza sozinha.
+- Ficam ainda no aparelho, em `localStorage`, a espécie escolhida e a camada escolhida no mapa.
+
+## Armazenamento local
+
+`js/armazenamento/` — camada independente da interface, só no aparelho (nada vai para servidores):
+
+- `esquema.js`: base `surfcasting-algarve` em IndexedDB, com as lojas `leituras` (cada leitura das fontes), `diario` e `condicoes` (para o diário, ainda sem interface) e `meta`. A versão da base é o número de migrações; para mudar o esquema acrescenta-se uma migração no fim, nunca se altera uma publicada.
+- `indexeddb.js`: abre a base e aplica as migrações. Se o navegador não deixar (sem IndexedDB, modo privado, base aberta noutro separador com outra versão, erro na migração), a app continua sem guardar e o diagnóstico di-lo.
+- `leituras.js`: guardar, ler a última e limpar. Política em `config.json` (`persistencia.leituras`): todas as leituras das últimas 48 h; das mais antigas, a última de cada dia (hora de Lisboa) até 30 dias; no máximo 60; uma leitura com menos de 30 min é substituída pela nova; sem rede, só se usa a última se tiver até 168 h (7 dias). A mais recente nunca é apagada pela limpeza. Sem espaço (quota), apagam-se só as leituras mais antigas, uma de cada vez, até a nova caber; a leitura válida mais recente nunca se apaga sozinha: no fim, só é trocada pela nova numa única transacção, que se desfaz se a nova não couber. Nunca se fica sem nenhuma leitura; se a nova não couber, a app continua e avisa que os dados não ficaram guardados.
+- `armazem-memoria.js`: a mesma interface em memória, só para os testes em Node.
+- Cada leitura ocupa cerca de 0,3 MB (16 pontos do Open-Meteo e a boia). As marés e os fundos não se guardam aqui (são ficheiros da app).
+- O diagnóstico mostra quantas leituras há, as datas e o espaço usado.
 
 ## Estado das fontes
 
@@ -94,7 +114,7 @@ O GitHub Actions corre-os em cada push e PR (workflow «Testes no browser») e g
 
 ## Limitações desta entrega
 
-- Ainda não existem: páginas por pesqueiro, diário de saídas, estatísticas, histórico de previsões e armazenamento das previsões em IndexedDB. Estão no plano de evolução, um PR cada; nada disto está publicado.
+- Ainda não existem: páginas por pesqueiro, diário de saídas (a base já tem as lojas), estatísticas e o ecrã do histórico de previsões (as leituras já ficam guardadas). Estão no plano de evolução, um PR cada.
 - Os avisos do IPMA não são consultados: a regra de segurança foi retirada por decisão do utilizador (13/10/2026).
 - O `sw.js` serve a shell a partir da cache; `config.json` e marés (`*.json`) vão sempre primeiro à rede e só usam a cópia em cache sem ligação; essa cópia só existe depois de terem sido pedidos com o service worker a controlar a página (ver «Sem rede»). Ao alterar um ficheiro da shell, correr `node ferramentas/versao-sw.mjs` (actualiza a impressão e sobe a versão da cache em `sw.js`); um teste falha se for esquecido.
 - Quando há uma versão nova publicada, a página aberta recarrega sozinha uma vez, assim que o service worker novo toma conta dela (`js/registo-sw.js`). Sem isso ficava o código antigo com a `config.json` nova, que vem sempre da rede. Na primeira instalação não recarrega.
