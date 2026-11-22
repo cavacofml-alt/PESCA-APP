@@ -67,7 +67,7 @@ Reutiliza os componentes do ecrã inicial e do «hora a hora» (não há outra c
 
 ## Histórico de previsões e validação pessoal
 
-`historico.html` (`js/historico/validacao.js`, `js/ui/historico.js`), a partir das «Fontes»: as leituras guardadas neste aparelho e, na zona da boia de Faro, a previsão do Open-Meteo que a app tinha ao lado do que a boia mediu. Usa só o que está guardado no aparelho (as leituras e o diário), sem pedidos a fontes externas. Sem rede, abre depois de a app ter sido aberta pelo menos duas vezes com rede (ver «Sem rede»), mesmo que o histórico nunca tenha sido aberto com rede, com as leituras guardadas e os pares previsão × boia que já houver; depois de uma única visita com rede, não abre sem rede.
+`historico.html` (`js/historico/validacao.js`, `js/ui/historico.js`), a partir das «Fontes»: as leituras guardadas neste aparelho e, na zona da boia de Faro, a previsão do Open-Meteo que a app tinha ao lado do que a boia mediu. Usa só o que está guardado no aparelho (as leituras e o diário), sem pedidos a fontes externas. Sem rede, abre depois de o início ter sido aberto pelo menos duas vezes com rede (ver «Sem rede»), mesmo que o histórico nunca tenha sido aberto com rede, com as leituras guardadas e os pares previsão × boia que já houver; depois de uma única visita com rede ao início, não abre sem rede.
 
 - **Previsão arquivada ≠ observação:** a previsão vem com a hora da leitura e a antecedência; a observação é a da boia (ao largo, a 90 m de fundo).
 - **Só horas que eram previsão:** de cada leitura só contam as horas depois da hora da leitura e que já chegaram (os 7 dias para trás de cada leitura não contam). A medição da boia tem de estar a 15 min da hora certa; sem medição (ou com QC mau), fica «sem medição», nunca zero.
