@@ -1,5 +1,6 @@
 // Guia (plano de evolução, PR 8): estático e local; «Em geral» separado de «Nesta app»; os valores de
-// «Nesta app» vêm do config (mudam com ele); a parte geral não traz regras de pesca.
+// «Nesta app» lidos do config mudam com ele (alguns estão escritos no texto: ver js/ui/guia.js); a parte
+// geral não traz regras de pesca.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -25,7 +26,7 @@ test("guia: a parte geral não traz regras de pesca (nada de espécies, notas ou
   }
 });
 
-test("guia: os valores de «Nesta app» vêm do config e mudam com ele", () => {
+test("guia: os valores de «Nesta app» lidos do config mudam com ele", () => {
   const base = renderGuia(config);
   assert.match(base, /abaixo de 2,00 m, morta; de 2,00 a 3,00 m, intermédia; acima de 3,00 m, viva/);
   assert.match(base, /P ≈ 0,49 × Hs² × T/);
