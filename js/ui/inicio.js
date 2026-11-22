@@ -500,11 +500,11 @@ export const TIPO_LOCAL = { praia: "praia (mar de fora)", molhe: "molhe", ria: "
 // do motor, sem outra classificação (como a «melhor janela» e «Onde e quando»). Os empatados vão
 // todos; «sem nota» são os n.d. e «por confirmar» que faltam. Entre os períodos com nota mais baixa e
 // incompletos (revisão de 22/11/2026): «pode subir» só quando o motor dá um limite superior numérico
-// (intervalo.max) acima dessa nota; sem limite superior conhecido, o período fica dito como
-// «incompleta», sem se afirmar que pode subir; com limite que não passa essa nota, não muda nada e não
-// se diz nada. (Hoje o motor dá sempre um intervalo numérico às notas «ok», js/regras/notas.js; a
-// verificação é só para não afirmar sem limite.) Devolve null quando a nota do dia não é de um
-// período passado. Função pura.
+// (intervalo.max) acima dessa nota; com limite exactamente igual a essa nota (pode empatar, não pode
+// passar) ou sem limite superior conhecido, o período fica dito como «incompleta», sem se afirmar que
+// pode subir; com limite abaixo dessa nota, não muda nada e não se diz nada. (Hoje o motor dá sempre
+// um intervalo numérico às notas «ok», js/regras/notas.js; a verificação de «sem limite» é só para
+// não afirmar sem limite.) Devolve null quando a nota do dia não é de um período passado. Função pura.
 export function restoDoDia(p, esp, passados) {
   const n = p.notas?.[esp];
   if (!n || n.estado !== "ok" || !n.periodo || !passados.includes(n.periodo)) return null;
@@ -518,7 +518,7 @@ export function restoDoDia(p, esp, passados) {
   const abaixoIncompletas = ok.filter(x => x.n.nota < nota && !x.n.completa);
   const temLimite = x => Number.isFinite(x.n.intervalo?.max);
   const podeSubir = abaixoIncompletas.filter(x => temLimite(x) && x.n.intervalo.max > nota).map(x => x.nome);
-  const incompletas = abaixoIncompletas.filter(x => !temLimite(x)).map(x => x.nome);
+  const incompletas = abaixoIncompletas.filter(x => !temLimite(x) || x.n.intervalo.max === nota).map(x => x.nome);
   return { passou: n.periodo, nota, melhor: melhores[0].n, periodos: melhores.map(x => x.nome),
     completa: melhores.every(x => x.n.completa === true), podeSubir, incompletas, semNota };
 }
