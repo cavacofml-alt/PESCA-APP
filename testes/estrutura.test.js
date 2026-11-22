@@ -43,21 +43,35 @@ test("a app e o diagnóstico consultam os pontos de todos os pesqueiros (via pon
 
 // ---------- Service worker, executado num contexto falso ----------
 
-function carregarSw({ rede }) {
+function carregarSw({ rede, instalacao = "ok", cacheJaExiste = false }) {
   const handlers = {};
   const cache = new Map();
   const abertas = new Set();
   const instalados = [];
+  const apagadas = [];
+  const procuras = [];
   const cacheApi = {
     open: async nome => {
       abertas.add(nome);
       return {
         // Atraso deliberado: prova que a resposta espera pela gravação.
         put: (req, res) => new Promise(ok => setTimeout(() => { cache.set(req.url, res); ok(); }, 5)),
-        addAll: async lista => { instalados.push(...lista); }
+        // Como o cache.addAll real: tudo ou nada (um ficheiro que falha → nada fica guardado).
+        addAll: async lista => {
+          if (instalacao === "falha") throw new TypeError("Failed to fetch ./mares/2027.json");
+          instalados.push(...lista);
+        }
       };
     },
-    match: async req => cache.get(req.url),
+    // Regista as opções de cada procura; com ignoreSearch compara o endereço sem os parâmetros.
+    match: async (req, opcoes) => {
+      procuras.push({ url: req.url, opcoes });
+      if (!opcoes?.ignoreSearch) return cache.get(req.url);
+      const semQuery = u => u.split("?")[0];
+      return [...cache].find(([k]) => semQuery(k) === semQuery(req.url))?.[1];
+    },
+    delete: async nome => { apagadas.push(nome); abertas.delete(nome); return true; },
+    has: async () => cacheJaExiste,
     keys: async () => [...abertas]
   };
   const ctx = {
@@ -81,12 +95,12 @@ function carregarSw({ rede }) {
     await espera;
     return instalados;
   }
-  async function pedir(url) {
+  async function pedir(url, { mode } = {}) {
     let resposta;
-    handlers.fetch({ request: { url, method: "GET" }, respondWith: p => { resposta = p; } });
+    handlers.fetch({ request: { url, method: "GET", mode }, respondWith: p => { resposta = p; } });
     return resposta ? await resposta : "ignorado";
   }
-  return { pedir, instalar, cache };
+  return { pedir, instalar, cache, procuras, apagadas, abertas };
 }
 
 test("sw: *.json é rede primeiro, mesmo com cópia em cache", async () => {
@@ -109,7 +123,7 @@ test("sw: a cópia de *.json fica gravada antes de a resposta ser devolvida", as
   assert.ok(sw.cache.has("https://exemplo.pt/mares/2026.json"));
 });
 
-test("sw: a instalação guarda a shell completa e todos os ficheiros existem", async () => {
+test("sw: a instalação guarda a shell completa e os dados para abrir sem rede (config, marés, fundo típico); todos os ficheiros existem", async () => {
   const sw = carregarSw({ rede: "ok" });
   const instalados = await sw.instalar();
   const naPasta = (pasta, ext) => readdirSync(join(raiz, pasta)).filter(f => f.endsWith(ext)).map(f => `./${pasta}/${f}`);
@@ -118,11 +132,51 @@ test("sw: a instalação guarda a shell completa e todos os ficheiros existem", 
     ...naPasta("css", ".css"), ...naPasta("assets/fotos", ".jpg"),
     ...[...ficheirosJs("js"), ...ficheirosJs("vendor")].map(f => "./" + f.split("\\").join("/")),
     // Leaflet: a folha de estilo e o ícone do selector de camadas (os ícones de marcador não são usados).
-    ...naPasta("vendor/leaflet", ".css"), "./vendor/leaflet/images/layers.png", "./vendor/leaflet/images/layers-2x.png"];
+    ...naPasta("vendor/leaflet", ".css"), "./vendor/leaflet/images/layers.png", "./vendor/leaflet/images/layers-2x.png",
+    // Dados para abrir sem rede logo depois da primeira visita (revisão de 22/11/2026, D1): o config,
+    // TODAS as tabelas de marés de mares/ (uma tabela nova tem de entrar aqui) e o fundo típico.
+    "./config.json", ...naPasta("mares", ".json"), "./fundos/tipico.json"];
   assert.deepEqual([...instalados].sort(), [...esperado].sort());
   for (const f of instalados.filter(f => f !== "./")) {
     assert.doesNotThrow(() => statSync(join(raiz, f)), `${f} não existe`);
   }
+});
+
+test("sw: se algum ficheiro falhar na instalação, a cache nova é apagada e a instalação falha (nunca fica activa sem config ou marés)", async () => {
+  const sw = carregarSw({ rede: "ok", instalacao: "falha" });
+  await assert.rejects(sw.instalar(), /Failed to fetch/);
+  const versao = ler("sw.js").match(/const CACHE = "([^"]+)"/)[1];
+  assert.deepEqual(sw.apagadas, [versao], "a cache da versão nova é apagada");
+  assert.ok(!sw.abertas.has(versao));
+  // Uma cache com o mesmo nome que já existia (do service worker activo) não é apagada por uma instalação falhada.
+  const outra = carregarSw({ rede: "ok", instalacao: "falha", cacheJaExiste: true });
+  await assert.rejects(outra.instalar(), /Failed to fetch/);
+  assert.deepEqual(outra.apagadas, []);
+});
+
+test("sw: nas navegações (páginas) a cache ignora os parâmetros do endereço; nos outros pedidos não", async () => {
+  const sw = carregarSw({ rede: "falha" });
+  for (const p of ["pesqueiro.html", "comparador.html", "mapa.html"]) sw.cache.set(`https://exemplo.pt/${p}`, { ok: true, origem: `cache ${p}` });
+  // Páginas com parâmetros nunca abertos: servidas pela cópia da página.
+  for (const [url, pagina] of [["pesqueiro.html?id=falesia", "pesqueiro.html"], ["pesqueiro.html?id=ria&dia=2", "pesqueiro.html"],
+    ["comparador.html?dia=1", "comparador.html"], ["mapa.html?pesqueiro=falesia", "mapa.html"]]) {
+    assert.equal((await sw.pedir(`https://exemplo.pt/${url}`, { mode: "navigate" })).origem, `cache ${pagina}`, url);
+    assert.equal(sw.procuras.at(-1).opcoes?.ignoreSearch, true, url); // (objecto de outro contexto vm: compara-se o campo)
+  }
+  // Um script com parâmetros não é uma navegação: procura-se pelo endereço exacto (aqui falha → rede → sem rede).
+  sw.cache.set("https://exemplo.pt/js/app.js", { ok: true, origem: "cache" });
+  await assert.rejects(sw.pedir("https://exemplo.pt/js/app.js?v=2", { mode: "no-cors" }), /sem rede/);
+  assert.equal(sw.procuras.at(-1).opcoes, undefined);
+  // Sem parâmetros, o script continua a vir da cache.
+  assert.equal((await sw.pedir("https://exemplo.pt/js/app.js", { mode: "no-cors" })).origem, "cache");
+});
+
+test("sw: *.json procura-se sempre pelo endereço exacto, mesmo numa navegação", async () => {
+  const sw = carregarSw({ rede: "falha" });
+  sw.cache.set("https://exemplo.pt/config.json", { ok: true, origem: "cache" });
+  assert.equal((await sw.pedir("https://exemplo.pt/config.json", { mode: "navigate" })).origem, "cache");
+  assert.equal((await sw.pedir("https://exemplo.pt/config.json?outro=1", { mode: "navigate" })).origem, "erro");
+  assert.ok(sw.procuras.every(p => p.opcoes === undefined), "nenhum *.json com ignoreSearch");
 });
 
 test("sw: shell é cache primeiro", async () => {

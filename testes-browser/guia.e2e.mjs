@@ -3,7 +3,7 @@
 // Correr: npm run test:browser.
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { servir, abrir, lancar, larguras, captura } from "./apoio.mjs";
+import { servir, abrir, lancar, larguras, textoLarguras, captura } from "./apoio.mjs";
 
 let srv, browser;
 before(async () => { srv = await servir(); browser = await lancar(); });
@@ -25,7 +25,7 @@ for (const dispositivo of ["Pixel 7", { width: 360, height: 780 }]) {
       await pagina.waitForFunction(() => { const r = document.querySelector("#fundos").getBoundingClientRect(); return Math.abs(r.top) < 40; });
       assert.equal(await pagina.textContent("nav.barra a.activo"), "Fontes");
       const l = await larguras(pagina);
-      assert.ok(l.conteudo <= l.ecra, `${l.conteudo} > ${l.ecra}`);
+      assert.ok(l.ok, `sem deslocamento horizontal — ${textoLarguras(l)}`);
       await captura(pagina, `guia-${nome}`);
       assert.deepEqual(registo.externos, [], "o guia não faz pedidos externos");
       assert.deepEqual(registo.erros, []);

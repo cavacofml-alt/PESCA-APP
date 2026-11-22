@@ -7,7 +7,7 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { servir, abrir, lancar, larguras, captura, RAIZ, AGORA } from "./apoio.mjs";
+import { servir, abrir, lancar, larguras, textoLarguras, captura, RAIZ, AGORA } from "./apoio.mjs";
 
 const config = JSON.parse(fs.readFileSync(path.join(RAIZ, "config.json"), "utf8"));
 let srv, browser;
@@ -80,7 +80,7 @@ for (const dispositivo of ["Pixel 7", { width: 360, height: 780 }]) {
         .filter(x => x.razao < 4.5);
       assert.deepEqual(baixos, [], "texto com contraste ≥ 4,5:1");
       const l = await larguras(pagina);
-      assert.ok(l.conteudo <= l.ecra, `sem deslocamento horizontal (${l.conteudo} > ${l.ecra})`);
+      assert.ok(l.ok, `sem deslocamento horizontal — ${textoLarguras(l)}`);
       await captura(pagina, `interface-inicio-${nome}`);
       assert.deepEqual(registo.recusados, []);
       assert.deepEqual(registo.erros, []);
@@ -114,7 +114,7 @@ for (const dispositivo of ["Pixel 7", { width: 360, height: 780 }]) {
         assert.ok(v.avista, `${id}: a hora actual à vista`);
         assert.ok(v.melhor >= 1, `${id}: melhor período marcado`);
         const l = await larguras(pagina);
-        assert.ok(l.conteudo <= l.ecra, `${id} (${nome}): ${l.conteudo} > ${l.ecra}`);
+        assert.ok(l.ok, `${id} (${nome}): sem deslocamento horizontal — ${textoLarguras(l)}`);
         if (id === "falesia" || id === "molhe_quarteira") await captura(pagina, `interface-pesqueiro-${id}-${nome}`);
       }
       const baixos = (await contrastes(pagina, [".janela-topo", ".janela-quando", ".destaque-estado", ".tile-rot", ".tile-valor", ".tile-det",
@@ -223,7 +223,7 @@ test("sem rede: indisponível sem melhor oportunidade definitiva; depois de uma 
     assert.equal(await pagina.locator(".horas-pq .tabela-horas.arquivada").count(), 1);
     assert.ok(await pagina.locator(".tile-tipo", { hasText: "arquivado" }).count() >= 1, "condições marcadas como arquivadas");
     const l = await larguras(pagina);
-    assert.ok(l.conteudo <= l.ecra);
+    assert.ok(l.ok, `sem deslocamento horizontal — ${textoLarguras(l)}`);
     await captura(pagina, "interface-pesqueiro-arquivo");
     assert.deepEqual(registo.erros.filter(e => !/ERR_INTERNET_DISCONNECTED|Failed to load resource/.test(e)), []);
   } finally { await contexto.close(); }

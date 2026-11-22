@@ -2,7 +2,7 @@
 // n em cada valor, «sem registos», Pixel 7 e 360 px, e sem rede. Correr: npm run test:browser.
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { servir, abrir, lancar, larguras, captura } from "./apoio.mjs";
+import { servir, abrir, lancar, larguras, textoLarguras, captura } from "./apoio.mjs";
 
 let srv, browser;
 before(async () => { srv = await servir(); browser = await lancar(); });
@@ -51,7 +51,7 @@ for (const dispositivo of ["Pixel 7", { width: 360, height: 780 }]) {
       await pagina.dispatchEvent("[name=desde]", "change");
       await pagina.waitForFunction(() => /n = 2 saída\(s\) de 3/.test(document.querySelector("[aria-label=Resumo]")?.textContent));
       const l = await larguras(pagina);
-      assert.ok(l.conteudo <= l.ecra, `${l.conteudo} > ${l.ecra}`);
+      assert.ok(l.ok, `sem deslocamento horizontal — ${textoLarguras(l)}`);
       await captura(pagina, `estatisticas-${nome}`);
       assert.deepEqual(registo.erros, []);
     } finally { await contexto.close(); }

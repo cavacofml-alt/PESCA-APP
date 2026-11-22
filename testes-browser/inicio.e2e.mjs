@@ -3,7 +3,7 @@
 // Correr: npm run test:browser.
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { servir, abrir, lancar, larguras, captura } from "./apoio.mjs";
+import { servir, abrir, lancar, larguras, textoLarguras, captura } from "./apoio.mjs";
 
 let srv, browser;
 before(async () => { srv = await servir(); browser = await lancar(); });
@@ -29,7 +29,7 @@ for (const dispositivo of ["Pixel 7", { width: 360, height: 780 }]) {
       assert.ok(m.oq.top < m.ecra, `«Onde e quando» começa no primeiro ecrã (${Math.round(m.oq.top)} < ${m.ecra})`);
       assert.ok(m.dq.bottom <= m.oq.top && m.oq.bottom <= m.mar.top && m.mar.bottom <= m.cartao.top, "ordem: melhor oportunidade, «Onde e quando», «Mar agora», cartões");
       const l = await larguras(pagina);
-      assert.ok(l.conteudo <= l.ecra, `sem deslocamento horizontal (${l.conteudo} > ${l.ecra})`);
+      assert.ok(l.ok, `sem deslocamento horizontal — ${textoLarguras(l)}`);
       console.log(`# medição ${nome}: página ${m.pagina} px, 1.º cartão a ${Math.round(m.cartao.top)} px, ecrã ${m.ecra} px, blocos de alinhamento ${m.alinhamentos}`);
       await captura(pagina, `inicio-reorganizado-${nome}`);
       assert.deepEqual(registo.recusados, []);

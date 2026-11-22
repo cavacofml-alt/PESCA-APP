@@ -5,7 +5,7 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { servir, abrir, lancar, larguras, captura, RAIZ } from "./apoio.mjs";
+import { servir, abrir, lancar, larguras, textoLarguras, captura, RAIZ } from "./apoio.mjs";
 
 const config = JSON.parse(fs.readFileSync(path.join(RAIZ, "config.json"), "utf8"));
 let srv, browser;
@@ -80,7 +80,7 @@ for (const dispositivo of ["Pixel 7", { width: 360, height: 780 }]) {
         await pagina.waitForSelector(seletor);
         await pagina.waitForTimeout(300);
         const l = await larguras(pagina);
-        assert.ok(l.conteudo <= l.ecra, `${id} (${nome}): conteúdo ${l.conteudo} px > ecrã ${l.ecra} px`);
+        assert.ok(l.ok, `${id} (${nome}): sem deslocamento horizontal — ${textoLarguras(l)}`);
         await captura(pagina, `${id}-${nome}`);
       }
       assert.deepEqual(registo.recusados, []);

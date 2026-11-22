@@ -1,7 +1,7 @@
 // Mudar a versão sempre que a shell mudar: a activação apaga as caches antigas.
 // A impressão abaixo (SHA-256 dos ficheiros da SHELL) é conferida por um teste; para actualizar
 // a impressão e a versão de uma vez: node ferramentas/versao-sw.mjs
-const CACHE = "surfcasting-shell-v35";
+const CACHE = "surfcasting-shell-v36";
 // impressão da shell: 2001a796e40e
 const SHELL = [
   "./", "./index.html", "./diagnostico.html", "./mapa.html", "./fontes.html", "./comparador.html", "./pesqueiro.html", "./diario.html", "./estatisticas.html", "./historico.html", "./guia.html", "./manifest.webmanifest", "./css/app.css",
@@ -25,8 +25,21 @@ const SHELL = [
   "./vendor/suncalc.js", "./vendor/leaflet/leaflet.js", "./vendor/leaflet/leaflet.css",
   "./vendor/leaflet/images/layers.png", "./vendor/leaflet/images/layers-2x.png"
 ];
+// Dados de que a app precisa para abrir sem rede (revisão de 22/11/2026, D1): guardam-se já na
+// instalação, para que a primeira visita com rede deixe a app pronta a abrir sem ela. Durante o uso
+// continuam a vir primeiro da rede (redePrimeiro), e a cópia é actualizada a cada leitura.
+// Não entram na impressão da shell (mudam com a configuração e as tabelas de marés). Um teste confere
+// que estão aqui o config.json, o fundo típico e todas as tabelas de mares/.
+const DADOS = ["./config.json", "./mares/2026.json", "./mares/2027.json", "./fundos/tipico.json"];
+// Instalação tudo ou nada: a shell e os dados entram juntos (cache.addAll guarda tudo ou nada).
+// Se algum ficheiro falhar, a instalação falha explicitamente: este service worker não fica activo,
+// o anterior (se houver) continua a servir, e o browser volta a tentar na visita seguinte. Nunca
+// fica uma versão activa sem a configuração ou as marés. A cache criada por esta instalação é
+// apagada; uma cache com o mesmo nome que já existia (em uso pelo service worker activo) fica.
 self.addEventListener("install", event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)));
+  event.waitUntil(caches.has(CACHE).then(existia => caches.open(CACHE)
+    .then(cache => cache.addAll([...SHELL, ...DADOS]))
+    .catch(erro => (existia ? Promise.resolve() : caches.delete(CACHE)).then(() => { throw erro; }))));
   self.skipWaiting();
 });
 self.addEventListener("activate", event => {
@@ -54,9 +67,14 @@ function semRedireccao(response) {
   return response.blob().then(corpo => new Response(corpo,
     { status: response.status, statusText: response.statusText, headers: response.headers }));
 }
-// Shell: cache primeiro.
+// Shell: cache primeiro. Só nas navegações (páginas HTML) a procura ignora os parâmetros do endereço
+// (revisão de 22/11/2026, D2): pesqueiro.html?id=…, comparador.html?dia=… e mapa.html?pesqueiro=… são
+// a mesma página, que lê os parâmetros no browser. Os outros pedidos (scripts, estilos, imagens) e os
+// *.json (redePrimeiro) continuam a procurar-se pelo endereço exacto, porque o conteúdo pode depender
+// dos parâmetros.
 function cachePrimeiro(request) {
-  return caches.match(request).then(cached => (cached ? semRedireccao(cached)
+  const opcoes = request.mode === "navigate" ? { ignoreSearch: true } : undefined;
+  return caches.match(request, opcoes).then(cached => (cached ? semRedireccao(cached)
     : fetch(request).then(response => guardar(request, response))));
 }
 self.addEventListener("fetch", event => {

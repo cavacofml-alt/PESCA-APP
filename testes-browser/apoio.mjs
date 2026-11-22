@@ -50,10 +50,11 @@ const PNG_VAZIO = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC
 // Contexto do browser com as respostas simuladas. dispositivo: "Pixel 7" ou { width, height }.
 // semApis: as APIs (Open-Meteo, boia) falham como sem rede; a app em si continua a ser servida.
 // rede.apis pode mudar durante o teste (por exemplo, ler com rede e depois abrir sem rede).
+// serviceWorker: por omissão bloqueado; com true fica activo (testes do arranque sem rede).
 export const APIS = ["marine-api.open-meteo.com", "api.open-meteo.com", "ogcapi.hidrografico.pt"];
-export async function abrir(browser, dispositivo = "Pixel 7", { semApis = false } = {}) {
+export async function abrir(browser, dispositivo = "Pixel 7", { semApis = false, serviceWorker = false } = {}) {
   const base = typeof dispositivo === "string" ? devices[dispositivo] : { viewport: dispositivo, isMobile: true, hasTouch: true, deviceScaleFactor: 2 };
-  const contexto = await browser.newContext({ ...base, locale: "pt-PT", timezoneId: "Europe/Lisbon", serviceWorkers: "block" });
+  const contexto = await browser.newContext({ ...base, locale: "pt-PT", timezoneId: "Europe/Lisbon", serviceWorkers: serviceWorker ? "allow" : "block" });
   const registo = { externos: [], recusados: [], erros: [] };
   const rede = { apis: !semApis };
   await contexto.route(/^https?:\/\/(?!127\.0\.0\.1)/, async route => {
@@ -76,8 +77,17 @@ export async function abrir(browser, dispositivo = "Pixel 7", { semApis = false 
 
 export const lancar = () => chromium.launch();
 
-// Largura do conteúdo maior do que o ecrã = deslocamento horizontal (proibido).
-export const larguras = pagina => pagina.evaluate(() => ({ conteudo: document.documentElement.scrollWidth, ecra: window.innerWidth }));
+// Deslocamento horizontal (proibido). Revisão de 22/11/2026 (D4): em emulação de telemóvel, quando o
+// conteúdo passa a largura do ecrã, o Chromium tira zoom e alarga a janela (innerWidth cresce com o
+// conteúdo) em vez de deslocar; comparar com innerWidth deixava passar páginas mais largas do que o
+// ecrã. Agora compara-se com a largura configurada no teste (viewport) e exige-se também que a janela
+// não tenha crescido: ok só quando conteúdo ≤ ecrã E janela = ecrã (falha com overflow ou com zoom out).
+export async function larguras(pagina) {
+  const ecra = pagina.viewportSize().width;
+  const m = await pagina.evaluate(() => ({ conteudo: document.documentElement.scrollWidth, janela: window.innerWidth }));
+  return { ...m, ecra, ok: m.conteudo <= ecra && m.janela === ecra };
+}
+export const textoLarguras = l => `conteúdo ${l.conteudo} px, janela ${l.janela} px, ecrã configurado ${l.ecra} px`;
 
 export async function captura(pagina, nome) {
   fs.mkdirSync(SAIDA, { recursive: true });
